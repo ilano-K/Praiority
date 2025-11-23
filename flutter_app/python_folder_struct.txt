@@ -1,0 +1,15 @@
+backend/
+├── app/
+│   ├── main.py                   # Application entry point
+│   ├── core/                     # Config, Database connection
+│   ├── models/                   # SQL Alchemy / Pydantic models (DB Schemas)
+│   ├── api/
+│   │   └── v1/
+│   │       ├── endpoints/        # Routes (auth.py, calendar.py, ai.py)
+│   │       └── dependencies.py   # Dependency injection (Current User)
+│   ├── services/                 # Business Logic
+│   │   ├── scheduling_engine.py  # Core algorithms for organizing slots
+│   │   └── ai_model.py           # Integration with LLM/AI (OpenAI, HuggingFace, etc.)
+│   └── schemas/                  # Pydantic schemas (Request/Response models)
+├── requirements.txt
+└── .env

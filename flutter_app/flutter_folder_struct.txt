@@ -1,0 +1,38 @@
+lib/
+├── main.dart                     # Entry point
+├── app.dart                      # Root widget (Theme, Routing setup)
+├── src/
+│   ├── core/                     # Global, non-feature specific code
+│   │   ├── constants/            # API keys, global strings
+│   │   ├── theme/                # AppTheme, text styles, colors
+│   │   ├── utils/                # Date formatters, validators
+│   │   ├── network/              # Dio/Http client configurations, Interceptors
+│   │   └── errors/               # Custom Failure/Exception classes
+│   │
+│   ├── features/                 # core business features
+│   │   ├── auth/                 # Authentication feature
+│   │   │
+│   │   ├── calendar/             # The main calendar view
+│   │   │   ├── data/             # Repositories & Data Sources
+│   │   │   │   ├── models/       # DTOs (Data Transfer Objects - JSON parsing)
+│   │   │   │   ├── repositories/ # Implementation of Repository Interface
+│   │   │   │   └── sources/      # API calls (CalendarRemoteSource)
+│   │   │   ├── domain/           # Pure Dart logic (Entities & Usecases)
+│   │   │   │   ├── entities/     # Event, Task (Pure Dart objects)
+│   │   │   │   └── repositories/ # Abstract Repository Interface
+│   │   │   └── presentation/     # UI Layer
+│   │   │       ├── controllers/  # State Management (Bloc/Riverpod)
+│   │   │       ├── pages/        # Full Screen Widgets
+│   │   │       └── widgets/      # Small reusable widgets specific to Calendar
+│   │   │
+│   │   ├── mood_tracker/         # Feature to input/track mood
+│   │   │   └── ... (same data/domain/presentation structure)
+│   │   │
+│   │   ├── ai_assistant/         # UI for Chat/Prompts to reorganize schedule
+│   │   │   └── ... 
+│   │   │
+│   │   └── settings/             # Working hours configuration
+│   │
+│   └── shared/                   # Reusable widgets across multiple features
+│       ├── widgets/              # PrimaryButton, CustomTextField
+│       └── extensions/           # Dart extensions (e.g., BuildContext extension)
