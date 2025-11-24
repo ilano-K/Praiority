@@ -1,24 +1,21 @@
+import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'package:isar/isar.dart';
 import '../data/models/task_model.dart';
 import 'package:flutter_app/features/calendar/data/models/task_model.dart';
 
 abstract class CalendarLocalDataSource {
-  // Create
   Future<void>saveAndUpdateTask(TaskModel task);
-
-  // Read
-  Future<List<TaskModel>> getTasksDay(DateTime date);
-  Future<List<TaskModel>> getTasksWeek(DateTime date);
-  Future<List<TaskModel>> getTasksMonth(DateTime date);
-  //unscheduled, scheudled, completed here:
-
-  
-  //Update
-  // Future<void>updateTask(TaskModel task);
-  // Delete
   Future<void>deleteTask(String id);
 
+  Future<List<TaskModel>> getTasksDay(DateTime date, {TaskCategory? category, TaskType? type, String? tag});
+  Future<List<TaskModel>> getTasksWeek(DateTime date, {TaskCategory? category, TaskType? type, String? tag});
+  Future<List<TaskModel>> getTasksMonth(DateTime date, {TaskCategory? category, TaskType? type, String? tag});
+
+  Future<List<TaskModel>>getTasksByStatus(TaskStatus status);
+  Future<List<TaskModel>>getTasksByCategory(TaskCategory category);
+  Future<List<TaskModel>>getTasksByType(TaskType type);
+  Future<List<TaskModel>>getTasksByTags(String tags);
 }
 
 class CalendarLocalDataSourceImpl implements CalendarLocalDataSource{
@@ -26,61 +23,6 @@ class CalendarLocalDataSourceImpl implements CalendarLocalDataSource{
 
   CalendarLocalDataSourceImpl(this.isar);
 
-  // get tasks for today
-  @override
-  Future<List<TaskModel>> getTasksDay(DateTime date) async {
-    // Start of the day (00:00:00)
-    final startOfDay = DateTime(date.year, date.month, date.day);
-
-    // End of the day, subtracts 1 second to next day VOILA!!!
-    final endOfDay = startOfDay.add(const Duration(days: 1)).subtract(const Duration(seconds: 1));
-
-    //QUERY
-    return await isar.taskModels
-        .filter()
-        .startTimeBetween(startOfDay, endOfDay)
-        .sortByStartTime()
-        .findAll();
-  }
-
-  // get tasks for the week
-  @override
-  Future<List<TaskModel>> getTasksWeek(DateTime date) async {
-    // Current day (00:00:00)
-    final currentDay = DateTime(date.year, date.month, 1);
-
-    // After a week 
-    final endOfWeek = currentDay.add(const Duration(days: 6));
-
-    return await isar.taskModels
-        .filter()
-        .startTimeBetween(currentDay, endOfWeek)
-        .sortByStartTime()
-        .findAll();
-  }
-  
-  // get tasks for the month
-  @override
-  Future<List<TaskModel>> getTasksMonth(DateTime date) async {
-    // Current day (00:00:00)
-    final currentDay = DateTime(date.year, date.month, 1);
-
-    // Handling for december
-    final startOfNextMonth = (date.month < 12) 
-      ? DateTime(date.year, date.month + 1, 1) 
-      : DateTime(date.year + 1, 1, 1);
-    
-    final endOfMonth = startOfNextMonth.subtract(const Duration(seconds: 1));
-
-    return await isar.taskModels
-        .filter()
-        .startTimeBetween(currentDay, endOfMonth)
-        .sortByStartTime()
-        .findAll();
-  }
-  
- 
-  // create and automatically 
   @override
   Future<void> saveAndUpdateTask(TaskModel task) async{
     await isar.writeTxn(() async{
@@ -88,21 +30,166 @@ class CalendarLocalDataSourceImpl implements CalendarLocalDataSource{
           .filter()
           .originalIdEqualTo(task.originalId)
           .findFirst();
+      // update instead
       if(existingTask != null)  {
         task.id = existingTask.id;
       }
       await isar.taskModels.put(task);
     });
-    throw UnimplementedError();
   }
   
   @override
-    Future<void> deleteTask(String id) async{
-      await isar.writeTxn(() async{
-        await isar.taskModels
-          .filter()
-          .originalIdEqualTo(id)
-          .deleteAll();
-      });
+  Future<void> deleteTask(String id) async{
+    await isar.writeTxn(() async{
+      await isar.taskModels
+        .filter()
+        .originalIdEqualTo(id)
+        .deleteAll();
+    });
   }
+
+  // ---------------------------------------------------------------------------
+  // DATE VIEW LOGIC (CALENDAR PAGE)
+  // ---------------------------------------------------------------------------
+
+  @override
+  Future<List<TaskModel>> getTasksDay(
+    DateTime date,{
+      TaskCategory? category, 
+      TaskType? type,
+      String? tag
+    }
+    ) async {
+    
+    final startOfDay = DateTime(date.year, date.month, date.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1)).subtract(const Duration(seconds: 1));
+
+    var q = isar.taskModels.filter().startTimeBetween(startOfDay, endOfDay);
+
+    if (category != null){
+      q = q.and().categoryEqualTo(category);
+    }
+
+    if (type != null){
+      q = q.and().typeEqualTo(type);
+    }
+
+    if (tag != null){
+      q = q.and().tagsElementEqualTo(tag);
+    }
+    return await q.sortByStartTime().findAll();
+  }
+
+  @override
+  Future<List<TaskModel>> getTasksWeek(
+    DateTime date,{
+      TaskCategory? category, 
+      TaskType? type,
+      String? tag
+    }
+    ) async {
+    // Start of the week (Monday)
+    final startOfWeek = DateTime(
+      date.year,
+      date.month,
+      date.day - (date.weekday - 1),
+    );
+
+    // End of the week (Sunday)
+    final endOfWeek = startOfWeek
+        .add(const Duration(days: 7))
+        .subtract(const Duration(seconds: 1));
+
+    var q = isar.taskModels.filter().startTimeBetween(startOfWeek, endOfWeek);
+
+    if (category != null){
+      q = q.and().categoryEqualTo(category);
+    }
+
+    if (type != null){
+      q = q.and().typeEqualTo(type);
+    }
+
+    if (tag != null){
+      q = q.and().tagsElementEqualTo(tag);
+    }
+    return await q.sortByStartTime().findAll();
+  }
+  // get tasks for the month
+  @override
+  Future<List<TaskModel>> getTasksMonth(
+    DateTime date,{
+      TaskCategory? category, 
+      TaskType? type,
+      String? tag
+    }
+    ) async {
+    // Current day (00:00:00)
+    final startOfMonth = DateTime(date.year, date.month, 1);
+
+    // Handling for december
+    final startOfNextMonth = DateTime(date.year, date.month + 1, 1);
+    final endOfMonth = startOfNextMonth.subtract(const Duration(seconds: 1));
+    
+    var q = isar.taskModels.filter().startTimeBetween(startOfMonth, endOfMonth);
+
+    if (category != null){
+      q = q.and().categoryEqualTo(category);
+    }
+
+    if (type != null){
+      q = q.and().typeEqualTo(type);
+    }
+
+    if (tag != null){
+      q = q.and().tagsElementEqualTo(tag);
+    }
+    return await q.sortByStartTime().findAll();
+  }
+
+  // ---------------------------------------------------------------------------
+  // FILTER LOGIC
+  // ---------------------------------------------------------------------------
+
+  @override
+  Future<List<TaskModel>>getTasksByTags(String tags) async {
+    return await isar.taskModels
+        .filter()
+        .tagsElementEqualTo(tags)
+        .sortByStartTime()
+        .findAll();
+  }
+
+  // get by type (tasks or events)
+  @override
+  Future<List<TaskModel>>getTasksByType(TaskType type) async {
+    return await isar.taskModels
+        .filter()
+        .typeEqualTo(type)
+        .sortByStartTime()
+        .findAll();
+  }
+
+  // get by category (focus, active, lightweight ata)
+  @override
+  Future<List<TaskModel>>getTasksByCategory(TaskCategory category) async {
+    return await isar.taskModels
+        .filter()
+        .categoryEqualTo(category)
+        .sortByStartTime()
+        .findAll();
+  }
+
+  // get unsched, sched, and completed tasks
+  @override
+  Future<List<TaskModel>>getTasksByStatus(TaskStatus status) async {
+    return await isar.taskModels
+        .filter()
+        .statusEqualTo(status)
+        .sortByStartTime()
+        .findAll();
+  }
+
+  // get tasks for today
+
 }

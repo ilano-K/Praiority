@@ -21,6 +21,8 @@ class TaskModel {
   @Enumerated(EnumType.name)
   late TaskCategory category;
 
+  late List<String> tags;
+
   late String title;
 
   String? description;
@@ -52,6 +54,7 @@ class TaskModel {
       id: originalId,
       type: type,
       category: category,
+      tags: tags,
       title: title,
       description: description,
       location: location,
@@ -75,6 +78,7 @@ class TaskModel {
       ..originalId = task.id
       ..type = task.type
       ..category = task.category
+      ..tags = task.tags
       ..title = task.title
       ..description = task.description
       ..location = task.location
