@@ -1,22 +1,8 @@
-import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
-import 'package:flutter_app/features/calendar/domain/entities/task.dart';
-import 'package:isar/isar.dart';
-import '../data/models/task_model.dart';
 import 'package:flutter_app/features/calendar/data/models/task_model.dart';
+import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
+import 'calendar_local_data_source.dart';
+import 'package:isar/isar.dart';
 
-abstract class CalendarLocalDataSource {
-  Future<void>saveAndUpdateTask(TaskModel task);
-  Future<void>deleteTask(String id);
-
-  Future<List<TaskModel>> getTasksDay(DateTime date, {TaskCategory? category, TaskType? type, String? tag});
-  Future<List<TaskModel>> getTasksWeek(DateTime date, {TaskCategory? category, TaskType? type, String? tag});
-  Future<List<TaskModel>> getTasksMonth(DateTime date, {TaskCategory? category, TaskType? type, String? tag});
-
-  Future<List<TaskModel>>getTasksByStatus(TaskStatus status);
-  Future<List<TaskModel>>getTasksByCategory(TaskCategory category);
-  Future<List<TaskModel>>getTasksByType(TaskType type);
-  Future<List<TaskModel>>getTasksByTags(String tags);
-}
 
 class CalendarLocalDataSourceImpl implements CalendarLocalDataSource{
   final Isar isar;
@@ -66,6 +52,7 @@ class CalendarLocalDataSourceImpl implements CalendarLocalDataSource{
 
     var q = isar.taskModels.filter().startTimeBetween(startOfDay, endOfDay);
 
+    // optional filters
     if (category != null){
       q = q.and().categoryEqualTo(category);
     }
