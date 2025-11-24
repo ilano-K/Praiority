@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_app/core/services/theme/theme_provider.dart';
+import 'package:flutter_app/core/services/theme/theme_test.dart';
+import 'package:flutter_app/core/services/theme/themes.dart';
+import 'package:provider/provider.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(ChangeNotifierProvider(
+    create: (Context) => ThemeProvider(),
+    child: const MyApp(),
+    ));
 }
 
 class MyApp extends StatelessWidget {
@@ -9,8 +16,10 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: Scaffold(),
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: const ThemeTest(),
+      theme: Provider.of<ThemeProvider>(context).themeData,
     );
   }
 }
