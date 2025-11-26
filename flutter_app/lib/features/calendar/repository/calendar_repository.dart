@@ -4,13 +4,20 @@ import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 abstract class CalendarRepository {
   Future<void>saveAndUpdateTask(Task task);
   Future<void>deleteTask(String id);
-  
-  Future<List<Task>> getTasksDay(DateTime date, {TaskCategory? category, TaskType? type, String? tag});
+  // check conflicting task
+  Future<bool>hasConflict(Task task);
+
+  Future<List<Task>> getTasksDay(DateTime date, {TaskStatus?status, TaskCategory? category, TaskType? type, String? tag});
   Future<List<Task>> getTasksWeek(DateTime date, {TaskCategory? category, TaskType? type, String? tag});
   Future<List<Task>> getTasksMonth(DateTime date, {TaskCategory? category, TaskType? type, String? tag});
 
-  Future<List<Task>>getTasksByStatus(TaskStatus status);
+  Future<List<Task>>getUnscheduledTasks();// unscheduled
+  Future<List<Task>>getScheduledTasks();// scheduled
+  Future<List<Task>>getCompletedTasks();// completed,
+
   Future<List<Task>>getTasksByCategory(TaskCategory category);
   Future<List<Task>>getTasksByType(TaskType type);
   Future<List<Task>>getTasksByTags(String tags);
+
+  
 }

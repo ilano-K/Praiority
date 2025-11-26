@@ -41,6 +41,7 @@ class CalendarLocalDataSourceImpl implements CalendarLocalDataSource{
   @override
   Future<List<TaskModel>> getTasksDay(
     DateTime date,{
+      TaskStatus? status, 
       TaskCategory? category, 
       TaskType? type,
       String? tag
@@ -53,6 +54,10 @@ class CalendarLocalDataSourceImpl implements CalendarLocalDataSource{
     var q = isar.taskModels.filter().startTimeBetween(startOfDay, endOfDay);
 
     // optional filters
+    if (status != null){
+      q = q.and().statusEqualTo(status);
+    }
+
     if (category != null){
       q = q.and().categoryEqualTo(category);
     }
@@ -176,6 +181,8 @@ class CalendarLocalDataSourceImpl implements CalendarLocalDataSource{
         .sortByStartTime()
         .findAll();
   }
+
+  
 
   // get tasks for today
 
