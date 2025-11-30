@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:uuid/uuid.dart';
 import 'enums.dart';
 
 // Equatable--useful for editing a task. 
@@ -58,6 +59,45 @@ class Task extends Equatable{
     this.isSynced = false,
   });
   
+  factory Task.create({
+    required String title,
+    TaskType type = TaskType.task,
+    TaskCategory category = TaskCategory.unassigned,
+    List<String> tags = const [],
+    String? description,
+    String? location,
+    DateTime? startTime,
+    DateTime? endTime,
+    DateTime? deadline,
+    Duration? duration,
+    TaskPriority priority = TaskPriority.medium,
+    bool isAiMovable = true,
+    bool isSmartSchedule = false,
+    List<Duration> reminderOffsets = const [],
+    String? recurrenceRule,
+    TaskStatus status = TaskStatus.unscheduled,
+  }) {
+    return Task(
+      id: const Uuid().v4(), // AUTOMATIC ID GENERATION
+      title: title,
+      type: type,
+      category: category,
+      tags: tags,
+      description: description,
+      location: location,
+      startTime: startTime,
+      endTime: endTime,
+      deadline: deadline,
+      duration: duration,
+      priority: priority,
+      isAiMovable: isAiMovable,
+      isSmartSchedule: isSmartSchedule,
+      reminderOffsets: reminderOffsets,
+      recurrenceRule: recurrenceRule,
+      status: status,
+      isSynced: false,
+    );
+  }
   Task copyWith({
     String? id,
     TaskType? type,
