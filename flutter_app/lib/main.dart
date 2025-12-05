@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/core/services/theme/theme_provider.dart';
-import 'package:flutter_app/core/services/theme/theme_test.dart';
-import 'package:flutter_app/core/services/theme/themes.dart';
+import 'package:flutter_app/features/calendar/presentation/pages/main_calendar.dart';
 import 'package:provider/provider.dart';
 
 void main() {
@@ -18,7 +17,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: const ThemeTest(),
+      home: MainCalendar(),
       theme: Provider.of<ThemeProvider>(context).themeData,
     );
   }
