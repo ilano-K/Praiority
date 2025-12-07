@@ -5,10 +5,11 @@ import 'package:intl/intl.dart';
 import 'priority_selector.dart';
 import 'category_selector.dart';
 import 'tag_selector.dart';
+import 'color_selector.dart'; // Ensure this is imported for CalendarColor
 
-// IMPORT THE EVENT SHEET SO WE CAN SWITCH TO IT
+// IMPORT THE EVENT & BIRTHDAY SHEETS
 import 'add_event_sheet.dart'; 
-import 'add_birthday_sheet.dart';
+import 'add_birthday_sheet.dart'; 
 
 class AddTaskSheet extends StatefulWidget {
   const AddTaskSheet({super.key});
@@ -27,6 +28,10 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
   String _category = "None";
   String _tag = "None"; 
   
+  // --- NEW: SELECTED COLOR STATE ---
+  // Defaults to the first color (Default Purple) defined in color_selector.dart
+  CalendarColor _selectedColor = appEventColors[0];
+
   // 1. MASTER TAG LIST
   List<String> _tagsList = ["Schoolwork", "Office", "Chore"];
   
@@ -43,6 +48,10 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
   Widget build(BuildContext context) {
     // 1. ACCESS THEME
     final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    // Resolve display color
+    final Color displayColor = isDark ? _selectedColor.dark : _selectedColor.light;
     
     // 2. USE THEME COLOR
     final Color sheetBackground = colorScheme.inversePrimary; 
@@ -128,22 +137,43 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
 
           const SizedBox(height: 20),
 
-          // --- COLOR PICKER ---
-          Row(
-            children: [
-              Container(
-                width: 28, height: 28,
-                decoration: BoxDecoration(
-                  color: colorScheme.surface, 
-                  shape: BoxShape.circle,
+          // --- COLOR PICKER (UPDATED) ---
+          GestureDetector(
+            onTap: () {
+              // Open Color Selector
+              showModalBottomSheet(
+                context: context,
+                backgroundColor: Colors.transparent,
+                builder: (context) => ColorSelector(
+                  selectedColor: _selectedColor,
+                  onColorSelected: (newColor) {
+                    setState(() {
+                      _selectedColor = newColor;
+                    });
+                  },
                 ),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                "Color", 
-                style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16, color: colorScheme.onSurface)
-              ),
-            ],
+              );
+            },
+            child: Row(
+              children: [
+                Container(
+                  width: 28, height: 28,
+                  decoration: BoxDecoration(
+                    color: displayColor, // Shows the selected color
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  _selectedColor.name, // <--- CHANGED: Shows Name instead of "Color"
+                  style: TextStyle(
+                    fontWeight: FontWeight.w500, 
+                    fontSize: 16, 
+                    color: colorScheme.onSurface
+                  ),
+                ),
+              ],
+            ),
           ),
 
           const SizedBox(height: 20),
@@ -155,7 +185,7 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  // 1. SMART SCHEDULE TOGGLE
+                  // 1. SMART SCHEDULE
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -166,16 +196,14 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
                         child: Switch(
                           value: _isSmartScheduleEnabled,
                           activeColor: Colors.white, 
-                          activeTrackColor: colorScheme.primary,
+                          activeTrackColor: colorScheme.primary, 
                           onChanged: (val) => setState(() => _isSmartScheduleEnabled = val),
                         ),
                       ),
                     ],
                   ),
                   
-                  // --- CONDITIONAL BLOCK: Only show if Smart Schedule is ENABLED ---
                   if (_isSmartScheduleEnabled) ...[
-                    // Description Text
                     Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
@@ -185,7 +213,7 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
                     ),
                     const SizedBox(height: 20),
 
-                    // Smart Priority Row (Only visible when toggled ON)
+                    // Smart Priority
                     _buildInteractiveRow(
                       label: "Smart Priority", 
                       value: _priority,
@@ -202,9 +230,9 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
                       }
                     ),
                   ] else 
-                    const SizedBox(height: 10), // Small spacer when hidden
+                    const SizedBox(height: 10),
 
-                  // 3. DEADLINE (Always Visible)
+                  // 3. DEADLINE
                   _buildInteractiveRow(
                     label: "Deadline", 
                     value: DateFormat('MMMM d, y').format(_deadlineDate),
@@ -404,7 +432,10 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
         decoration: BoxDecoration(
+          // Fill: Primary (Purple) if selected, Transparent if not
           color: isSelected ? colors.primary : Colors.transparent,
+          
+          // Border: Always Black (onSurface) whether selected or not
           border: Border.all(
             color: colors.onSurface, // Always Black Border
             width: 1.2

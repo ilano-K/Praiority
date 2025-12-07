@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 import 'package:intl/intl.dart';
 import 'dart:math' as math; 
+import 'package:provider/provider.dart'; // <--- Required for Provider
 
 // IMPORTANT: Import your AddTaskSheet widget here
 import '../widgets/add_task_sheet.dart'; 
+
+// IMPORTANT: Import your ThemeProvider
+import '../../../../../core/services/theme/theme_provider.dart'; // Adjust path if necessary
 
 class MainCalendar extends StatefulWidget {
   const MainCalendar({super.key});
@@ -103,7 +107,15 @@ class _MainCalendarState extends State<MainCalendar> with SingleTickerProviderSt
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10),
               child: Row(
                 children: [
-                  Icon(Icons.menu, size: 30, color: colorScheme.onSurface),
+                  // --- THEME TOGGLE (Menu Icon) ---
+                  GestureDetector(
+                    onTap: () {
+                      // Toggle Theme
+                      Provider.of<ThemeProvider>(context, listen: false).toggleTheme();
+                    },
+                    child: Icon(Icons.menu, size: 30, color: colorScheme.onSurface),
+                  ),
+                  
                   const SizedBox(width: 15),
                   GestureDetector(
                     onTap: () => _pickDate(context),
@@ -161,7 +173,7 @@ class _MainCalendarState extends State<MainCalendar> with SingleTickerProviderSt
                           cellBorderColor: Colors.transparent,
                           dataSource: AppointmentDataSource([]), 
                           
-                          // --- 1. GRAY CELLS RESTORED & FIXED FOR PAST DATES ---
+                          // Gray Background Blocks (Restored)
                           specialRegions: _getGreyBlocks(colorScheme),
                           
                           onViewChanged: (ViewChangedDetails details) {
@@ -196,7 +208,7 @@ class _MainCalendarState extends State<MainCalendar> with SingleTickerProviderSt
                     top: 0,
                     width: 60,
                     child: Container(
-                      // --- 2. TRANSPARENT BACKGROUND (No white box) ---
+                      // Transparent background
                       color: Colors.transparent, 
                       padding: const EdgeInsets.only(top: 10, bottom: 10),
                       child: GestureDetector(
@@ -349,20 +361,16 @@ class _MainCalendarState extends State<MainCalendar> with SingleTickerProviderSt
   List<TimeRegion> _getGreyBlocks(ColorScheme colors) {
     List<TimeRegion> regions = [];
     
-    // FIX: Anchor the start time to a past date (e.g., 2020)
-    // This ensures the daily recurrence works when scrolling backwards.
+    // Anchor the start time to a past date (e.g., 2020)
     final DateTime anchorDate = DateTime(2020, 1, 1);
 
     for (int i = 0; i < 24; i++) {
       regions.add(TimeRegion(
-        // Start block at :00 of the hour (from year 2020)
         startTime: anchorDate.copyWith(hour: i, minute: 0, second: 0),
-        // End block at :52 of the hour
         endTime: anchorDate.copyWith(hour: i, minute: 52, second: 0), 
         color: colors.secondary, 
         enablePointerInteraction: true,
         text: '',
-        // RECURRENCE: Repeat Daily forever
         recurrenceRule: 'FREQ=DAILY;INTERVAL=1',
       ));
     }

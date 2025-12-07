@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-// IMPORTANT: Import other sheets for switching
+// Import switching sheets
 import 'add_task_sheet.dart';
 import 'add_event_sheet.dart';
+
+// NEW IMPORT: Color Selector
+import 'color_selector.dart';
 
 class AddBirthdaySheet extends StatefulWidget {
   const AddBirthdaySheet({super.key});
@@ -14,11 +17,15 @@ class AddBirthdaySheet extends StatefulWidget {
 
 class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
   // --- STATE VARIABLES ---
-  String _selectedType = 'Birthday'; // Default is Birthday
+  String _selectedType = 'Birthday'; 
   
   // Birthday Specific Fields
   DateTime _birthdayDate = DateTime.now();
   String _location = "None"; 
+
+  // --- NEW: SELECTED COLOR STATE ---
+  // Defaults to the first color (Default Purple)
+  CalendarColor _selectedColor = appEventColors[0];
 
   // Controllers
   final TextEditingController _titleController = TextEditingController();
@@ -26,7 +33,14 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
 
   @override
   Widget build(BuildContext context) {
+    // 1. ACCESS THEME
     final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    // Resolve display color
+    final Color displayColor = isDark ? _selectedColor.dark : _selectedColor.light;
+
+    // 2. USE THEME COLOR
     final Color sheetBackground = colorScheme.inversePrimary; 
 
     return Container(
@@ -73,7 +87,6 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
           // --- TITLE ---
           TextField(
             controller: _titleController,
-            // Cursor is Black (onSurface)
             cursorColor: colorScheme.onSurface,
             style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: colorScheme.onSurface),
             decoration: InputDecoration(
@@ -112,22 +125,43 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
 
           const SizedBox(height: 20),
 
-          // --- COLOR PICKER ---
-          Row(
-            children: [
-              Container(
-                width: 28, height: 28,
-                decoration: BoxDecoration(
-                  color: colorScheme.surface,
-                  shape: BoxShape.circle,
+          // --- COLOR PICKER (UPDATED) ---
+          GestureDetector(
+            onTap: () {
+              // Open Color Selector
+              showModalBottomSheet(
+                context: context,
+                backgroundColor: Colors.transparent,
+                builder: (context) => ColorSelector(
+                  selectedColor: _selectedColor,
+                  onColorSelected: (newColor) {
+                    setState(() {
+                      _selectedColor = newColor;
+                    });
+                  },
                 ),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                "Color", 
-                style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16, color: colorScheme.onSurface)
-              ),
-            ],
+              );
+            },
+            child: Row(
+              children: [
+                Container(
+                  width: 28, height: 28,
+                  decoration: BoxDecoration(
+                    color: displayColor, // Shows selected color
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  _selectedColor.name, // Shows selected name
+                  style: TextStyle(
+                    fontWeight: FontWeight.w500, 
+                    fontSize: 16, 
+                    color: colorScheme.onSurface
+                  ),
+                ),
+              ],
+            ),
           ),
 
           const SizedBox(height: 20),
@@ -170,7 +204,7 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
-      firstDate: DateTime(1900), // Allow past dates for birthdays
+      firstDate: DateTime(1900), 
       lastDate: DateTime(2100),
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(colorScheme: Theme.of(context).colorScheme),
@@ -226,8 +260,8 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
     required String label, 
     required String value, 
     required ColorScheme colors,
-    VoidCallback? onTap, // Simple tap for whole row or just label
-    VoidCallback? onTapValue, // Specific tap for value
+    VoidCallback? onTap, // Simple tap
+    VoidCallback? onTapValue, // Specific tap
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12.0),

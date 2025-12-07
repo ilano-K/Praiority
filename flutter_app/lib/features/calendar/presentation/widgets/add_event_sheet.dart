@@ -4,10 +4,11 @@ import 'package:intl/intl.dart';
 // Import your separate widgets
 import 'tag_selector.dart';
 import 'repeat_selector.dart'; 
+import 'color_selector.dart'; // <--- NEW IMPORT
 
 // IMPORTANT: Import other sheets for switching
 import 'add_task_sheet.dart';
-import 'add_birthday_sheet.dart'; // <--- NEW IMPORT
+import 'add_birthday_sheet.dart'; 
 
 class AddEventSheet extends StatefulWidget {
   const AddEventSheet({super.key});
@@ -33,6 +34,10 @@ class _AddEventSheetState extends State<AddEventSheet> {
   String _location = "None"; 
   String _tag = "None";
 
+  // --- NEW: SELECTED COLOR STATE ---
+  // Defaults to the first color (Default Purple)
+  CalendarColor _selectedColor = appEventColors[0];
+
   // MASTER TAG LIST (Persists new tags)
   List<String> _tagsList = ["Schoolwork", "Office", "Chore"];
 
@@ -42,7 +47,14 @@ class _AddEventSheetState extends State<AddEventSheet> {
 
   @override
   Widget build(BuildContext context) {
+    // 1. ACCESS THEME
     final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    // Resolve display color
+    final Color displayColor = isDark ? _selectedColor.dark : _selectedColor.light;
+
+    // 2. USE THEME COLOR
     final Color sheetBackground = colorScheme.inversePrimary; 
 
     return Container(
@@ -89,10 +101,11 @@ class _AddEventSheetState extends State<AddEventSheet> {
           // --- TITLE ---
           TextField(
             controller: _titleController,
-            cursorColor: colorScheme.onSurface,
+            // UPDATED: Cursor is onSurface (Black)
+            cursorColor: colorScheme.onSurface, 
             style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: colorScheme.onSurface),
             decoration: InputDecoration(
-              hintText: 'Add Title',
+              hintText: 'Add Event Title',
               border: InputBorder.none,
               hintStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.5), fontWeight: FontWeight.w900),
               contentPadding: EdgeInsets.zero,
@@ -102,6 +115,7 @@ class _AddEventSheetState extends State<AddEventSheet> {
           // --- DESCRIPTION ---
           TextField(
             controller: _descController,
+            // UPDATED: Cursor is onSurface (Black)
             cursorColor: colorScheme.onSurface,
             style: TextStyle(fontSize: 16, color: colorScheme.onSurface.withOpacity(0.8)),
             decoration: InputDecoration(
@@ -127,22 +141,43 @@ class _AddEventSheetState extends State<AddEventSheet> {
 
           const SizedBox(height: 20),
 
-          // --- COLOR PICKER ---
-          Row(
-            children: [
-              Container(
-                width: 28, height: 28,
-                decoration: BoxDecoration(
-                  color: colorScheme.surface,
-                  shape: BoxShape.circle,
+          // --- COLOR PICKER (UPDATED) ---
+          GestureDetector(
+            onTap: () {
+              // Open Color Selector
+              showModalBottomSheet(
+                context: context,
+                backgroundColor: Colors.transparent,
+                builder: (context) => ColorSelector(
+                  selectedColor: _selectedColor,
+                  onColorSelected: (newColor) {
+                    setState(() {
+                      _selectedColor = newColor;
+                    });
+                  },
                 ),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                "Color", 
-                style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16, color: colorScheme.onSurface)
-              ),
-            ],
+              );
+            },
+            child: Row(
+              children: [
+                Container(
+                  width: 28, height: 28,
+                  decoration: BoxDecoration(
+                    color: displayColor, // Shows selected color
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  _selectedColor.name, // Shows selected name
+                  style: TextStyle(
+                    fontWeight: FontWeight.w500, 
+                    fontSize: 16, 
+                    color: colorScheme.onSurface
+                  ),
+                ),
+              ],
+            ),
           ),
 
           const SizedBox(height: 20),
@@ -322,12 +357,15 @@ class _AddEventSheetState extends State<AddEventSheet> {
         content: TextField(
           controller: locController,
           autofocus: true,
+          // 1. Text is onSurface (Black)
           style: TextStyle(color: colorScheme.onSurface),
-          cursorColor: colorScheme.onSurface, 
+          // 2. Cursor is onSurface (Black)
+          cursorColor: colorScheme.onSurface,
           decoration: InputDecoration(
             hintText: "Enter location",
             hintStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.5)),
-            focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: colorScheme.onSurface)), 
+            // 3. Focused Line is onSurface (Black)
+            focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: colorScheme.onSurface)),
             enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: colorScheme.onSurface.withOpacity(0.5))),
           ),
         ),
@@ -407,7 +445,7 @@ class _AddEventSheetState extends State<AddEventSheet> {
     );
   }
 
-  // --- WIDGET HELPER: Type Button (Switching Logic) ---
+  // --- WIDGET HELPER: Type Button ---
   Widget _buildTypeButton(String label, ColorScheme colors) {
     bool isSelected = _selectedType == label;
     return GestureDetector(
@@ -440,7 +478,7 @@ class _AddEventSheetState extends State<AddEventSheet> {
           // Fill: Primary (Purple) if selected, Transparent if not
           color: isSelected ? colors.primary : Colors.transparent,
           
-          // Border: Always Black (onSurface) as requested
+          // Border: Always Black (onSurface) whether selected or not
           border: Border.all(
             color: colors.onSurface, 
             width: 1.2
@@ -451,7 +489,7 @@ class _AddEventSheetState extends State<AddEventSheet> {
           label,
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: colors.onSurface, // Text: Always Black
+            color: colors.onSurface, // Always Black Text
             fontSize: 14,
           ),
         ),
