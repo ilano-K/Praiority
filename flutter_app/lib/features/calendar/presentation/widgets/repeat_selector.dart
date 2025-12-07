@@ -58,13 +58,14 @@ class RepeatSelector extends StatelessWidget {
       title: Text(
         label,
         style: TextStyle(
+          // Bold when selected
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          // Purple if selected, Black/White if not
-          color: isSelected ? colorScheme.primary : colorScheme.onSurface,
+          // Always Black/White (onSurface), never Purple
+          color: colorScheme.onSurface,
         ),
       ),
-      // Checkmark on the right
-      trailing: isSelected ? Icon(Icons.check, color: colorScheme.primary) : null,
+      // Checkmark also uses onSurface when selected
+      trailing: isSelected ? Icon(Icons.check, color: colorScheme.onSurface) : null,
     );
   }
 }

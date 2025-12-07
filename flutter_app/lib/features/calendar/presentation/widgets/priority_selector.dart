@@ -39,6 +39,8 @@ class PrioritySelector extends StatelessWidget {
 
   Widget _buildOption(BuildContext context, String label, Color color) {
     bool isSelected = currentPriority == label;
+    final colorScheme = Theme.of(context).colorScheme;
+
     return ListTile(
       onTap: () {
         onPrioritySelected(label);
@@ -48,11 +50,14 @@ class PrioritySelector extends StatelessWidget {
       title: Text(
         label,
         style: TextStyle(
+          // Bold when selected
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          color: isSelected ? Theme.of(context).colorScheme.primary : null,
+          // Black (onSurface) when selected
+          color: isSelected ? colorScheme.onSurface : null,
         ),
       ),
-      trailing: isSelected ? const Icon(Icons.check) : null,
+      // Checkmark is Black (onSurface) when selected
+      trailing: isSelected ? Icon(Icons.check, color: colorScheme.onSurface) : null,
     );
   }
 }

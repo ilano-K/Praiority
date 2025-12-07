@@ -1,40 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-// Import your separate widgets
-import 'tag_selector.dart';
-import 'repeat_selector.dart'; 
-
 // IMPORTANT: Import other sheets for switching
 import 'add_task_sheet.dart';
-import 'add_birthday_sheet.dart'; // <--- NEW IMPORT
+import 'add_event_sheet.dart';
 
-class AddEventSheet extends StatefulWidget {
-  const AddEventSheet({super.key});
+class AddBirthdaySheet extends StatefulWidget {
+  const AddBirthdaySheet({super.key});
 
   @override
-  State<AddEventSheet> createState() => _AddEventSheetState();
+  State<AddBirthdaySheet> createState() => _AddBirthdaySheetState();
 }
 
-class _AddEventSheetState extends State<AddEventSheet> {
+class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
   // --- STATE VARIABLES ---
-  String _selectedType = 'Event'; 
+  String _selectedType = 'Birthday'; // Default is Birthday
   
-  // Event Specific Fields
-  bool _isAllDay = false; // Toggles Date/Time display
-  
-  DateTime _startDate = DateTime.now();
-  TimeOfDay _startTime = const TimeOfDay(hour: 9, minute: 0);
-  
-  DateTime _endDate = DateTime.now().add(const Duration(hours: 1));
-  TimeOfDay _endTime = const TimeOfDay(hour: 10, minute: 0);
-
-  String _repeat = "None";
+  // Birthday Specific Fields
+  DateTime _birthdayDate = DateTime.now();
   String _location = "None"; 
-  String _tag = "None";
-
-  // MASTER TAG LIST (Persists new tags)
-  List<String> _tagsList = ["Schoolwork", "Office", "Chore"];
 
   // Controllers
   final TextEditingController _titleController = TextEditingController();
@@ -89,6 +73,7 @@ class _AddEventSheetState extends State<AddEventSheet> {
           // --- TITLE ---
           TextField(
             controller: _titleController,
+            // Cursor is Black (onSurface)
             cursorColor: colorScheme.onSurface,
             style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: colorScheme.onSurface),
             decoration: InputDecoration(
@@ -149,110 +134,25 @@ class _AddEventSheetState extends State<AddEventSheet> {
           Divider(thickness: 1, color: colorScheme.onSurface.withOpacity(0.1)),
           const SizedBox(height: 10),
 
-          // --- EVENT DETAILS LIST ---
+          // --- BIRTHDAY DETAILS LIST ---
           Expanded(
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  // 1. ALL DAY TOGGLE
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text("All Day", 
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
-                      Transform.scale(
-                        scale: 0.8,
-                        child: Switch(
-                          value: _isAllDay,
-                          activeColor: Colors.white,
-                          activeTrackColor: colorScheme.primary,
-                          onChanged: (val) => setState(() => _isAllDay = val),
-                        ),
-                      ),
-                    ],
-                  ),
-                  
-                  const SizedBox(height: 10),
-
-                  // 2. DYNAMIC DATE/TIME ROWS
-                  if (_isAllDay) ...[
-                    // --- ALL DAY MODE: Show Single Date ---
-                    _buildInteractiveRow(
-                      label: "Date", 
-                      value: DateFormat('MMMM d, y').format(_startDate),
-                      colors: colorScheme,
-                      onTapValue: () => _pickDate(context, _startDate, (date) => setState(() => _startDate = date)),
-                    ),
-                  ] else ...[
-                    // --- NORMAL MODE: Show From/To with Time ---
-                    _buildInteractiveRow(
-                      label: "From", 
-                      value: DateFormat('MMMM d, y').format(_startDate),
-                      trailing: _startTime.format(context), 
-                      colors: colorScheme,
-                      onTapValue: () => _pickDate(context, _startDate, (date) => setState(() => _startDate = date)),
-                      onTapTrailing: () => _pickTime(context, _startTime, (time) => setState(() => _startTime = time)),
-                    ),
-                    _buildInteractiveRow(
-                      label: "To", 
-                      value: DateFormat('MMMM d, y').format(_endDate),
-                      trailing: _endTime.format(context),
-                      colors: colorScheme,
-                      onTapValue: () => _pickDate(context, _endDate, (date) => setState(() => _endDate = date)),
-                      onTapTrailing: () => _pickTime(context, _endTime, (time) => setState(() => _endTime = time)),
-                    ),
-                  ],
-
-                  // 3. REPEAT
+                  // 1. ARRANGE A DAY (Date Picker)
                   _buildInteractiveRow(
-                    label: "Repeat",
-                    value: _repeat,
+                    label: "Arrange a Day", 
+                    value: DateFormat('MMMM d, y').format(_birthdayDate),
                     colors: colorScheme,
-                    onTap: () {
-                      showModalBottomSheet(
-                        context: context,
-                        backgroundColor: Colors.transparent,
-                        builder: (context) => RepeatSelector(
-                          currentRepeat: _repeat,
-                          onRepeatSelected: (val) => setState(() => _repeat = val),
-                        ),
-                      );
-                    },
+                    onTapValue: () => _pickDate(context, (date) => setState(() => _birthdayDate = date)),
                   ),
 
-                  // 4. LOCATION
+                  // 2. LOCATION
                   _buildInteractiveRow(
                     label: "Location", 
                     value: _location,
                     colors: colorScheme,
                     onTap: () => _showLocationDialog(context, colorScheme),
-                  ),
-
-                  // 5. TAGS
-                  _buildInteractiveRow(
-                    label: "Tags", 
-                    value: _tag, 
-                    colors: colorScheme,
-                    onTap: () {
-                      showModalBottomSheet(
-                        context: context,
-                        isScrollControlled: true,
-                        backgroundColor: Colors.transparent,
-                        builder: (context) => TagSelector(
-                          currentTag: _tag,
-                          availableTags: _tagsList,
-                          onTagSelected: (val) => setState(() => _tag = val),
-                          onTagAdded: (newTag) => setState(() => _tagsList.add(newTag)),
-                          onTagRemoved: (tagToRemove) {
-                            setState(() {
-                              _tagsList.remove(tagToRemove);
-                              if (_tag == tagToRemove) _tag = "None";
-                            });
-                            Navigator.pop(context); 
-                          },
-                        ),
-                      );
-                    }
                   ),
                   
                   const SizedBox(height: 40),
@@ -266,47 +166,16 @@ class _AddEventSheetState extends State<AddEventSheet> {
   }
 
   // --- LOGIC: Date Picker ---
-  Future<void> _pickDate(BuildContext context, DateTime initial, Function(DateTime) onPicked) async {
+  Future<void> _pickDate(BuildContext context, Function(DateTime) onPicked) async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: initial,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900), // Allow past dates for birthdays
+      lastDate: DateTime(2100),
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(colorScheme: Theme.of(context).colorScheme),
         child: child!,
       ),
-    );
-    if (picked != null) onPicked(picked);
-  }
-
-  // --- LOGIC: Time Picker ---
-  Future<void> _pickTime(BuildContext context, TimeOfDay initial, Function(TimeOfDay) onPicked) async {
-    final colorScheme = Theme.of(context).colorScheme;
-    final TimeOfDay? picked = await showTimePicker(
-      context: context,
-      initialTime: initial,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            timePickerTheme: TimePickerThemeData(
-              backgroundColor: colorScheme.surface,
-              dialHandColor: colorScheme.primary,
-              dialTextColor: colorScheme.onSurface,
-              dialBackgroundColor: colorScheme.surfaceVariant,
-              dayPeriodTextColor: WidgetStateColor.resolveWith((states) =>
-                  states.contains(WidgetState.selected) ? Colors.white : colorScheme.onSurface),
-              dayPeriodColor: WidgetStateColor.resolveWith((states) =>
-                  states.contains(WidgetState.selected) ? colorScheme.primary : Colors.transparent),
-              dayPeriodBorderSide: BorderSide(color: colorScheme.primary),
-            ),
-            textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(foregroundColor: colorScheme.primary),
-            ),
-          ),
-          child: child!,
-        );
-      },
     );
     if (picked != null) onPicked(picked);
   }
@@ -323,11 +192,11 @@ class _AddEventSheetState extends State<AddEventSheet> {
           controller: locController,
           autofocus: true,
           style: TextStyle(color: colorScheme.onSurface),
-          cursorColor: colorScheme.onSurface, 
+          cursorColor: colorScheme.onSurface,
           decoration: InputDecoration(
             hintText: "Enter location",
             hintStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.5)),
-            focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: colorScheme.onSurface)), 
+            focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: colorScheme.onSurface)),
             enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: colorScheme.onSurface.withOpacity(0.5))),
           ),
         ),
@@ -357,10 +226,8 @@ class _AddEventSheetState extends State<AddEventSheet> {
     required String label, 
     required String value, 
     required ColorScheme colors,
-    String? trailing,
-    VoidCallback? onTap, 
-    VoidCallback? onTapValue, 
-    VoidCallback? onTapTrailing, 
+    VoidCallback? onTap, // Simple tap for whole row or just label
+    VoidCallback? onTapValue, // Specific tap for value
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12.0),
@@ -388,18 +255,6 @@ class _AddEventSheetState extends State<AddEventSheet> {
                   ),
                 ),
               ),
-              if (trailing != null)
-                GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: onTapTrailing ?? onTap,
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 20, top: 8, bottom: 8), 
-                    child: Text(
-                      trailing, 
-                      style: TextStyle(fontSize: 15, color: colors.onSurface.withOpacity(0.8)),
-                    ),
-                  ),
-                ),
             ],
           ),
         ],
@@ -413,7 +268,6 @@ class _AddEventSheetState extends State<AddEventSheet> {
     return GestureDetector(
       onTap: () {
         if (label == 'Task') {
-          // Switch to Task Sheet
           Navigator.pop(context); 
           showModalBottomSheet(
             context: context,
@@ -421,14 +275,13 @@ class _AddEventSheetState extends State<AddEventSheet> {
             backgroundColor: Colors.transparent,
             builder: (context) => const AddTaskSheet(),
           );
-        } else if (label == 'Birthday') {
-          // Switch to Birthday Sheet
-          Navigator.pop(context);
+        } else if (label == 'Event') {
+          Navigator.pop(context); 
           showModalBottomSheet(
             context: context,
             isScrollControlled: true,
             backgroundColor: Colors.transparent,
-            builder: (context) => const AddBirthdaySheet(),
+            builder: (context) => const AddEventSheet(),
           );
         } else {
           setState(() => _selectedType = label);
@@ -440,7 +293,7 @@ class _AddEventSheetState extends State<AddEventSheet> {
           // Fill: Primary (Purple) if selected, Transparent if not
           color: isSelected ? colors.primary : Colors.transparent,
           
-          // Border: Always Black (onSurface) as requested
+          // Border: ALWAYS Black (onSurface)
           border: Border.all(
             color: colors.onSurface, 
             width: 1.2

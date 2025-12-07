@@ -8,6 +8,7 @@ import 'tag_selector.dart';
 
 // IMPORT THE EVENT SHEET SO WE CAN SWITCH TO IT
 import 'add_event_sheet.dart'; 
+import 'add_birthday_sheet.dart';
 
 class AddTaskSheet extends StatefulWidget {
   const AddTaskSheet({super.key});
@@ -18,7 +19,7 @@ class AddTaskSheet extends StatefulWidget {
 
 class _AddTaskSheetState extends State<AddTaskSheet> {
   // --- STATE VARIABLES ---
-  String _selectedType = 'Task'; // Default is Task
+  String _selectedType = 'Task'; 
   bool _isSmartScheduleEnabled = true;
 
   // Dynamic Fields
@@ -91,6 +92,7 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
           // --- TEXT FIELDS ---
           TextField(
             controller: _titleController,
+            cursorColor: colorScheme.onSurface,
             style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: colorScheme.onSurface),
             decoration: InputDecoration(
               hintText: 'Add Title',
@@ -101,6 +103,7 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
           ),
           TextField(
             controller: _descController,
+            cursorColor: colorScheme.onSurface,
             style: TextStyle(fontSize: 16, color: colorScheme.onSurface.withOpacity(0.8)),
             decoration: InputDecoration(
               hintText: 'Add Description',
@@ -152,7 +155,7 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  // 1. SMART SCHEDULE
+                  // 1. SMART SCHEDULE TOGGLE
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -162,15 +165,17 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
                         scale: 0.8,
                         child: Switch(
                           value: _isSmartScheduleEnabled,
-                          activeColor: Colors.white, // White thumb
-                          activeTrackColor: colorScheme.primary, // Purple track
+                          activeColor: Colors.white, 
+                          activeTrackColor: colorScheme.primary,
                           onChanged: (val) => setState(() => _isSmartScheduleEnabled = val),
                         ),
                       ),
                     ],
                   ),
                   
+                  // --- CONDITIONAL BLOCK: Only show if Smart Schedule is ENABLED ---
                   if (_isSmartScheduleEnabled) ...[
+                    // Description Text
                     Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
@@ -179,27 +184,27 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
                       ),
                     ),
                     const SizedBox(height: 20),
+
+                    // Smart Priority Row (Only visible when toggled ON)
+                    _buildInteractiveRow(
+                      label: "Smart Priority", 
+                      value: _priority,
+                      colors: colorScheme,
+                      onTap: () {
+                        showModalBottomSheet(
+                          context: context,
+                          backgroundColor: Colors.transparent,
+                          builder: (context) => PrioritySelector(
+                            currentPriority: _priority,
+                            onPrioritySelected: (val) => setState(() => _priority = val),
+                          ),
+                        );
+                      }
+                    ),
                   ] else 
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 10), // Small spacer when hidden
 
-                  // 2. SMART PRIORITY
-                  _buildInteractiveRow(
-                    label: "Smart Priority", 
-                    value: _priority,
-                    colors: colorScheme,
-                    onTap: () {
-                      showModalBottomSheet(
-                        context: context,
-                        backgroundColor: Colors.transparent,
-                        builder: (context) => PrioritySelector(
-                          currentPriority: _priority,
-                          onPrioritySelected: (val) => setState(() => _priority = val),
-                        ),
-                      );
-                    }
-                  ),
-
-                  // 3. DEADLINE
+                  // 3. DEADLINE (Always Visible)
                   _buildInteractiveRow(
                     label: "Deadline", 
                     value: DateFormat('MMMM d, y').format(_deadlineDate),
@@ -377,13 +382,20 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
     return GestureDetector(
       onTap: () {
         if (label == 'Event') {
-          // Switch to Event Sheet
           Navigator.pop(context); 
           showModalBottomSheet(
             context: context,
             isScrollControlled: true,
             backgroundColor: Colors.transparent,
             builder: (context) => const AddEventSheet(),
+          );
+        } else if (label == 'Birthday') {
+          Navigator.pop(context);
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+            builder: (context) => const AddBirthdaySheet(),
           );
         } else {
           setState(() => _selectedType = label);
@@ -392,12 +404,9 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
         decoration: BoxDecoration(
-          // Fill: Primary (Purple) if selected, Transparent if not
           color: isSelected ? colors.primary : Colors.transparent,
-          
-          // Border: Always Black (onSurface) whether selected or not
           border: Border.all(
-            color: colors.onSurface, // <--- CHANGED: ALWAYS onSurface (Black)
+            color: colors.onSurface, // Always Black Border
             width: 1.2
           ),
           borderRadius: BorderRadius.circular(8),
@@ -406,7 +415,7 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
           label,
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: colors.onSurface, // Text: Always Black
+            color: colors.onSurface, // Always Black Text
             fontSize: 14,
           ),
         ),

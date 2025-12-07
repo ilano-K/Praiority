@@ -25,7 +25,7 @@ class CategorySelector extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            "Select Difficulty", // Changed title to match Easy/Hard context
+            "Select Category",
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 15),
@@ -39,6 +39,8 @@ class CategorySelector extends StatelessWidget {
 
   Widget _buildOption(BuildContext context, String label) {
     bool isSelected = currentCategory == label;
+    final colorScheme = Theme.of(context).colorScheme;
+
     return ListTile(
       onTap: () {
         onCategorySelected(label);
@@ -47,11 +49,16 @@ class CategorySelector extends StatelessWidget {
       title: Text(
         label,
         style: TextStyle(
+          // Text is Bold if selected
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          color: isSelected ? Theme.of(context).colorScheme.primary : null,
+          // Text is Black (onSurface) whether selected or not
+          color: colorScheme.onSurface,
         ),
       ),
-      trailing: isSelected ? const Icon(Icons.check) : null,
+      // Checkmark is also Black (onSurface) when selected
+      trailing: isSelected 
+          ? Icon(Icons.check, color: colorScheme.onSurface) 
+          : null,
     );
   }
 }

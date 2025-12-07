@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 import 'package:intl/intl.dart';
-import 'dart:math' as math; // Required for the rotation animation
+import 'dart:math' as math; 
 
 // IMPORTANT: Import your AddTaskSheet widget here
 import '../widgets/add_task_sheet.dart'; 
@@ -13,25 +13,21 @@ class MainCalendar extends StatefulWidget {
   State<MainCalendar> createState() => _MainCalendarState();
 }
 
-// 1. MIXIN: Add SingleTickerProviderStateMixin for animations
 class _MainCalendarState extends State<MainCalendar> with SingleTickerProviderStateMixin {
   DateTime _selectedDate = DateTime.now();
   final CalendarController _calendarController = CalendarController();
 
-  // 2. ANIMATION CONTROLLER
   late AnimationController _fabController;
   late Animation<double> _fabAnimation;
 
   @override
   void initState() {
     super.initState();
-    // Initialize animation: runs for 250 milliseconds
     _fabController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 250),
     );
     
-    // Curved animation makes it look bouncy/smooth
     _fabAnimation = CurvedAnimation(
       parent: _fabController, 
       curve: Curves.easeOut,
@@ -44,12 +40,11 @@ class _MainCalendarState extends State<MainCalendar> with SingleTickerProviderSt
     super.dispose();
   }
 
-  // Helper to toggle the menu
   void _toggleFab() {
     if (_fabController.isDismissed) {
-      _fabController.forward(); // Open
+      _fabController.forward(); 
     } else {
-      _fabController.reverse(); // Close
+      _fabController.reverse(); 
     }
   }
 
@@ -60,24 +55,20 @@ class _MainCalendarState extends State<MainCalendar> with SingleTickerProviderSt
     return Scaffold(
       backgroundColor: colorScheme.surface,
 
-      // --- 3. ANIMATED FLOATING ACTION BUTTON ---
+      // --- ANIMATED FAB ---
       floatingActionButton: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          // OPTION 1: ReOrganize
           _buildAnimatedFabOption("ReOrganize", colorScheme),
           const SizedBox(height: 10),
           
-          // OPTION 2: Chatbot
           _buildAnimatedFabOption("Chatbot", colorScheme),
           const SizedBox(height: 10),
           
-          // OPTION 3: Task
           _buildAnimatedFabOption("Task", colorScheme),
           const SizedBox(height: 10),
 
-          // MAIN BUTTON (Rotates)
           SizedBox(
             width: 65,
             height: 65,
@@ -85,15 +76,14 @@ class _MainCalendarState extends State<MainCalendar> with SingleTickerProviderSt
               backgroundColor: colorScheme.primary,
               shape: const CircleBorder(),
               elevation: 4,
-              onPressed: _toggleFab, // Triggers animation
+              onPressed: _toggleFab,
               child: AnimatedBuilder(
                 animation: _fabController,
                 builder: (context, child) {
-                  // Rotates the icon by 45 degrees (pi/4) when opening
                   return Transform.rotate(
                     angle: _fabController.value * math.pi / 4,
                     child: Icon(
-                      Icons.add, // Always use 'add', rotation makes it 'close'
+                      Icons.add, 
                       size: 32,
                       color: colorScheme.onSurface,
                     ),
@@ -104,7 +94,6 @@ class _MainCalendarState extends State<MainCalendar> with SingleTickerProviderSt
           ),
         ],
       ),
-      // ----------------------------------------
 
       body: SafeArea(
         child: Column(
@@ -171,6 +160,8 @@ class _MainCalendarState extends State<MainCalendar> with SingleTickerProviderSt
                           backgroundColor: colorScheme.surface,
                           cellBorderColor: Colors.transparent,
                           dataSource: AppointmentDataSource([]), 
+                          
+                          // --- 1. GRAY CELLS RESTORED & FIXED FOR PAST DATES ---
                           specialRegions: _getGreyBlocks(colorScheme),
                           
                           onViewChanged: (ViewChangedDetails details) {
@@ -199,36 +190,41 @@ class _MainCalendarState extends State<MainCalendar> with SingleTickerProviderSt
                     ],
                   ),
 
-                  // LAYER 2: Sidebar Overlay
+                  // LAYER 2: Sidebar Overlay (Date Indicator)
                   Positioned(
                     left: 0,
                     top: 0,
                     width: 60,
                     child: Container(
-                      color: colorScheme.surface,
+                      // --- 2. TRANSPARENT BACKGROUND (No white box) ---
+                      color: Colors.transparent, 
                       padding: const EdgeInsets.only(top: 10, bottom: 10),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            DateFormat('E').format(_selectedDate), 
-                            style: TextStyle(
-                              fontSize: 16, 
-                              fontWeight: FontWeight.w500,
-                              color: colorScheme.onSurface,
+                      child: GestureDetector(
+                        onTap: () => _pickDate(context),
+                        behavior: HitTestBehavior.opaque,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              DateFormat('E').format(_selectedDate), 
+                              style: TextStyle(
+                                fontSize: 16, 
+                                fontWeight: FontWeight.w500,
+                                color: colorScheme.onSurface,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            DateFormat('d').format(_selectedDate), 
-                            style: TextStyle(
-                              fontSize: 26, 
-                              fontWeight: FontWeight.bold,
-                              color: colorScheme.onSurface
+                            const SizedBox(height: 2),
+                            Text(
+                              DateFormat('d').format(_selectedDate), 
+                              style: TextStyle(
+                                fontSize: 26, 
+                                fontWeight: FontWeight.bold,
+                                color: colorScheme.onSurface
+                              ),
                             ),
-                          ),
-                          Icon(Icons.arrow_drop_down, size: 20, color: colorScheme.onSurface),
-                        ],
+                            Icon(Icons.arrow_drop_down, size: 20, color: colorScheme.onSurface),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -241,19 +237,18 @@ class _MainCalendarState extends State<MainCalendar> with SingleTickerProviderSt
     );
   }
 
-  // --- 4. ANIMATED FAB OPTION BUILDER ---
+  // --- FAB OPTION BUILDER ---
   Widget _buildAnimatedFabOption(String label, ColorScheme colors) {
     return ScaleTransition(
-      scale: _fabAnimation, // Grows from 0 to 1
-      alignment: Alignment.bottomRight, // Grows from the button upwards
+      scale: _fabAnimation, 
+      alignment: Alignment.bottomRight, 
       child: FadeTransition(
-        opacity: _fabAnimation, // Fades in
+        opacity: _fabAnimation, 
         child: GestureDetector(
           onTap: () {
             print("$label clicked");
-            _toggleFab(); // Close menu
+            _toggleFab(); 
 
-            // Open Task Sheet
             if (label == "Task") {
                showModalBottomSheet(
                 context: context,
@@ -290,7 +285,7 @@ class _MainCalendarState extends State<MainCalendar> with SingleTickerProviderSt
     );
   }
 
-  // --- Logic: Build Purple Bars ---
+  // --- Purple Bars ---
   List<Widget> _buildPurpleBars(ColorScheme colors) {
     bool isToday = _selectedDate.day == DateTime.now().day && 
                    _selectedDate.month == DateTime.now().month;
@@ -350,16 +345,24 @@ class _MainCalendarState extends State<MainCalendar> with SingleTickerProviderSt
     }
   }
 
-  // GAP LOGIC
+  // --- GAP LOGIC (FIXED) ---
   List<TimeRegion> _getGreyBlocks(ColorScheme colors) {
     List<TimeRegion> regions = [];
+    
+    // FIX: Anchor the start time to a past date (e.g., 2020)
+    // This ensures the daily recurrence works when scrolling backwards.
+    final DateTime anchorDate = DateTime(2020, 1, 1);
+
     for (int i = 0; i < 24; i++) {
       regions.add(TimeRegion(
-        startTime: DateTime.now().copyWith(hour: i, minute: 0, second: 0),
-        endTime: DateTime.now().copyWith(hour: i, minute: 52, second: 0), 
-        color: colors.secondary,
+        // Start block at :00 of the hour (from year 2020)
+        startTime: anchorDate.copyWith(hour: i, minute: 0, second: 0),
+        // End block at :52 of the hour
+        endTime: anchorDate.copyWith(hour: i, minute: 52, second: 0), 
+        color: colors.secondary, 
         enablePointerInteraction: true,
         text: '',
+        // RECURRENCE: Repeat Daily forever
         recurrenceRule: 'FREQ=DAILY;INTERVAL=1',
       ));
     }

@@ -5,7 +5,7 @@ class TagSelector extends StatefulWidget {
   final List<String> availableTags; 
   final ValueChanged<String> onTagSelected;
   final ValueChanged<String> onTagAdded; 
-  final ValueChanged<String> onTagRemoved; // <--- NEW: Delete Callback
+  final ValueChanged<String> onTagRemoved; 
 
   const TagSelector({
     super.key,
@@ -13,7 +13,7 @@ class TagSelector extends StatefulWidget {
     required this.availableTags,
     required this.onTagSelected,
     required this.onTagAdded,
-    required this.onTagRemoved, // <--- Require this
+    required this.onTagRemoved, 
   });
 
   @override
@@ -39,7 +39,7 @@ class _TagSelectorState extends State<TagSelector> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "Select Tag", // <--- CHANGED TITLE
+            "Select Tag", 
             style: TextStyle(
               fontSize: 20, 
               fontWeight: FontWeight.bold,
@@ -96,31 +96,24 @@ class _TagSelectorState extends State<TagSelector> {
       },
       leading: Icon(
         Icons.label_outline, 
-        color: isSelected ? colorScheme.primary : colorScheme.onSurface.withOpacity(0.5),
+        // Icon is Black (onSurface) if selected, faded if not
+        color: isSelected ? colorScheme.onSurface : colorScheme.onSurface.withOpacity(0.5),
       ),
       title: Text(
         label,
         style: TextStyle(
+          // Text is Bold if selected
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          color: isSelected ? colorScheme.primary : colorScheme.onSurface,
+          // Text is always Black (onSurface)
+          color: colorScheme.onSurface,
         ),
       ),
-      // --- TRAILING: Checkmark + Delete Button ---
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (isSelected) 
-            Icon(Icons.check, color: colorScheme.primary),
-          
-          // The X Button to delete
-          IconButton(
-            icon: Icon(Icons.close, size: 20, color: colorScheme.onSurface.withOpacity(0.5)),
-            onPressed: () {
-              // Call the delete callback
-              widget.onTagRemoved(label);
-            },
-          ),
-        ],
+      // --- TRAILING: Only Delete Button (No Checkmark) ---
+      trailing: IconButton(
+        icon: Icon(Icons.close, size: 20, color: colorScheme.onSurface.withOpacity(0.5)),
+        onPressed: () {
+          widget.onTagRemoved(label);
+        },
       ),
     );
   }
@@ -137,12 +130,16 @@ class _TagSelectorState extends State<TagSelector> {
         content: TextField(
           controller: customTagController,
           autofocus: true,
+          // 1. Text is onSurface (Black)
           style: TextStyle(color: colorScheme.onSurface),
+          // 2. Cursor is onSurface (Black)
+          cursorColor: colorScheme.onSurface,
           decoration: InputDecoration(
             hintText: "Enter tag name",
             hintStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.5)),
+            // 3. Focused Line is onSurface (Black)
             focusedBorder: UnderlineInputBorder(
-              borderSide: BorderSide(color: colorScheme.primary),
+              borderSide: BorderSide(color: colorScheme.onSurface),
             ),
           ),
         ),
