@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 import 'package:intl/intl.dart';
 import 'dart:math' as math; 
-import 'package:provider/provider.dart'; // <--- Required for Provider
+import 'package:provider/provider.dart'; 
 
-// IMPORTANT: Import your AddTaskSheet widget here
+// IMPORTANT: Import your Widgets
 import '../widgets/add_task_sheet.dart'; 
+import '../widgets/appointment_card.dart'; 
 
 // IMPORTANT: Import your ThemeProvider
-import '../../../../../core/services/theme/theme_provider.dart'; // Adjust path if necessary
+import '../../../../../core/services/theme/theme_provider.dart'; 
 
 class MainCalendar extends StatefulWidget {
   const MainCalendar({super.key});
@@ -24,6 +25,9 @@ class _MainCalendarState extends State<MainCalendar> with SingleTickerProviderSt
   late AnimationController _fabController;
   late Animation<double> _fabAnimation;
 
+  // Mock Data List
+  late List<Appointment> _mockAppointments;
+
   @override
   void initState() {
     super.initState();
@@ -36,6 +40,39 @@ class _MainCalendarState extends State<MainCalendar> with SingleTickerProviderSt
       parent: _fabController, 
       curve: Curves.easeOut,
     );
+
+    // Initialize Mock Data
+    _mockAppointments = _generateMockAppointments();
+  }
+
+  // --- Helper to Generate Mock Appointments ---
+  List<Appointment> _generateMockAppointments() {
+    return [
+      Appointment(
+        startTime: DateTime.now().copyWith(hour: 9, minute: 0),
+        endTime: DateTime.now().copyWith(hour: 11, minute: 0),
+        subject: "Design Meeting",
+        notes: "Discuss the new UI wireframes.",
+        color: const Color(0xFFF5A89A), 
+        isAllDay: false,
+      ),
+      Appointment(
+        startTime: DateTime.now().copyWith(hour: 13, minute: 0),
+        endTime: DateTime.now().copyWith(hour: 14, minute: 0),
+        subject: "Dev Sync",
+        notes: "Daily standup with backend team.",
+        color: const Color(0xFFF7B38F),
+        isAllDay: false,
+      ),
+      // Added an 'All Day' event to show in the top cell
+      Appointment(
+        startTime: DateTime.now(),
+        endTime: DateTime.now(),
+        subject: "Holiday",
+        color: Colors.blueAccent,
+        isAllDay: true,
+      ),
+    ];
   }
 
   @override
@@ -66,13 +103,10 @@ class _MainCalendarState extends State<MainCalendar> with SingleTickerProviderSt
         children: [
           _buildAnimatedFabOption("ReOrganize", colorScheme),
           const SizedBox(height: 10),
-          
           _buildAnimatedFabOption("Chatbot", colorScheme),
           const SizedBox(height: 10),
-          
           _buildAnimatedFabOption("Task", colorScheme),
           const SizedBox(height: 10),
-
           SizedBox(
             width: 65,
             height: 65,
@@ -86,11 +120,7 @@ class _MainCalendarState extends State<MainCalendar> with SingleTickerProviderSt
                 builder: (context, child) {
                   return Transform.rotate(
                     angle: _fabController.value * math.pi / 4,
-                    child: Icon(
-                      Icons.add, 
-                      size: 32,
-                      color: colorScheme.onSurface,
-                    ),
+                    child: Icon(Icons.add, size: 32, color: colorScheme.onSurface),
                   );
                 },
               ),
@@ -107,15 +137,12 @@ class _MainCalendarState extends State<MainCalendar> with SingleTickerProviderSt
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10),
               child: Row(
                 children: [
-                  // --- THEME TOGGLE (Menu Icon) ---
                   GestureDetector(
                     onTap: () {
-                      // Toggle Theme
                       Provider.of<ThemeProvider>(context, listen: false).toggleTheme();
                     },
                     child: Icon(Icons.menu, size: 30, color: colorScheme.onSurface),
                   ),
-                  
                   const SizedBox(width: 15),
                   GestureDetector(
                     onTap: () => _pickDate(context),
@@ -150,15 +177,16 @@ class _MainCalendarState extends State<MainCalendar> with SingleTickerProviderSt
                   // LAYER 1: Scrollable Content
                   Column(
                     children: [
-                      // Fixed Height Panel (Purple Bars)
+                      // --- 1. RESTORED: Fixed Height Panel (70px) ---
                       Container(
                         padding: const EdgeInsets.only(left: 60), 
-                        constraints: const BoxConstraints(minHeight: 70),
+                        constraints: const BoxConstraints(minHeight: 90),
                         width: double.infinity,
                         color: colorScheme.surface,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: _buildPurpleBars(colorScheme),
+                          // This will show "All Day" events if any
+                          children: _buildAllDayEvents(colorScheme),
                         ),
                       ),
 
@@ -171,9 +199,14 @@ class _MainCalendarState extends State<MainCalendar> with SingleTickerProviderSt
                           viewHeaderHeight: 0,
                           backgroundColor: colorScheme.surface,
                           cellBorderColor: Colors.transparent,
-                          dataSource: AppointmentDataSource([]), 
                           
-                          // Gray Background Blocks (Restored)
+                          dataSource: AppointmentDataSource(_mockAppointments),
+                          
+                          appointmentBuilder: (context, calendarAppointmentDetails) {
+                            final Appointment appointment = calendarAppointmentDetails.appointments.first;
+                            return AppointmentCard(appointment: appointment);
+                          },
+
                           specialRegions: _getGreyBlocks(colorScheme),
                           
                           onViewChanged: (ViewChangedDetails details) {
@@ -185,6 +218,20 @@ class _MainCalendarState extends State<MainCalendar> with SingleTickerProviderSt
                                   });
                                 }
                               });
+                            }
+                          },
+
+                          onTap: (CalendarTapDetails details) {
+                            if (details.targetElement == CalendarElement.appointment) {
+                              // We just open the sheet. 
+                              // We aren't passing the 'tappedAppointment' because AddTaskSheet
+                              // doesn't accept it yet.
+                              showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                backgroundColor: Colors.transparent,
+                                builder: (context) => const AddTaskSheet(),
+                              );
                             }
                           },
 
@@ -208,7 +255,6 @@ class _MainCalendarState extends State<MainCalendar> with SingleTickerProviderSt
                     top: 0,
                     width: 60,
                     child: Container(
-                      // Transparent background
                       color: Colors.transparent, 
                       padding: const EdgeInsets.only(top: 10, bottom: 10),
                       child: GestureDetector(
@@ -249,6 +295,21 @@ class _MainCalendarState extends State<MainCalendar> with SingleTickerProviderSt
     );
   }
 
+  // --- Logic to show All Day Events in the top cell ---
+  List<Widget> _buildAllDayEvents(ColorScheme colors) {
+    // Filter for TODAY + ALL DAY events
+    final allDayEvents = _mockAppointments.where((appt) {
+      bool isToday = appt.startTime.year == _selectedDate.year &&
+                     appt.startTime.month == _selectedDate.month &&
+                     appt.startTime.day == _selectedDate.day;
+      return isToday && appt.isAllDay;
+    }).toList();
+
+    if (allDayEvents.isEmpty) return [];
+
+    return allDayEvents.map((appt) => AppointmentCard(appointment: appt)).toList();
+  }
+
   // --- FAB OPTION BUILDER ---
   Widget _buildAnimatedFabOption(String label, ColorScheme colors) {
     return ScaleTransition(
@@ -258,9 +319,7 @@ class _MainCalendarState extends State<MainCalendar> with SingleTickerProviderSt
         opacity: _fabAnimation, 
         child: GestureDetector(
           onTap: () {
-            print("$label clicked");
             _toggleFab(); 
-
             if (label == "Task") {
                showModalBottomSheet(
                 context: context,
@@ -297,41 +356,6 @@ class _MainCalendarState extends State<MainCalendar> with SingleTickerProviderSt
     );
   }
 
-  // --- Purple Bars ---
-  List<Widget> _buildPurpleBars(ColorScheme colors) {
-    bool isToday = _selectedDate.day == DateTime.now().day && 
-                   _selectedDate.month == DateTime.now().month;
-
-    if (!isToday) {
-      return []; 
-    }
-
-    return [
-      _purpleBar("Design Meeting", colors),
-      _purpleBar("Dev Sync", colors),
-    ];
-  }
-
-  Widget _purpleBar(String title, ColorScheme colors) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 2, right: 10, top: 2),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: colors.primary, 
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        title,
-        style: TextStyle(
-          color: colors.onSurface, 
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-    );
-  }
-
   // --- Date Picker Logic ---
   Future<void> _pickDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
@@ -357,11 +381,9 @@ class _MainCalendarState extends State<MainCalendar> with SingleTickerProviderSt
     }
   }
 
-  // --- GAP LOGIC (FIXED) ---
+  // --- GAP LOGIC ---
   List<TimeRegion> _getGreyBlocks(ColorScheme colors) {
     List<TimeRegion> regions = [];
-    
-    // Anchor the start time to a past date (e.g., 2020)
     final DateTime anchorDate = DateTime(2020, 1, 1);
 
     for (int i = 0; i < 24; i++) {
