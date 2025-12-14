@@ -4,7 +4,10 @@ import 'package:intl/intl.dart';
 // Import your separate widgets
 import 'tag_selector.dart';
 import 'repeat_selector.dart'; 
-import 'color_selector.dart'; // <--- NEW IMPORT
+import 'color_selector.dart'; // <--- Required for CalendarColor
+
+// IMPORTANT: Import the new Reusable Header
+import 'add_header_sheet.dart'; // <--- NEW IMPORT
 
 // IMPORTANT: Import other sheets for switching
 import 'add_task_sheet.dart';
@@ -34,8 +37,7 @@ class _AddEventSheetState extends State<AddEventSheet> {
   String _location = "None"; 
   String _tag = "None";
 
-  // --- NEW: SELECTED COLOR STATE ---
-  // Defaults to the first color (Default Purple)
+  // --- SELECTED COLOR STATE ---
   CalendarColor _selectedColor = appEventColors[0];
 
   // MASTER TAG LIST (Persists new tags)
@@ -45,17 +47,32 @@ class _AddEventSheetState extends State<AddEventSheet> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
 
+  // --- SAVE CALLBACK ---
+  void _handleSave() {
+    // Current save logic: just close the sheet (no controller implementation yet)
+    // When Riverpod is added, this method will contain the logic to call ref.read(calendarControllerProvider.notifier).addEvent(...)
+    Navigator.pop(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     // 1. ACCESS THEME
     final colorScheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     
-    // Resolve display color
-    final Color displayColor = isDark ? _selectedColor.dark : _selectedColor.light;
-
     // 2. USE THEME COLOR
     final Color sheetBackground = colorScheme.inversePrimary; 
+
+    // --- Create Header Data Object ---
+    final headerData = HeaderData(
+      selectedType: _selectedType,
+      selectedColor: _selectedColor,
+      titleController: _titleController,
+      descController: _descController,
+      // Update local state when user selects a different type/color
+      onTypeSelected: (type) => setState(() => _selectedType = type),
+      onColorSelected: (color) => setState(() => _selectedColor = color),
+      onSave: _handleSave,
+    );
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
@@ -67,122 +84,10 @@ class _AddEventSheetState extends State<AddEventSheet> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // --- HEADER ---
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              IconButton(
-                icon: Icon(Icons.close, size: 28, color: colorScheme.onSurface),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                onPressed: () => Navigator.pop(context),
-              ),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: colorScheme.primary,
-                  foregroundColor: Colors.black, // Always Black Text
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                ),
-                child: const Text(
-                  "Save",
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 20),
-
-          // --- TITLE ---
-          TextField(
-            controller: _titleController,
-            // UPDATED: Cursor is onSurface (Black)
-            cursorColor: colorScheme.onSurface, 
-            style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: colorScheme.onSurface),
-            decoration: InputDecoration(
-              hintText: 'Add Event Title',
-              border: InputBorder.none,
-              hintStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.5), fontWeight: FontWeight.w900),
-              contentPadding: EdgeInsets.zero,
-            ),
-          ),
-
-          // --- DESCRIPTION ---
-          TextField(
-            controller: _descController,
-            // UPDATED: Cursor is onSurface (Black)
-            cursorColor: colorScheme.onSurface,
-            style: TextStyle(fontSize: 16, color: colorScheme.onSurface.withOpacity(0.8)),
-            decoration: InputDecoration(
-              hintText: 'Add Description',
-              border: InputBorder.none,
-              hintStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.5)),
-              contentPadding: EdgeInsets.zero,
-            ),
-          ),
-
-          const SizedBox(height: 25),
-
-          // --- TYPE BUTTONS ---
-          Row(
-            children: [
-              _buildTypeButton("Task", colorScheme),
-              const SizedBox(width: 12),
-              _buildTypeButton("Event", colorScheme),
-              const SizedBox(width: 12),
-              _buildTypeButton("Birthday", colorScheme),
-            ],
-          ),
-
-          const SizedBox(height: 20),
-
-          // --- COLOR PICKER (UPDATED) ---
-          GestureDetector(
-            onTap: () {
-              // Open Color Selector
-              showModalBottomSheet(
-                context: context,
-                backgroundColor: Colors.transparent,
-                builder: (context) => ColorSelector(
-                  selectedColor: _selectedColor,
-                  onColorSelected: (newColor) {
-                    setState(() {
-                      _selectedColor = newColor;
-                    });
-                  },
-                ),
-              );
-            },
-            child: Row(
-              children: [
-                Container(
-                  width: 28, height: 28,
-                  decoration: BoxDecoration(
-                    color: displayColor, // Shows selected color
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  _selectedColor.name, // Shows selected name
-                  style: TextStyle(
-                    fontWeight: FontWeight.w500, 
-                    fontSize: 16, 
-                    color: colorScheme.onSurface
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 20),
-          Divider(thickness: 1, color: colorScheme.onSurface.withOpacity(0.1)),
-          const SizedBox(height: 10),
+          
+          // --- REPLACED: HEADER, TEXT FIELDS, TYPE BUTTONS, COLOR PICKER ---
+          AddSheetHeader(data: headerData), 
+          // ------------------------------------------------------------------
 
           // --- EVENT DETAILS LIST ---
           Expanded(
@@ -357,15 +262,12 @@ class _AddEventSheetState extends State<AddEventSheet> {
         content: TextField(
           controller: locController,
           autofocus: true,
-          // 1. Text is onSurface (Black)
           style: TextStyle(color: colorScheme.onSurface),
-          // 2. Cursor is onSurface (Black)
-          cursorColor: colorScheme.onSurface,
+          cursorColor: colorScheme.onSurface, 
           decoration: InputDecoration(
             hintText: "Enter location",
             hintStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.5)),
-            // 3. Focused Line is onSurface (Black)
-            focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: colorScheme.onSurface)),
+            focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: colorScheme.onSurface)), 
             enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: colorScheme.onSurface.withOpacity(0.5))),
           ),
         ),
@@ -441,58 +343,6 @@ class _AddEventSheetState extends State<AddEventSheet> {
             ],
           ),
         ],
-      ),
-    );
-  }
-
-  // --- WIDGET HELPER: Type Button ---
-  Widget _buildTypeButton(String label, ColorScheme colors) {
-    bool isSelected = _selectedType == label;
-    return GestureDetector(
-      onTap: () {
-        if (label == 'Task') {
-          // Switch to Task Sheet
-          Navigator.pop(context); 
-          showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            backgroundColor: Colors.transparent,
-            builder: (context) => const AddTaskSheet(),
-          );
-        } else if (label == 'Birthday') {
-          // Switch to Birthday Sheet
-          Navigator.pop(context);
-          showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            backgroundColor: Colors.transparent,
-            builder: (context) => const AddBirthdaySheet(),
-          );
-        } else {
-          setState(() => _selectedType = label);
-        }
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-        decoration: BoxDecoration(
-          // Fill: Primary (Purple) if selected, Transparent if not
-          color: isSelected ? colors.primary : Colors.transparent,
-          
-          // Border: Always Black (onSurface) whether selected or not
-          border: Border.all(
-            color: colors.onSurface, 
-            width: 1.2
-          ),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: colors.onSurface, // Always Black Text
-            fontSize: 14,
-          ),
-        ),
       ),
     );
   }

@@ -7,6 +7,9 @@ import 'category_selector.dart';
 import 'tag_selector.dart';
 import 'color_selector.dart'; // Ensure this is imported for CalendarColor
 
+// IMPORTANT: Import the new Reusable Header (You must create this file)
+import 'add_header_sheet.dart'; // Assuming the file is named '_add_sheet_header.dart'
+
 // IMPORT THE EVENT & BIRTHDAY SHEETS
 import 'add_event_sheet.dart'; 
 import 'add_birthday_sheet.dart'; 
@@ -28,8 +31,7 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
   String _category = "None";
   String _tag = "None"; 
   
-  // --- NEW: SELECTED COLOR STATE ---
-  // Defaults to the first color (Default Purple) defined in color_selector.dart
+  // --- SELECTED COLOR STATE ---
   CalendarColor _selectedColor = appEventColors[0];
 
   // 1. MASTER TAG LIST
@@ -44,17 +46,31 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
 
+  // --- SAVE CALLBACK ---
+  void _handleSave() {
+    // Current save logic: just close the sheet (no controller implementation yet)
+    Navigator.pop(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     // 1. ACCESS THEME
     final colorScheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    // Resolve display color
-    final Color displayColor = isDark ? _selectedColor.dark : _selectedColor.light;
     
     // 2. USE THEME COLOR
     final Color sheetBackground = colorScheme.inversePrimary; 
+
+    // --- Create Header Data Object ---
+    final headerData = HeaderData(
+      selectedType: _selectedType,
+      selectedColor: _selectedColor,
+      titleController: _titleController,
+      descController: _descController,
+      // Update local state when user selects a different type/color
+      onTypeSelected: (type) => setState(() => _selectedType = type),
+      onColorSelected: (color) => setState(() => _selectedColor = color),
+      onSave: _handleSave,
+    );
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
@@ -66,121 +82,12 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // --- HEADER ---
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              IconButton(
-                icon: Icon(Icons.close, size: 28, color: colorScheme.onSurface),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                onPressed: () => Navigator.pop(context),
-              ),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: colorScheme.primary, // Purple
-                  foregroundColor: colorScheme.onSurface, // Text Color (Black)
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                ),
-                child: const Text(
-                  "Save",
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 20),
-
-          // --- TEXT FIELDS ---
-          TextField(
-            controller: _titleController,
-            cursorColor: colorScheme.onSurface,
-            style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: colorScheme.onSurface),
-            decoration: InputDecoration(
-              hintText: 'Add Title',
-              border: InputBorder.none,
-              hintStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.5), fontWeight: FontWeight.w900),
-              contentPadding: EdgeInsets.zero,
-            ),
-          ),
-          TextField(
-            controller: _descController,
-            cursorColor: colorScheme.onSurface,
-            style: TextStyle(fontSize: 16, color: colorScheme.onSurface.withOpacity(0.8)),
-            decoration: InputDecoration(
-              hintText: 'Add Description',
-              border: InputBorder.none,
-              hintStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.5)),
-              contentPadding: EdgeInsets.zero,
-            ),
-          ),
-
-          const SizedBox(height: 25),
-
-          // --- TYPE BUTTONS ---
-          Row(
-            children: [
-              _buildTypeButton("Task", colorScheme),
-              const SizedBox(width: 12),
-              _buildTypeButton("Event", colorScheme),
-              const SizedBox(width: 12),
-              _buildTypeButton("Birthday", colorScheme),
-            ],
-          ),
-
-          const SizedBox(height: 20),
-
-          // --- COLOR PICKER (UPDATED) ---
-          GestureDetector(
-            onTap: () {
-              // Open Color Selector
-              showModalBottomSheet(
-                context: context,
-                backgroundColor: Colors.transparent,
-                builder: (context) => ColorSelector(
-                  selectedColor: _selectedColor,
-                  onColorSelected: (newColor) {
-                    setState(() {
-                      _selectedColor = newColor;
-                    });
-                  },
-                ),
-              );
-            },
-            child: Row(
-              children: [
-                Container(
-                  width: 28, height: 28,
-                  decoration: BoxDecoration(
-                    color: displayColor, // Shows the selected color
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  _selectedColor.name, // <--- CHANGED: Shows Name instead of "Color"
-                  style: TextStyle(
-                    fontWeight: FontWeight.w500, 
-                    fontSize: 16, 
-                    color: colorScheme.onSurface
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 20),
-          Divider(thickness: 1, color: colorScheme.onSurface.withOpacity(0.1)),
-          const SizedBox(height: 10),
-
-          // --- SCROLLABLE SETTINGS LIST ---
+          
+          // --- REPLACED: HEADER, TEXT FIELDS, TYPE BUTTONS, COLOR PICKER ---
+          AddSheetHeader(data: headerData), 
+          // ------------------------------------------------------------------
+          
+          // --- SCROLLABLE SETTINGS LIST (Task-specific content) ---
           Expanded(
             child: SingleChildScrollView(
               child: Column(
@@ -400,56 +307,6 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
             ],
           ),
         ],
-      ),
-    );
-  }
-
-  // --- WIDGET HELPER: Type Button ---
-  Widget _buildTypeButton(String label, ColorScheme colors) {
-    bool isSelected = _selectedType == label;
-    return GestureDetector(
-      onTap: () {
-        if (label == 'Event') {
-          Navigator.pop(context); 
-          showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            backgroundColor: Colors.transparent,
-            builder: (context) => const AddEventSheet(),
-          );
-        } else if (label == 'Birthday') {
-          Navigator.pop(context);
-          showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            backgroundColor: Colors.transparent,
-            builder: (context) => const AddBirthdaySheet(),
-          );
-        } else {
-          setState(() => _selectedType = label);
-        }
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-        decoration: BoxDecoration(
-          // Fill: Primary (Purple) if selected, Transparent if not
-          color: isSelected ? colors.primary : Colors.transparent,
-          
-          // Border: Always Black (onSurface) whether selected or not
-          border: Border.all(
-            color: colors.onSurface, // Always Black Border
-            width: 1.2
-          ),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: colors.onSurface, // Always Black Text
-            fontSize: 14,
-          ),
-        ),
       ),
     );
   }

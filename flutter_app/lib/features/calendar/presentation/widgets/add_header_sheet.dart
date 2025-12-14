@@ -1,0 +1,209 @@
+import 'package:flutter/material.dart';
+import 'package:syncfusion_flutter_calendar/calendar.dart';
+
+// Import necessary widgets and data structures
+import 'color_selector.dart';
+import 'add_task_sheet.dart'; 
+import 'add_event_sheet.dart';
+import 'add_birthday_sheet.dart'; 
+
+// Define a common interface for the header's state data
+class HeaderData {
+  final String selectedType;
+  final CalendarColor selectedColor;
+  final TextEditingController titleController;
+  final TextEditingController descController;
+  final ValueChanged<String> onTypeSelected;
+  final ValueChanged<CalendarColor> onColorSelected;
+  final VoidCallback onSave;
+
+  HeaderData({
+    required this.selectedType,
+    required this.selectedColor,
+    required this.titleController,
+    required this.descController,
+    required this.onTypeSelected,
+    required this.onColorSelected,
+    required this.onSave,
+  });
+}
+
+class AddSheetHeader extends StatelessWidget {
+  final HeaderData data;
+
+  const AddSheetHeader({super.key, required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color displayColor = isDark ? data.selectedColor.dark : data.selectedColor.light;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // --- HEADER (Close & Save Buttons) ---
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            IconButton(
+              icon: Icon(Icons.close, size: 28, color: colorScheme.onSurface),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              onPressed: () => Navigator.pop(context),
+            ),
+            ElevatedButton(
+              onPressed: data.onSave, // Use the provided save callback
+              style: ElevatedButton.styleFrom(
+                backgroundColor: colorScheme.primary,
+                foregroundColor: colorScheme.onSurface,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              child: const Text(
+                "Save",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 20),
+
+        // --- TITLE ---
+        TextField(
+          controller: data.titleController,
+          cursorColor: colorScheme.onSurface,
+          style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: colorScheme.onSurface),
+          decoration: InputDecoration(
+            hintText: 'Add Title',
+            border: InputBorder.none,
+            hintStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.5), fontWeight: FontWeight.w900),
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+
+        // --- DESCRIPTION ---
+        TextField(
+          controller: data.descController,
+          cursorColor: colorScheme.onSurface,
+          style: TextStyle(fontSize: 16, color: colorScheme.onSurface.withOpacity(0.8)),
+          decoration: InputDecoration(
+            hintText: 'Add Description',
+            border: InputBorder.none,
+            hintStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.5)),
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+
+        const SizedBox(height: 25),
+
+        // --- TYPE BUTTONS ---
+        Row(
+          children: [
+            _buildTypeButton("Task", colorScheme, context),
+            const SizedBox(width: 12),
+            _buildTypeButton("Event", colorScheme, context),
+            const SizedBox(width: 12),
+            _buildTypeButton("Birthday", colorScheme, context),
+          ],
+        ),
+
+        const SizedBox(height: 20),
+
+        // --- COLOR PICKER ---
+        GestureDetector(
+          onTap: () {
+            showModalBottomSheet(
+              context: context,
+              backgroundColor: Colors.transparent,
+              builder: (context) => ColorSelector(
+                selectedColor: data.selectedColor,
+                onColorSelected: (newColor) {
+                  // Notify the parent sheet to update its state
+                  data.onColorSelected(newColor);
+                  Navigator.pop(context);
+                },
+              ),
+            );
+          },
+          child: Row(
+            children: [
+              Container(
+                width: 28, height: 28,
+                decoration: BoxDecoration(
+                  color: displayColor,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                data.selectedColor.name,
+                style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16, color: colorScheme.onSurface),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 20),
+        Divider(thickness: 1, color: colorScheme.onSurface.withOpacity(0.1)),
+        const SizedBox(height: 10),
+      ],
+    );
+  }
+
+  // --- WIDGET HELPER: Type Button (Handles switching between sheets) ---
+  Widget _buildTypeButton(String label, ColorScheme colors, BuildContext context) {
+    bool isSelected = data.selectedType == label;
+
+    return GestureDetector(
+      onTap: () {
+        // Notify parent of type change (mainly for state update visual)
+        data.onTypeSelected(label);
+
+        // Then switch sheets if needed
+        if (label == 'Task' && data.selectedType != 'Task') {
+          _switchSheet(context, const AddTaskSheet());
+        } else if (label == 'Event' && data.selectedType != 'Event') {
+          _switchSheet(context, const AddEventSheet());
+        } else if (label == 'Birthday' && data.selectedType != 'Birthday') {
+          _switchSheet(context, const AddBirthdaySheet());
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? colors.primary : Colors.transparent,
+          border: Border.all(
+            color: colors.onSurface,
+            width: 1.2
+          ),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: colors.onSurface,
+            fontSize: 14,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _switchSheet(BuildContext context, Widget newSheet) {
+    // Pop the current sheet and push the new one
+    Navigator.pop(context); 
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => newSheet,
+    );
+  }
+}
