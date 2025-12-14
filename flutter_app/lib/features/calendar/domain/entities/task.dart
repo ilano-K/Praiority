@@ -21,7 +21,7 @@ class Task extends Equatable{
   final DateTime? endTime; // may be null if smart scheduled
   final DateTime? deadline; // if none, will be defaulted to today
   final Duration? duration;
-
+  final bool isAllDay;
   //priority
   final TaskPriority priority;
 
@@ -50,6 +50,7 @@ class Task extends Equatable{
     this.endTime,
     this.deadline,
     this.duration,
+    this.isAllDay = false,
     this.priority = TaskPriority.medium,
     this.isAiMovable = true,
     this.isSmartSchedule = false, // default: user schedules manually
@@ -70,6 +71,7 @@ class Task extends Equatable{
     DateTime? endTime,
     DateTime? deadline,
     Duration? duration,
+    bool isAllDay = false,
     TaskPriority priority = TaskPriority.medium,
     bool isAiMovable = true,
     bool isSmartSchedule = false,
@@ -89,6 +91,7 @@ class Task extends Equatable{
       endTime: endTime,
       deadline: deadline,
       duration: duration,
+      isAllDay: isAllDay,
       priority: priority,
       isAiMovable: isAiMovable,
       isSmartSchedule: isSmartSchedule,
@@ -110,6 +113,7 @@ class Task extends Equatable{
     DateTime? endTime,
     DateTime? deadline,
     Duration? duration,
+    bool? isAllDay,
     TaskPriority? priority,
     bool? isAiMovable,
     bool? isSmartSchedule, // Add to copyWith
@@ -130,6 +134,7 @@ class Task extends Equatable{
       endTime: endTime ?? this.endTime,
       deadline: deadline ?? this.deadline,
       duration: duration ?? this.duration,
+      isAllDay: isAllDay ?? this.isAllDay,
       priority: priority ?? this.priority,
       isAiMovable: isAiMovable ?? this.isAiMovable,
       isSmartSchedule: isSmartSchedule ?? this.isSmartSchedule,
@@ -153,6 +158,7 @@ class Task extends Equatable{
         endTime,
         deadline,
         duration,
+        isAllDay,
         priority,
         isAiMovable,
         isSmartSchedule, // Add to props

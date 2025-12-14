@@ -4,9 +4,9 @@ import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'package:flutter_app/features/calendar/presentation/providers/calendar_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-final calendarControllerProvider = AsyncNotifierProvider.autoDispose.family<CalendarController, List<Task>, DateTime>(CalendarController.new);
+final calendarControllerProvider = AsyncNotifierProvider.autoDispose.family<CalendarStateController, List<Task>, DateTime>(CalendarStateController.new);
 
-class CalendarController extends AutoDisposeFamilyAsyncNotifier<List<Task>, DateTime>{
+class CalendarStateController extends AutoDisposeFamilyAsyncNotifier<List<Task>, DateTime>{
   @override
   FutureOr<List<Task>> build(DateTime arg) {
     final repository = ref.watch(calendarRepositoryProvider);

@@ -1,32 +1,36 @@
 import 'package:flutter/material.dart';
-import 'package:syncfusion_flutter_calendar/calendar.dart';
+import 'package:flutter_app/features/calendar/presentation/controllers/calendar_controller_providers.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'dart:math' as math; 
-import 'package:provider/provider.dart'; 
+import 'package:provider/provider.dart' as provider; // Alias to avoid conflict with Riverpod
+
+import 'package:syncfusion_flutter_calendar/calendar.dart';
 
 // IMPORTANT: Import your Widgets
 import '../widgets/add_task_sheet.dart'; 
 import '../widgets/appointment_card.dart'; 
 
 // IMPORTANT: Import your ThemeProvider
-import '../../../../../core/services/theme/theme_provider.dart'; 
+import '../../../../core/services/theme/theme_controller.dart'; 
 
-class MainCalendar extends StatefulWidget {
+// IMPORTANT: Import Backend
+import '../../domain/entities/task.dart';
+
+class MainCalendar extends ConsumerStatefulWidget {
   const MainCalendar({super.key});
 
   @override
-  State<MainCalendar> createState() => _MainCalendarState();
+  ConsumerState<MainCalendar> createState() => _MainCalendarState();
 }
 
-class _MainCalendarState extends State<MainCalendar> with SingleTickerProviderStateMixin {
+class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerProviderStateMixin {
   DateTime _selectedDate = DateTime.now();
-  final CalendarController _calendarController = CalendarController();
 
+  //THIS IS THE ONLY RED LINE
+  final CalendarController _calendarController = CalendarController();
   late AnimationController _fabController;
   late Animation<double> _fabAnimation;
-
-  // Mock Data List
-  late List<Appointment> _mockAppointments;
 
   @override
   void initState() {
@@ -40,39 +44,6 @@ class _MainCalendarState extends State<MainCalendar> with SingleTickerProviderSt
       parent: _fabController, 
       curve: Curves.easeOut,
     );
-
-    // Initialize Mock Data
-    _mockAppointments = _generateMockAppointments();
-  }
-
-  // --- Helper to Generate Mock Appointments ---
-  List<Appointment> _generateMockAppointments() {
-    return [
-      Appointment(
-        startTime: DateTime.now().copyWith(hour: 9, minute: 0),
-        endTime: DateTime.now().copyWith(hour: 11, minute: 0),
-        subject: "Design Meeting",
-        notes: "Discuss the new UI wireframes.",
-        color: const Color(0xFFF5A89A), 
-        isAllDay: false,
-      ),
-      Appointment(
-        startTime: DateTime.now().copyWith(hour: 13, minute: 0),
-        endTime: DateTime.now().copyWith(hour: 14, minute: 0),
-        subject: "Dev Sync",
-        notes: "Daily standup with backend team.",
-        color: const Color(0xFFF7B38F),
-        isAllDay: false,
-      ),
-      // Added an 'All Day' event to show in the top cell
-      Appointment(
-        startTime: DateTime.now(),
-        endTime: DateTime.now(),
-        subject: "Holiday",
-        color: Colors.blueAccent,
-        isAllDay: true,
-      ),
-    ];
   }
 
   @override
@@ -93,6 +64,12 @@ class _MainCalendarState extends State<MainCalendar> with SingleTickerProviderSt
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
+    // 1. WATCH THE DATABASE
+    // This automatically fetches tasks for the selected date.
+    // When you swipe to a new day, _selectedDate updates, and this refetches.
+    final tasksAsync = ref.watch(calendarControllerProvider(_selectedDate));
+
+    //add task logic here
     return Scaffold(
       backgroundColor: colorScheme.surface,
 
@@ -139,7 +116,7 @@ class _MainCalendarState extends State<MainCalendar> with SingleTickerProviderSt
                 children: [
                   GestureDetector(
                     onTap: () {
-                      Provider.of<ThemeProvider>(context, listen: false).toggleTheme();
+                      provider.Provider.of<ThemeController>(context, listen: false).toggleTheme();
                     },
                     child: Icon(Icons.menu, size: 30, color: colorScheme.onSurface),
                   ),
@@ -177,73 +154,77 @@ class _MainCalendarState extends State<MainCalendar> with SingleTickerProviderSt
                   // LAYER 1: Scrollable Content
                   Column(
                     children: [
-                      // --- 1. RESTORED: Fixed Height Panel (70px) ---
+                      // --- 1. Fixed Height Panel (70px) ---
                       Container(
                         padding: const EdgeInsets.only(left: 60), 
                         constraints: const BoxConstraints(minHeight: 90),
                         width: double.infinity,
                         color: colorScheme.surface,
-                        child: Column(
+                        child: const Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          // This will show "All Day" events if any
-                          children: _buildAllDayEvents(colorScheme),
                         ),
                       ),
 
-                      // Calendar
+                      // --- 2. THE CALENDAR (Connected to Riverpod) ---
                       Expanded(
-                        child: SfCalendar(
-                          view: CalendarView.day,
-                          controller: _calendarController,
-                          headerHeight: 0,
-                          viewHeaderHeight: 0,
-                          backgroundColor: colorScheme.surface,
-                          cellBorderColor: Colors.transparent,
+                        child: tasksAsync.when(
+                          // LOADING STATE
+                          loading: () => const Center(child: CircularProgressIndicator()),
                           
-                          dataSource: AppointmentDataSource(_mockAppointments),
+                          // ERROR STATE
+                          error: (err, stack) => Center(child: Text("Error: $err")),
                           
-                          appointmentBuilder: (context, calendarAppointmentDetails) {
-                            final Appointment appointment = calendarAppointmentDetails.appointments.first;
-                            return AppointmentCard(appointment: appointment);
-                          },
+                          // SUCCESS STATE
+                          data: (tasks) {
+                            // Filter only scheduled tasks for the calendar view
+                            final scheduledTasks = tasks.where((t) => t.startTime != null && t.endTime != null).toList();
 
-                          specialRegions: _getGreyBlocks(colorScheme),
-                          
-                          onViewChanged: (ViewChangedDetails details) {
-                            if (details.visibleDates.isNotEmpty) {
-                              Future.microtask(() {
-                                if (mounted && details.visibleDates.first.day != _selectedDate.day) {
-                                  setState(() {
-                                    _selectedDate = details.visibleDates.first;
+                            return SfCalendar(
+                              view: CalendarView.day,
+                              controller: _calendarController,
+                              headerHeight: 0,
+                              viewHeaderHeight: 0,
+                              backgroundColor: colorScheme.surface,
+                              cellBorderColor: Colors.transparent,
+                              
+                              // 2a. CONNECT THE DATA SOURCE
+                              dataSource: _TaskDataSource(scheduledTasks),
+                              
+                              // 2b. USE YOUR CUSTOM CARD
+                              appointmentBuilder: (context, details) {
+                                final Appointment appointment = details.appointments.first;
+                                return AppointmentCard(appointment: appointment);
+                              },
+
+                              specialRegions: _getGreyBlocks(colorScheme),
+                              
+                              onViewChanged: (ViewChangedDetails details) {
+                                if (details.visibleDates.isNotEmpty) {
+                                  Future.microtask(() {
+                                    if (mounted && details.visibleDates.first.day != _selectedDate.day) {
+                                      setState(() {
+                                        _selectedDate = details.visibleDates.first;
+                                      });
+                                    }
                                   });
                                 }
-                              });
-                            }
-                          },
+                              },
 
-                          onTap: (CalendarTapDetails details) {
-                            if (details.targetElement == CalendarElement.appointment) {
-                              // We just open the sheet. 
-                              // We aren't passing the 'tappedAppointment' because AddTaskSheet
-                              // doesn't accept it yet.
-                              showModalBottomSheet(
-                                context: context,
-                                isScrollControlled: true,
-                                backgroundColor: Colors.transparent,
-                                builder: (context) => const AddTaskSheet(),
-                              );
-                            }
-                          },
+                              onTap: (CalendarTapDetails details) {
+                                // Handle tap on appointment or empty slot
+                              },
 
-                          timeSlotViewSettings: TimeSlotViewSettings(
-                            timeRulerSize: 60,
-                            timeTextStyle: TextStyle(
-                              color: colorScheme.onSurface,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 12,
-                            ),
-                            timeIntervalHeight: 80,
-                          ),
+                              timeSlotViewSettings: TimeSlotViewSettings(
+                                timeRulerSize: 60,
+                                timeTextStyle: TextStyle(
+                                  color: colorScheme.onSurface,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                ),
+                                timeIntervalHeight: 80,
+                              ),
+                            );
+                          },
                         ),
                       ),
                     ],
@@ -295,20 +276,6 @@ class _MainCalendarState extends State<MainCalendar> with SingleTickerProviderSt
     );
   }
 
-  // --- Logic to show All Day Events in the top cell ---
-  List<Widget> _buildAllDayEvents(ColorScheme colors) {
-    // Filter for TODAY + ALL DAY events
-    final allDayEvents = _mockAppointments.where((appt) {
-      bool isToday = appt.startTime.year == _selectedDate.year &&
-                     appt.startTime.month == _selectedDate.month &&
-                     appt.startTime.day == _selectedDate.day;
-      return isToday && appt.isAllDay;
-    }).toList();
-
-    if (allDayEvents.isEmpty) return [];
-
-    return allDayEvents.map((appt) => AppointmentCard(appointment: appt)).toList();
-  }
 
   // --- FAB OPTION BUILDER ---
   Widget _buildAnimatedFabOption(String label, ColorScheme colors) {
@@ -400,8 +367,24 @@ class _MainCalendarState extends State<MainCalendar> with SingleTickerProviderSt
   }
 }
 
-class AppointmentDataSource extends CalendarDataSource {
-  AppointmentDataSource(List<Appointment> source) {
-    appointments = source;
+// -----------------------------------------------------------------------------
+// HELPER: DATA SOURCE
+// Bridges your Task Entity to Syncfusion's Appointment System
+// -----------------------------------------------------------------------------
+class _TaskDataSource extends CalendarDataSource {
+  _TaskDataSource(List<Task> tasks) {
+    appointments = tasks.map((task) {
+      return Appointment(
+        id: task.id,
+        subject: task.title,
+        startTime: task.startTime!,
+        endTime: task.endTime!,
+        notes: task.description,
+        // You can map category to color here if needed, 
+        // or let AppointmentCard handle it with transparent.
+        color: Colors.transparent, 
+        isAllDay: task.isAllDay,
+      );
+    }).toList();
   }
 }

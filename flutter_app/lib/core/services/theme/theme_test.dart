@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/core/services/theme/button_test.dart';
 import 'package:flutter_app/core/services/theme/cell.dart';
-import 'package:flutter_app/core/services/theme/theme_provider.dart';
+import 'package:flutter_app/core/services/theme/theme_controller.dart';
 import 'package:provider/provider.dart';
 
 class ThemeTest extends StatelessWidget {
@@ -17,7 +17,7 @@ class ThemeTest extends StatelessWidget {
             child: ButtonTest(
             color: Theme.of(context).colorScheme.secondary, 
             onTap: () {
-              Provider.of<ThemeProvider>(context, listen: false).toggleTheme();
+              Provider.of<ThemeController>(context, listen: false).toggleTheme();
             }
           ),
         ),

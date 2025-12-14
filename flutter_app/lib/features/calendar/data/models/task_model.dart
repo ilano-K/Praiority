@@ -31,6 +31,8 @@ class TaskModel {
   DateTime? deadline; 
   int? durationMinutes;
 
+  late bool isAllDay;
+
   @Enumerated(EnumType.ordinal)
   late TaskPriority priority;
 
@@ -60,6 +62,7 @@ class TaskModel {
       endTime: endTime,
       deadline: deadline,
       duration: durationMinutes != null ? Duration(minutes: durationMinutes!) : null,
+      isAllDay: isAllDay,
       priority: priority,
       isAiMovable: isAiMovable,
       isSmartSchedule: isSmartSchedule,
@@ -84,6 +87,7 @@ class TaskModel {
       ..endTime = task.endTime
       ..deadline = task.deadline
       ..durationMinutes = task.duration?.inMinutes
+      ..isAllDay = task.isAllDay
       ..priority = task.priority
       ..isAiMovable = task.isAiMovable
       ..isSmartSchedule = task.isSmartSchedule

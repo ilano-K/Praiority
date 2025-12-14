@@ -48,65 +48,70 @@ const TaskModelSchema = CollectionSchema(
       name: r'isAiMovable',
       type: IsarType.bool,
     ),
-    r'isSmartSchedule': PropertySchema(
+    r'isAllDay': PropertySchema(
       id: 6,
+      name: r'isAllDay',
+      type: IsarType.bool,
+    ),
+    r'isSmartSchedule': PropertySchema(
+      id: 7,
       name: r'isSmartSchedule',
       type: IsarType.bool,
     ),
     r'isSynced': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'isSynced',
       type: IsarType.bool,
     ),
     r'location': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'location',
       type: IsarType.string,
     ),
     r'originalId': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'originalId',
       type: IsarType.string,
     ),
     r'priority': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'priority',
       type: IsarType.byte,
       enumMap: _TaskModelpriorityEnumValueMap,
     ),
     r'recurrenceRule': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'recurrenceRule',
       type: IsarType.string,
     ),
     r'reminderOffsets': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'reminderOffsets',
       type: IsarType.longList,
     ),
     r'startTime': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'startTime',
       type: IsarType.dateTime,
     ),
     r'status': PropertySchema(
-      id: 14,
+      id: 15,
       name: r'status',
       type: IsarType.string,
       enumMap: _TaskModelstatusEnumValueMap,
     ),
     r'tags': PropertySchema(
-      id: 15,
+      id: 16,
       name: r'tags',
       type: IsarType.stringList,
     ),
     r'title': PropertySchema(
-      id: 16,
+      id: 17,
       name: r'title',
       type: IsarType.string,
     ),
     r'type': PropertySchema(
-      id: 17,
+      id: 18,
       name: r'type',
       type: IsarType.string,
       enumMap: _TaskModeltypeEnumValueMap,
@@ -192,18 +197,19 @@ void _taskModelSerialize(
   writer.writeLong(offsets[3], object.durationMinutes);
   writer.writeDateTime(offsets[4], object.endTime);
   writer.writeBool(offsets[5], object.isAiMovable);
-  writer.writeBool(offsets[6], object.isSmartSchedule);
-  writer.writeBool(offsets[7], object.isSynced);
-  writer.writeString(offsets[8], object.location);
-  writer.writeString(offsets[9], object.originalId);
-  writer.writeByte(offsets[10], object.priority.index);
-  writer.writeString(offsets[11], object.recurrenceRule);
-  writer.writeLongList(offsets[12], object.reminderOffsets);
-  writer.writeDateTime(offsets[13], object.startTime);
-  writer.writeString(offsets[14], object.status.name);
-  writer.writeStringList(offsets[15], object.tags);
-  writer.writeString(offsets[16], object.title);
-  writer.writeString(offsets[17], object.type.name);
+  writer.writeBool(offsets[6], object.isAllDay);
+  writer.writeBool(offsets[7], object.isSmartSchedule);
+  writer.writeBool(offsets[8], object.isSynced);
+  writer.writeString(offsets[9], object.location);
+  writer.writeString(offsets[10], object.originalId);
+  writer.writeByte(offsets[11], object.priority.index);
+  writer.writeString(offsets[12], object.recurrenceRule);
+  writer.writeLongList(offsets[13], object.reminderOffsets);
+  writer.writeDateTime(offsets[14], object.startTime);
+  writer.writeString(offsets[15], object.status.name);
+  writer.writeStringList(offsets[16], object.tags);
+  writer.writeString(offsets[17], object.title);
+  writer.writeString(offsets[18], object.type.name);
 }
 
 TaskModel _taskModelDeserialize(
@@ -222,23 +228,24 @@ TaskModel _taskModelDeserialize(
   object.endTime = reader.readDateTimeOrNull(offsets[4]);
   object.id = id;
   object.isAiMovable = reader.readBool(offsets[5]);
-  object.isSmartSchedule = reader.readBool(offsets[6]);
-  object.isSynced = reader.readBool(offsets[7]);
-  object.location = reader.readStringOrNull(offsets[8]);
-  object.originalId = reader.readString(offsets[9]);
+  object.isAllDay = reader.readBool(offsets[6]);
+  object.isSmartSchedule = reader.readBool(offsets[7]);
+  object.isSynced = reader.readBool(offsets[8]);
+  object.location = reader.readStringOrNull(offsets[9]);
+  object.originalId = reader.readString(offsets[10]);
   object.priority =
-      _TaskModelpriorityValueEnumMap[reader.readByteOrNull(offsets[10])] ??
+      _TaskModelpriorityValueEnumMap[reader.readByteOrNull(offsets[11])] ??
           TaskPriority.low;
-  object.recurrenceRule = reader.readStringOrNull(offsets[11]);
-  object.reminderOffsets = reader.readLongList(offsets[12]) ?? [];
-  object.startTime = reader.readDateTimeOrNull(offsets[13]);
+  object.recurrenceRule = reader.readStringOrNull(offsets[12]);
+  object.reminderOffsets = reader.readLongList(offsets[13]) ?? [];
+  object.startTime = reader.readDateTimeOrNull(offsets[14]);
   object.status =
-      _TaskModelstatusValueEnumMap[reader.readStringOrNull(offsets[14])] ??
+      _TaskModelstatusValueEnumMap[reader.readStringOrNull(offsets[15])] ??
           TaskStatus.unscheduled;
-  object.tags = reader.readStringList(offsets[15]) ?? [];
-  object.title = reader.readString(offsets[16]);
+  object.tags = reader.readStringList(offsets[16]) ?? [];
+  object.title = reader.readString(offsets[17]);
   object.type =
-      _TaskModeltypeValueEnumMap[reader.readStringOrNull(offsets[17])] ??
+      _TaskModeltypeValueEnumMap[reader.readStringOrNull(offsets[18])] ??
           TaskType.task;
   return object;
 }
@@ -268,26 +275,28 @@ P _taskModelDeserializeProp<P>(
     case 7:
       return (reader.readBool(offset)) as P;
     case 8:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 9:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 10:
+      return (reader.readString(offset)) as P;
+    case 11:
       return (_TaskModelpriorityValueEnumMap[reader.readByteOrNull(offset)] ??
           TaskPriority.low) as P;
-    case 11:
-      return (reader.readStringOrNull(offset)) as P;
     case 12:
-      return (reader.readLongList(offset) ?? []) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 13:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readLongList(offset) ?? []) as P;
     case 14:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 15:
       return (_TaskModelstatusValueEnumMap[reader.readStringOrNull(offset)] ??
           TaskStatus.unscheduled) as P;
-    case 15:
-      return (reader.readStringList(offset) ?? []) as P;
     case 16:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringList(offset) ?? []) as P;
     case 17:
+      return (reader.readString(offset)) as P;
+    case 18:
       return (_TaskModeltypeValueEnumMap[reader.readStringOrNull(offset)] ??
           TaskType.task) as P;
     default:
@@ -1081,6 +1090,16 @@ extension TaskModelQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'isAiMovable',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> isAllDayEqualTo(
+      bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isAllDay',
         value: value,
       ));
     });
@@ -2500,6 +2519,18 @@ extension TaskModelQuerySortBy on QueryBuilder<TaskModel, TaskModel, QSortBy> {
     });
   }
 
+  QueryBuilder<TaskModel, TaskModel, QAfterSortBy> sortByIsAllDay() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isAllDay', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterSortBy> sortByIsAllDayDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isAllDay', Sort.desc);
+    });
+  }
+
   QueryBuilder<TaskModel, TaskModel, QAfterSortBy> sortByIsSmartSchedule() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isSmartSchedule', Sort.asc);
@@ -2707,6 +2738,18 @@ extension TaskModelQuerySortThenBy
     });
   }
 
+  QueryBuilder<TaskModel, TaskModel, QAfterSortBy> thenByIsAllDay() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isAllDay', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterSortBy> thenByIsAllDayDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isAllDay', Sort.desc);
+    });
+  }
+
   QueryBuilder<TaskModel, TaskModel, QAfterSortBy> thenByIsSmartSchedule() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isSmartSchedule', Sort.asc);
@@ -2868,6 +2911,12 @@ extension TaskModelQueryWhereDistinct
     });
   }
 
+  QueryBuilder<TaskModel, TaskModel, QDistinct> distinctByIsAllDay() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isAllDay');
+    });
+  }
+
   QueryBuilder<TaskModel, TaskModel, QDistinct> distinctByIsSmartSchedule() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isSmartSchedule');
@@ -2989,6 +3038,12 @@ extension TaskModelQueryProperty
   QueryBuilder<TaskModel, bool, QQueryOperations> isAiMovableProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isAiMovable');
+    });
+  }
+
+  QueryBuilder<TaskModel, bool, QQueryOperations> isAllDayProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isAllDay');
     });
   }
 
