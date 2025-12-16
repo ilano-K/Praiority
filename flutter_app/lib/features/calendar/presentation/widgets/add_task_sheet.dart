@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
+import 'package:flutter_app/features/calendar/domain/entities/task.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/date_picker.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/pick_time.dart';
 import 'package:intl/intl.dart';
 
 // Import your separate widgets
@@ -27,7 +31,7 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
   bool _isSmartScheduleEnabled = true;
 
   // Dynamic Fields
-  String _priority = "High";
+  String _priority = "Medium";
   String _category = "None";
   String _tag = "None"; 
   
@@ -35,21 +39,80 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
   CalendarColor _selectedColor = appEventColors[0];
 
   // 1. MASTER TAG LIST
-  List<String> _tagsList = ["Schoolwork", "Office", "Chore"];
+  List<String> _tagsList = ["Schoolwork", "Office", "Chore"];// i need to fix this
   
   // Date/Time
+  DateTime _startDate = DateTime.now();
+  TimeOfDay _startTime = TimeOfDay.now();
+
+  // Endtime
+  TimeOfDay _endTime = TimeOfDay.fromDateTime(
+    DateTime.now().add(const Duration(hours: 1))
+  );
+
+  // Deadline data and time
   DateTime _deadlineDate = DateTime.now();
   TimeOfDay _deadlineTime = const TimeOfDay(hour: 23, minute: 59);
-  DateTime _arrangeDate = DateTime.now();
 
   // Controllers
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
 
+  // map for data conversion
+  final priorityMap = {
+    "Low": TaskPriority.low,
+    "Medium": TaskPriority.medium,
+    "High": TaskPriority.high 
+  };
+
+  final categoryMap = {
+    "Easy": TaskCategory.easy,
+    "Average": TaskCategory.average,
+    "Hard": TaskCategory.hard,
+    "None" : TaskCategory.none
+  };
+
   // --- SAVE CALLBACK ---
-  void _handleSave() {
+  Task createTaskSaveTemplate() {
     // Current save logic: just close the sheet (no controller implementation yet)
-    Navigator.pop(context);
+    DateTime deadline = DateTime(
+        _deadlineDate.year,
+        _deadlineDate.month,
+        _deadlineDate.day,
+        _deadlineTime.hour,
+        _deadlineTime.minute,
+    );
+    DateTime startTime = DateTime(
+        _startDate.year,
+        _startDate.month,
+        _startDate.day,
+        _startTime.hour,
+        _startTime.minute,
+    );
+
+    DateTime endTime = DateTime(
+        _startDate.year,
+        _startDate.month,
+        _startDate.day,
+        _endTime.hour,
+        _endTime.minute,
+    );
+
+    final template = Task.create(
+      title: _titleController.text.trim().isEmpty
+        ? "New Task"
+        : _titleController.text.trim(),
+      description: _descController.text.trim(),
+      isSmartSchedule: _isSmartScheduleEnabled,
+      priority: priorityMap[_priority]!,
+      startTime: startTime,
+      endTime: endTime,
+      deadline: deadline,
+      category: categoryMap[_category]!,
+      tags: _tag
+    );
+
+    return template;
   }
 
   @override
@@ -69,7 +132,7 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
       // Update local state when user selects a different type/color
       onTypeSelected: (type) => setState(() => _selectedType = type),
       onColorSelected: (color) => setState(() => _selectedColor = color),
-      onSave: _handleSave,
+      saveTemplate: createTaskSaveTemplate,
     );
 
     return Container(
@@ -138,6 +201,42 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
                     ),
                   ] else 
                     const SizedBox(height: 10),
+                  
+                  // 3. START TIME
+                  _buildInteractiveRow(
+                    label: "Start Time", 
+                    value: DateFormat('MMMM d, y').format(_startDate),
+                    trailing: _startTime.format(context),
+                    colors: colorScheme,
+                    onTapValue: () async {
+                      final picked = await pickDate(
+                        context,
+                        initialDate: _startDate,
+                      );
+                      if (picked != null) {
+                        setState(() => _startDate = picked);
+                      }
+                    },
+                    onTapTrailing: () async {
+                      final picked = await pickTime(context);
+                      if (picked != null) {
+                        setState(() => _startTime = picked);
+                      }
+                    },
+                  ),
+
+                  // 4. END TIME
+                  _buildInteractiveRow(
+                    label: "End Time", 
+                    value: _endTime.format(context),
+                    colors: colorScheme,
+                    onTapValue: () async {
+                      final picked = await pickTime(context, initialTime: _endTime);
+                      if (picked != null) {
+                        setState(() => _endTime = picked);
+                      }
+                    },
+                  ),
 
                   // 3. DEADLINE
                   _buildInteractiveRow(
@@ -145,16 +244,21 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
                     value: DateFormat('MMMM d, y').format(_deadlineDate),
                     trailing: _deadlineTime.format(context),
                     colors: colorScheme,
-                    onTapValue: () => _pickDate(context, (date) => setState(() => _deadlineDate = date)),
-                    onTapTrailing: () => _pickTime(context, (time) => setState(() => _deadlineTime = time)),
-                  ),
-
-                  // 4. ARRANGE A DAY
-                  _buildInteractiveRow(
-                    label: "Arrange a Day", 
-                    value: DateFormat('MMMM d, y').format(_arrangeDate),
-                    colors: colorScheme,
-                    onTapValue: () => _pickDate(context, (date) => setState(() => _arrangeDate = date)),
+                    onTapValue: () async {
+                      final picked = await pickDate(
+                        context,
+                        initialDate: _startDate,
+                      );
+                      if (picked != null) {
+                        setState(() => _deadlineDate = picked);
+                      }
+                    },
+                    onTapTrailing: () async {
+                      final picked = await pickTime(context, initialTime: _deadlineTime);
+                      if (picked != null) {
+                        setState(() => _deadlineTime = picked);
+                      }
+                    },
                   ),
 
                   // 5. CATEGORY
@@ -209,51 +313,6 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
         ],
       ),
     );
-  }
-
-  // --- LOGIC: Date & Time ---
-  Future<void> _pickDate(BuildContext context, Function(DateTime) onPicked) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
-      builder: (context, child) => Theme(
-        data: Theme.of(context).copyWith(colorScheme: Theme.of(context).colorScheme),
-        child: child!,
-      ),
-    );
-    if (picked != null) onPicked(picked);
-  }
-
-  Future<void> _pickTime(BuildContext context, Function(TimeOfDay) onPicked) async {
-    final colorScheme = Theme.of(context).colorScheme;
-    final TimeOfDay? picked = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.now(),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            timePickerTheme: TimePickerThemeData(
-              backgroundColor: colorScheme.surface,
-              dialHandColor: colorScheme.primary,
-              dialTextColor: colorScheme.onSurface,
-              dialBackgroundColor: colorScheme.surfaceVariant,
-              dayPeriodTextColor: WidgetStateColor.resolveWith((states) =>
-                  states.contains(WidgetState.selected) ? Colors.white : colorScheme.onSurface),
-              dayPeriodColor: WidgetStateColor.resolveWith((states) =>
-                  states.contains(WidgetState.selected) ? colorScheme.primary : Colors.transparent),
-              dayPeriodBorderSide: BorderSide(color: colorScheme.primary),
-            ),
-            textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(foregroundColor: colorScheme.primary),
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null) onPicked(picked);
   }
 
   // --- WIDGET HELPER: Interactive Rows ---

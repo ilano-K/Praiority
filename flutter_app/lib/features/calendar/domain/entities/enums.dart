@@ -1,4 +1,4 @@
 enum TaskType {task, event}
-enum TaskCategory {focus, light, active, unassigned}
+enum TaskCategory {easy, average, hard, none}
 enum TaskPriority {low, medium, high}
 enum TaskStatus {unscheduled, scheduled,completed}

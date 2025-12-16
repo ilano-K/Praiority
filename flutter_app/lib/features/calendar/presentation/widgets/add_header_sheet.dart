@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_app/features/calendar/domain/entities/task.dart';
+import 'package:flutter_app/features/calendar/presentation/controllers/calendar_controller_providers.dart';
+import 'package:flutter_app/features/calendar/presentation/services/save_task.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 
 // Import necessary widgets and data structures
@@ -15,7 +19,7 @@ class HeaderData {
   final TextEditingController descController;
   final ValueChanged<String> onTypeSelected;
   final ValueChanged<CalendarColor> onColorSelected;
-  final VoidCallback onSave;
+  final Task Function() saveTemplate;
 
   HeaderData({
     required this.selectedType,
@@ -24,17 +28,18 @@ class HeaderData {
     required this.descController,
     required this.onTypeSelected,
     required this.onColorSelected,
-    required this.onSave,
+    required this.saveTemplate,
   });
 }
 
-class AddSheetHeader extends StatelessWidget {
+
+class AddSheetHeader extends ConsumerWidget {
   final HeaderData data;
 
   const AddSheetHeader({super.key, required this.data});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final Color displayColor = isDark ? data.selectedColor.dark : data.selectedColor.light;
@@ -54,7 +59,13 @@ class AddSheetHeader extends StatelessWidget {
               onPressed: () => Navigator.pop(context),
             ),
             ElevatedButton(
-              onPressed: data.onSave, // Use the provided save callback
+              onPressed: () async {
+                final task = data.saveTemplate();
+                final taskDay = DateTime(task.startTime!.year, task.startTime!.month, task.startTime!.day);
+                await saveTask(ref, task);
+                ref.invalidate(calendarControllerProvider(taskDay));
+                Navigator.pop(context);
+                }, // Use the provided save callback
               style: ElevatedButton.styleFrom(
                 backgroundColor: colorScheme.primary,
                 foregroundColor: colorScheme.onSurface,

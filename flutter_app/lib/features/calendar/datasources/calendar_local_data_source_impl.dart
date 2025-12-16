@@ -67,7 +67,7 @@ class CalendarLocalDataSourceImpl implements CalendarLocalDataSource{
     }
 
     if (tag != null){
-      q = q.and().tagsElementEqualTo(tag);
+      q = q.and().tagsEqualTo(tag);
     }
     return await q.sortByStartTime().findAll();
   }
@@ -103,7 +103,7 @@ class CalendarLocalDataSourceImpl implements CalendarLocalDataSource{
     }
 
     if (tag != null){
-      q = q.and().tagsElementEqualTo(tag);
+      q = q.and().tagsEqualTo(tag);
     }
     return await q.sortByStartTime().findAll();
   }
@@ -134,7 +134,7 @@ class CalendarLocalDataSourceImpl implements CalendarLocalDataSource{
     }
 
     if (tag != null){
-      q = q.and().tagsElementEqualTo(tag);
+      q = q.and().tagsEqualTo(tag);
     }
     return await q.sortByStartTime().findAll();
   }
@@ -147,7 +147,7 @@ class CalendarLocalDataSourceImpl implements CalendarLocalDataSource{
   Future<List<TaskModel>>getTasksByTags(String tags) async {
     return await isar.taskModels
         .filter()
-        .tagsElementEqualTo(tags)
+        .tagsEqualTo(tags)
         .sortByStartTime()
         .findAll();
   }

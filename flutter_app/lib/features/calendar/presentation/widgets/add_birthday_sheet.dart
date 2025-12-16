@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'package:intl/intl.dart';
 
 // Import switching sheets
@@ -32,9 +33,9 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
   final TextEditingController _descController = TextEditingController();
 
   // --- SAVE CALLBACK ---
-  void _handleSave() {
+  Task _handleSave() {
     // Placeholder for save logic (to be replaced by Riverpod/Repository call later)
-    Navigator.pop(context);
+    return Task(id: "id", title: "title");
   }
 
   @override
@@ -54,7 +55,7 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
       // Update local state when user selects a different type/color
       onTypeSelected: (type) => setState(() => _selectedType = type),
       onColorSelected: (color) => setState(() => _selectedColor = color),
-      onSave: _handleSave,
+      saveTemplate: _handleSave,
     );
 
     return Container(

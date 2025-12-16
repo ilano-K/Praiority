@@ -103,7 +103,7 @@ const TaskModelSchema = CollectionSchema(
     r'tags': PropertySchema(
       id: 16,
       name: r'tags',
-      type: IsarType.stringList,
+      type: IsarType.string,
     ),
     r'title': PropertySchema(
       id: 17,
@@ -173,11 +173,10 @@ int _taskModelEstimateSize(
   }
   bytesCount += 3 + object.reminderOffsets.length * 8;
   bytesCount += 3 + object.status.name.length * 3;
-  bytesCount += 3 + object.tags.length * 3;
   {
-    for (var i = 0; i < object.tags.length; i++) {
-      final value = object.tags[i];
-      bytesCount += value.length * 3;
+    final value = object.tags;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
     }
   }
   bytesCount += 3 + object.title.length * 3;
@@ -207,7 +206,7 @@ void _taskModelSerialize(
   writer.writeLongList(offsets[13], object.reminderOffsets);
   writer.writeDateTime(offsets[14], object.startTime);
   writer.writeString(offsets[15], object.status.name);
-  writer.writeStringList(offsets[16], object.tags);
+  writer.writeString(offsets[16], object.tags);
   writer.writeString(offsets[17], object.title);
   writer.writeString(offsets[18], object.type.name);
 }
@@ -221,7 +220,7 @@ TaskModel _taskModelDeserialize(
   final object = TaskModel();
   object.category =
       _TaskModelcategoryValueEnumMap[reader.readStringOrNull(offsets[0])] ??
-          TaskCategory.focus;
+          TaskCategory.easy;
   object.deadline = reader.readDateTimeOrNull(offsets[1]);
   object.description = reader.readStringOrNull(offsets[2]);
   object.durationMinutes = reader.readLongOrNull(offsets[3]);
@@ -242,7 +241,7 @@ TaskModel _taskModelDeserialize(
   object.status =
       _TaskModelstatusValueEnumMap[reader.readStringOrNull(offsets[15])] ??
           TaskStatus.unscheduled;
-  object.tags = reader.readStringList(offsets[16]) ?? [];
+  object.tags = reader.readStringOrNull(offsets[16]);
   object.title = reader.readString(offsets[17]);
   object.type =
       _TaskModeltypeValueEnumMap[reader.readStringOrNull(offsets[18])] ??
@@ -259,7 +258,7 @@ P _taskModelDeserializeProp<P>(
   switch (propertyId) {
     case 0:
       return (_TaskModelcategoryValueEnumMap[reader.readStringOrNull(offset)] ??
-          TaskCategory.focus) as P;
+          TaskCategory.easy) as P;
     case 1:
       return (reader.readDateTimeOrNull(offset)) as P;
     case 2:
@@ -293,7 +292,7 @@ P _taskModelDeserializeProp<P>(
       return (_TaskModelstatusValueEnumMap[reader.readStringOrNull(offset)] ??
           TaskStatus.unscheduled) as P;
     case 16:
-      return (reader.readStringList(offset) ?? []) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 17:
       return (reader.readString(offset)) as P;
     case 18:
@@ -305,16 +304,16 @@ P _taskModelDeserializeProp<P>(
 }
 
 const _TaskModelcategoryEnumValueMap = {
-  r'focus': r'focus',
-  r'light': r'light',
-  r'active': r'active',
-  r'unassigned': r'unassigned',
+  r'easy': r'easy',
+  r'average': r'average',
+  r'hard': r'hard',
+  r'none': r'none',
 };
 const _TaskModelcategoryValueEnumMap = {
-  r'focus': TaskCategory.focus,
-  r'light': TaskCategory.light,
-  r'active': TaskCategory.active,
-  r'unassigned': TaskCategory.unassigned,
+  r'easy': TaskCategory.easy,
+  r'average': TaskCategory.average,
+  r'hard': TaskCategory.hard,
+  r'none': TaskCategory.none,
 };
 const _TaskModelpriorityEnumValueMap = {
   'low': 0,
@@ -1960,8 +1959,24 @@ extension TaskModelQueryFilter
     });
   }
 
-  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> tagsElementEqualTo(
-    String value, {
+  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> tagsIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'tags',
+      ));
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> tagsIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'tags',
+      ));
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> tagsEqualTo(
+    String? value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -1973,9 +1988,8 @@ extension TaskModelQueryFilter
     });
   }
 
-  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition>
-      tagsElementGreaterThan(
-    String value, {
+  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> tagsGreaterThan(
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -1989,8 +2003,8 @@ extension TaskModelQueryFilter
     });
   }
 
-  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> tagsElementLessThan(
-    String value, {
+  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> tagsLessThan(
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -2004,9 +2018,9 @@ extension TaskModelQueryFilter
     });
   }
 
-  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> tagsElementBetween(
-    String lower,
-    String upper, {
+  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> tagsBetween(
+    String? lower,
+    String? upper, {
     bool includeLower = true,
     bool includeUpper = true,
     bool caseSensitive = true,
@@ -2023,8 +2037,7 @@ extension TaskModelQueryFilter
     });
   }
 
-  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition>
-      tagsElementStartsWith(
+  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> tagsStartsWith(
     String value, {
     bool caseSensitive = true,
   }) {
@@ -2037,7 +2050,7 @@ extension TaskModelQueryFilter
     });
   }
 
-  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> tagsElementEndsWith(
+  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> tagsEndsWith(
     String value, {
     bool caseSensitive = true,
   }) {
@@ -2050,7 +2063,7 @@ extension TaskModelQueryFilter
     });
   }
 
-  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> tagsElementContains(
+  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> tagsContains(
       String value,
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -2062,7 +2075,7 @@ extension TaskModelQueryFilter
     });
   }
 
-  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> tagsElementMatches(
+  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> tagsMatches(
       String pattern,
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -2074,8 +2087,7 @@ extension TaskModelQueryFilter
     });
   }
 
-  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition>
-      tagsElementIsEmpty() {
+  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> tagsIsEmpty() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'tags',
@@ -2084,98 +2096,12 @@ extension TaskModelQueryFilter
     });
   }
 
-  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition>
-      tagsElementIsNotEmpty() {
+  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> tagsIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'tags',
         value: '',
       ));
-    });
-  }
-
-  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> tagsLengthEqualTo(
-      int length) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'tags',
-        length,
-        true,
-        length,
-        true,
-      );
-    });
-  }
-
-  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> tagsIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'tags',
-        0,
-        true,
-        0,
-        true,
-      );
-    });
-  }
-
-  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> tagsIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'tags',
-        0,
-        false,
-        999999,
-        true,
-      );
-    });
-  }
-
-  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> tagsLengthLessThan(
-    int length, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'tags',
-        0,
-        true,
-        length,
-        include,
-      );
-    });
-  }
-
-  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition>
-      tagsLengthGreaterThan(
-    int length, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'tags',
-        length,
-        include,
-        999999,
-        true,
-      );
-    });
-  }
-
-  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> tagsLengthBetween(
-    int lower,
-    int upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'tags',
-        lower,
-        includeLower,
-        upper,
-        includeUpper,
-      );
     });
   }
 
@@ -2627,6 +2553,18 @@ extension TaskModelQuerySortBy on QueryBuilder<TaskModel, TaskModel, QSortBy> {
     });
   }
 
+  QueryBuilder<TaskModel, TaskModel, QAfterSortBy> sortByTags() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'tags', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterSortBy> sortByTagsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'tags', Sort.desc);
+    });
+  }
+
   QueryBuilder<TaskModel, TaskModel, QAfterSortBy> sortByTitle() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'title', Sort.asc);
@@ -2846,6 +2784,18 @@ extension TaskModelQuerySortThenBy
     });
   }
 
+  QueryBuilder<TaskModel, TaskModel, QAfterSortBy> thenByTags() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'tags', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterSortBy> thenByTagsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'tags', Sort.desc);
+    });
+  }
+
   QueryBuilder<TaskModel, TaskModel, QAfterSortBy> thenByTitle() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'title', Sort.asc);
@@ -2976,9 +2926,10 @@ extension TaskModelQueryWhereDistinct
     });
   }
 
-  QueryBuilder<TaskModel, TaskModel, QDistinct> distinctByTags() {
+  QueryBuilder<TaskModel, TaskModel, QDistinct> distinctByTags(
+      {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'tags');
+      return query.addDistinctBy(r'tags', caseSensitive: caseSensitive);
     });
   }
 
@@ -3102,7 +3053,7 @@ extension TaskModelQueryProperty
     });
   }
 
-  QueryBuilder<TaskModel, List<String>, QQueryOperations> tagsProperty() {
+  QueryBuilder<TaskModel, String?, QQueryOperations> tagsProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'tags');
     });

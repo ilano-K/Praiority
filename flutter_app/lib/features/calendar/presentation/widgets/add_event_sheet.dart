@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'package:intl/intl.dart';
 
 // Import your separate widgets
@@ -48,10 +49,10 @@ class _AddEventSheetState extends State<AddEventSheet> {
   final TextEditingController _descController = TextEditingController();
 
   // --- SAVE CALLBACK ---
-  void _handleSave() {
+  Task _handleSave() {
     // Current save logic: just close the sheet (no controller implementation yet)
     // When Riverpod is added, this method will contain the logic to call ref.read(calendarControllerProvider.notifier).addEvent(...)
-    Navigator.pop(context);
+    return Task(id: "1", title: "asdfasd");
   }
 
   @override
@@ -71,7 +72,7 @@ class _AddEventSheetState extends State<AddEventSheet> {
       // Update local state when user selects a different type/color
       onTypeSelected: (type) => setState(() => _selectedType = type),
       onColorSelected: (color) => setState(() => _selectedColor = color),
-      onSave: _handleSave,
+      saveTemplate: _handleSave,
     );
 
     return Container(

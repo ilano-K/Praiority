@@ -9,7 +9,7 @@ class Task extends Equatable{
   // Type and Category
   final TaskType type;
   final TaskCategory category;
-  final List<String> tags;
+  final String? tags;
 
   final String title; // change to a default name like task_1
   // optional fields
@@ -42,8 +42,8 @@ class Task extends Equatable{
     required this.id,
     required this.title,
     this.type = TaskType.task,
-    this.category = TaskCategory.unassigned,
-    this.tags = const [],
+    this.category = TaskCategory.none,
+    this.tags = "None",
     this.description,
     this.location,
     this.startTime,
@@ -59,12 +59,12 @@ class Task extends Equatable{
     this.status = TaskStatus.unscheduled,
     this.isSynced = false,
   });
-  
+
   factory Task.create({
     required String title,
     TaskType type = TaskType.task,
-    TaskCategory category = TaskCategory.unassigned,
-    List<String> tags = const [],
+    TaskCategory category = TaskCategory.none,
+    String? tags,
     String? description,
     String? location,
     DateTime? startTime,
@@ -105,7 +105,7 @@ class Task extends Equatable{
     String? id,
     TaskType? type,
     TaskCategory? category,
-    List<String>? tags,
+    String? tags,
     String? title,
     String? description,
     String? location,
@@ -169,6 +169,4 @@ class Task extends Equatable{
       ];
   
 }
-
-
 

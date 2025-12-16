@@ -19,7 +19,7 @@ class TaskModel {
   @Enumerated(EnumType.name)
   late TaskCategory category;
 
-  late List<String> tags;
+  late String? tags;
 
   late String title;
 
