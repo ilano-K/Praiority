@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
+import 'package:flutter_app/features/calendar/domain/entities/task_tags.dart';
+import 'package:flutter_app/features/calendar/presentation/providers/calendar_providers.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/date_picker.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/pick_time.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 // Import your separate widgets
@@ -18,14 +21,14 @@ import 'add_header_sheet.dart'; // Assuming the file is named '_add_sheet_header
 import 'add_event_sheet.dart'; 
 import 'add_birthday_sheet.dart'; 
 
-class AddTaskSheet extends StatefulWidget {
+class AddTaskSheet extends ConsumerStatefulWidget {
   const AddTaskSheet({super.key});
 
   @override
-  State<AddTaskSheet> createState() => _AddTaskSheetState();
+  ConsumerState<AddTaskSheet> createState() => _AddTaskSheetState();
 }
 
-class _AddTaskSheetState extends State<AddTaskSheet> {
+class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
   // --- STATE VARIABLES ---
   String _selectedType = 'Task'; 
   bool _isSmartScheduleEnabled = true;
@@ -39,7 +42,18 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
   CalendarColor _selectedColor = appEventColors[0];
 
   // 1. MASTER TAG LIST
-  List<String> _tagsList = ["Schoolwork", "Office", "Chore"];// i need to fix this
+  List<String> _tagsList = [];
+  @override
+  void initState() {
+    super.initState();
+
+    // Fetch tags from repository
+    ref.read(calendarRepositoryProvider).getAllTagNames().then((tags) {
+      setState(() {
+        _tagsList = tags.isEmpty ? ["None"] : tags;
+      });
+    });
+  }
   
   // Date/Time
   DateTime _startDate = DateTime.now();
@@ -98,6 +112,8 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
         _endTime.minute,
     );
 
+    TaskTags? tag = (_tag.trim().isEmpty || _tag == "None") ? null : TaskTags(name: _tag);
+
     final template = Task.create(
       title: _titleController.text.trim().isEmpty
         ? "New Task"
@@ -109,7 +125,8 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
       endTime: endTime,
       deadline: deadline,
       category: categoryMap[_category]!,
-      tags: _tag
+      tags: tag,
+      status: TaskStatus.scheduled
     );
 
     return template;

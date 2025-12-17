@@ -1,3 +1,4 @@
+import 'package:flutter_app/features/calendar/data/models/task_tags_model.dart';
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../features/calendar/data/models/task_model.dart';
@@ -11,7 +12,7 @@ class LocalDatabaseService {
 
     // open local database (isar)
     isar = await Isar.open(
-      [TaskModelSchema],
+      [TaskModelSchema, TaskTagsModelSchema],
       directory: appDir.path,
       inspector: true, // debug
       );

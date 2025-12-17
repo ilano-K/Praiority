@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:flutter_app/features/calendar/domain/entities/task_tags.dart';
 import 'package:uuid/uuid.dart';
 import 'enums.dart';
 
@@ -9,7 +10,7 @@ class Task extends Equatable{
   // Type and Category
   final TaskType type;
   final TaskCategory category;
-  final String? tags;
+  final TaskTags? tags;
 
   final String title; // change to a default name like task_1
   // optional fields
@@ -43,7 +44,7 @@ class Task extends Equatable{
     required this.title,
     this.type = TaskType.task,
     this.category = TaskCategory.none,
-    this.tags = "None",
+    this.tags,
     this.description,
     this.location,
     this.startTime,
@@ -64,7 +65,7 @@ class Task extends Equatable{
     required String title,
     TaskType type = TaskType.task,
     TaskCategory category = TaskCategory.none,
-    String? tags,
+    TaskTags? tags,
     String? description,
     String? location,
     DateTime? startTime,
@@ -105,7 +106,7 @@ class Task extends Equatable{
     String? id,
     TaskType? type,
     TaskCategory? category,
-    String? tags,
+    TaskTags? tags,
     String? title,
     String? description,
     String? location,

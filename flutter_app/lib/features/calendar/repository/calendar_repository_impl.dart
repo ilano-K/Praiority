@@ -13,8 +13,8 @@ class CalendarRepositoryImpl implements CalendarRepository{
 
   @override
   Future<void> saveAndUpdateTask(Task task) async {
-    final model = TaskModel.fromEntity(task);
-    await localDataSource.saveAndUpdateTask(model);
+    // final model = TaskModel.fromEntity(task);
+    await localDataSource.saveAndUpdateTask(task);
   }
 
   @override
@@ -89,6 +89,12 @@ class CalendarRepositoryImpl implements CalendarRepository{
   Future<List<Task>> getTasksWeek(DateTime date, {TaskCategory? category, TaskType? type, String? tag}) async{
     final models = await localDataSource.getTasksWeek(date, category: category, type: type, tag: tag);
     return models.map((model) => model.toEntity()).toList();
+  }
+
+  @override
+  Future<List<String>> getAllTagNames() async {
+    final tags = await localDataSource.getAllTagNames();
+    return tags.map((t) => t.name).toList();
   }
   
 }

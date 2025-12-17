@@ -1,8 +1,10 @@
+import 'package:flutter_app/features/calendar/data/models/task_tags_model.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
+import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import '../data/models/task_model.dart';
 
 abstract class CalendarLocalDataSource {
-  Future<void>saveAndUpdateTask(TaskModel task);
+  Future<void>saveAndUpdateTask(Task task);
   Future<void>deleteTask(String id);
 
   Future<List<TaskModel>> getTasksDay(DateTime date, {TaskStatus? status, TaskCategory? category, TaskType? type, String? tag});
@@ -13,5 +15,7 @@ abstract class CalendarLocalDataSource {
   Future<List<TaskModel>>getTasksByCategory(TaskCategory category);
   Future<List<TaskModel>>getTasksByType(TaskType type);
   Future<List<TaskModel>>getTasksByTags(String tags);
+
+  Future<List<TaskTagsModel>> getAllTagNames();
 }
 

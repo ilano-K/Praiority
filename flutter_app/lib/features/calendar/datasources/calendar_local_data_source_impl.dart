@@ -1,5 +1,7 @@
 import 'package:flutter_app/features/calendar/data/models/task_model.dart';
+import 'package:flutter_app/features/calendar/data/models/task_tags_model.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
+import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'calendar_local_data_source.dart';
 import 'package:isar/isar.dart';
 
@@ -10,17 +12,44 @@ class CalendarLocalDataSourceImpl implements CalendarLocalDataSource{
   CalendarLocalDataSourceImpl(this.isar);
 
   @override
-  Future<void> saveAndUpdateTask(TaskModel task) async{
-    await isar.writeTxn(() async{
+  // FIX: Change Parameter from TaskModel -> Task
+  Future<void> saveAndUpdateTask(Task task) async {
+    // 1. Create the Model from the Entity here
+    final taskModel = TaskModel.fromEntity(task);
+
+    await isar.writeTxn(() async {
+      // 2. Check if task exists to preserve the Isar ID
       final existingTask = await isar.taskModels
           .filter()
-          .originalIdEqualTo(task.originalId)
+          .originalIdEqualTo(task.id)
           .findFirst();
-      // update instead
-      if(existingTask != null)  {
-        task.id = existingTask.id;
+
+      if (existingTask != null) {
+        taskModel.id = existingTask.id;
       }
-      await isar.taskModels.put(task);
+
+      // 3. Save the Task Model first (so it gets an ID)
+      await isar.taskModels.put(taskModel);
+
+      // 4. Handle Tag Linking using the ENTITY data
+      // If the task has a tag name (and it's not a placeholder like 'None'),
+      // attempt to find an existing tag; if none exists, create it and link.
+      if (task.tags != null && task.tags!.name.trim().isNotEmpty && task.tags!.name != 'None') {
+        var tagModel = await isar.taskTagsModels
+            .filter()
+            .nameEqualTo(task.tags!.name)
+            .findFirst();
+
+        if (tagModel == null) {
+          tagModel = TaskTagsModel.fromEntity(task.tags!);
+          await isar.taskTagsModels.put(tagModel);
+        }
+
+        await taskModel.tags.load();
+        taskModel.tags.clear();
+        taskModel.tags.add(tagModel);
+        await taskModel.tags.save();
+      }
     });
   }
   
@@ -66,8 +95,8 @@ class CalendarLocalDataSourceImpl implements CalendarLocalDataSource{
       q = q.and().typeEqualTo(type);
     }
 
-    if (tag != null){
-      q = q.and().tagsEqualTo(tag);
+    if (tag != null) {
+      q = q.and().tags((t) => t.nameEqualTo(tag));
     }
     return await q.sortByStartTime().findAll();
   }
@@ -102,8 +131,8 @@ class CalendarLocalDataSourceImpl implements CalendarLocalDataSource{
       q = q.and().typeEqualTo(type);
     }
 
-    if (tag != null){
-      q = q.and().tagsEqualTo(tag);
+    if (tag != null) {
+      q = q.and().tags((t) => t.nameEqualTo(tag));
     }
     return await q.sortByStartTime().findAll();
   }
@@ -133,8 +162,8 @@ class CalendarLocalDataSourceImpl implements CalendarLocalDataSource{
       q = q.and().typeEqualTo(type);
     }
 
-    if (tag != null){
-      q = q.and().tagsEqualTo(tag);
+    if (tag != null) {
+      q = q.and().tags((t) => t.nameEqualTo(tag));
     }
     return await q.sortByStartTime().findAll();
   }
@@ -147,7 +176,7 @@ class CalendarLocalDataSourceImpl implements CalendarLocalDataSource{
   Future<List<TaskModel>>getTasksByTags(String tags) async {
     return await isar.taskModels
         .filter()
-        .tagsEqualTo(tags)
+        .tags((q) => q.nameEqualTo(tags, caseSensitive: false))
         .sortByStartTime()
         .findAll();
   }
@@ -182,8 +211,10 @@ class CalendarLocalDataSourceImpl implements CalendarLocalDataSource{
         .findAll();
   }
 
-  
-
-  // get tasks for today
+  // tags
+  @override
+  Future<List<TaskTagsModel>> getAllTagNames() async {
+    return await isar.taskTagsModels.where().findAll();
+  }
 
 }

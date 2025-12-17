@@ -19,5 +19,7 @@ abstract class CalendarRepository {
   Future<List<Task>>getTasksByType(TaskType type);
   Future<List<Task>>getTasksByTags(String tags);
 
+  Future<List<String>> getAllTagNames();
+
   
 }
