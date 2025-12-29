@@ -1,8 +1,12 @@
 // File: lib/features/calendar/presentation/widgets/add_event_sheet.dart
 // Purpose: Bottom sheet UI for creating calendar events (non-task items).
 import 'package:flutter/material.dart';
+import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
+import 'package:flutter_app/features/calendar/domain/entities/task_tags.dart';
+import 'package:flutter_app/features/calendar/presentation/providers/calendar_providers.dart';
 import 'package:flutter_app/features/calendar/presentation/utils/time_adjust.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 // Import your separate widgets
@@ -17,14 +21,14 @@ import 'add_header_sheet.dart'; // <--- NEW IMPORT
 import 'add_task_sheet.dart';
 import 'add_birthday_sheet.dart'; 
 
-class AddEventSheet extends StatefulWidget {
+class AddEventSheet extends ConsumerStatefulWidget {
   const AddEventSheet({super.key});
 
   @override
-  State<AddEventSheet> createState() => _AddEventSheetState();
+  ConsumerState<AddEventSheet> createState() => _AddEventSheetState();
 }
 
-class _AddEventSheetState extends State<AddEventSheet> {
+class _AddEventSheetState extends ConsumerState<AddEventSheet> {
   // --- STATE VARIABLES ---
   String _selectedType = 'Event'; 
   
@@ -32,10 +36,12 @@ class _AddEventSheetState extends State<AddEventSheet> {
   bool _isAllDay = false; // Toggles Date/Time display
   
   DateTime _startDate = DateTime.now();
-  TimeOfDay _startTime = const TimeOfDay(hour: 9, minute: 0);
+  TimeOfDay _startTime = TimeOfDay.now();
   
-  DateTime _endDate = DateTime.now().add(const Duration(hours: 1));
-  TimeOfDay _endTime = const TimeOfDay(hour: 10, minute: 0);
+  DateTime _endDate = DateTime.now();
+  TimeOfDay _endTime = TimeOfDay.fromDateTime(
+    DateTime.now().add(const Duration(hours: 1))
+  );
 
   String _repeat = "None";
   String _location = "None"; 
@@ -45,17 +51,61 @@ class _AddEventSheetState extends State<AddEventSheet> {
   CalendarColor _selectedColor = appEventColors[0];
 
   // MASTER TAG LIST (Persists new tags)
-  List<String> _tagsList = ["Schoolwork", "Office", "Chore"];
+  List<String> _tagsList = [];
+  @override
+  void initState() {
+    super.initState();
+
+    // Fetch tags from repository
+    ref.read(calendarRepositoryProvider).getAllTagNames().then((tags) {
+      setState(() {
+        _tagsList = tags.isEmpty ? ["None"] : tags;
+      });
+    });
+  }
 
   // Controllers
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
 
   // --- SAVE CALLBACK ---
-  Task _handleSave() {
-    // Current save logic: just close the sheet (no controller implementation yet)
-    // When Riverpod is added, this method will contain the logic to call ref.read(calendarControllerProvider.notifier).addEvent(...)
-    return Task(id: "1", title: "asdfasd");
+  Task createTaskSaveTemplate() {
+    //start time
+    //end time
+    //repeat
+    //location
+    //tags
+    DateTime startTime = DateTime(
+        _startDate.year,
+        _startDate.month,
+        _startDate.day,
+        _startTime.hour,
+        _startTime.minute,
+    );
+
+    DateTime endTime = DateTime(
+        _startDate.year,
+        _startDate.month,
+        _startDate.day,
+        _endTime.hour,
+        _endTime.minute,
+    );
+    TaskTags? tag = (_tag.trim().isEmpty || _tag == "None") ? null : TaskTags(name: _tag);
+    
+    final template = Task.create(
+      type: TaskType.event,
+      title: _titleController.text.trim().isEmpty
+        ? "New Task"
+        : _titleController.text.trim(),
+      description: _descController.text.trim(),
+      startTime: startTime,
+      endTime: endTime,
+      tags: tag,
+      status: TaskStatus.scheduled
+    );
+    // location and repeat to follow.
+
+    return template;
   }
 
   @override
@@ -75,7 +125,7 @@ class _AddEventSheetState extends State<AddEventSheet> {
       // Update local state when user selects a different type/color
       onTypeSelected: (type) => setState(() => _selectedType = type),
       onColorSelected: (color) => setState(() => _selectedColor = color),
-      saveTemplate: _handleSave,
+      saveTemplate: createTaskSaveTemplate,
     );
 
     return Container(

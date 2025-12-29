@@ -121,6 +121,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
     TaskTags? tag = (_tag.trim().isEmpty || _tag == "None") ? null : TaskTags(name: _tag);
 
     final template = Task.create(
+      type: TaskType.task,
       title: _titleController.text.trim().isEmpty
         ? "New Task"
         : _titleController.text.trim(),
