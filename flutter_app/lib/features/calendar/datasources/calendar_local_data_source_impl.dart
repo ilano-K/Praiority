@@ -1,3 +1,6 @@
+// File: lib/features/calendar/datasources/calendar_local_data_source_impl.dart
+// Purpose: Isar-backed implementation of CalendarLocalDataSource.
+// Handles persisting, updating, deleting tasks and linking tag models.
 import 'package:flutter_app/features/calendar/data/models/task_model.dart';
 import 'package:flutter_app/features/calendar/data/models/task_tags_model.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';

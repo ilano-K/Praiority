@@ -1,3 +1,5 @@
+// File: lib/core/services/theme/themes.dart
+// Purpose: Defines the light and dark ThemeData used across the app.
 import 'package:flutter/material.dart';
 
 ThemeData lightMode = ThemeData(

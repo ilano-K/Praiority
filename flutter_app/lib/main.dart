@@ -1,3 +1,5 @@
+// File: lib/main.dart
+// Purpose: Application entry point; initializes services and runs the app.
 import 'package:flutter/material.dart';
 import 'package:flutter_app/core/services/theme/theme_provider.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';

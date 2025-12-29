@@ -1,3 +1,6 @@
+// File: lib/core/services/theme/button_test.dart
+// Purpose: Theme-related widget tests for buttons.
+import 'package:flutter/material.dart';
 import 'package:flutter/material.dart';
 
 class ButtonTest extends StatelessWidget {

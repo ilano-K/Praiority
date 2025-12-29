@@ -1,3 +1,6 @@
+// File: lib/core/services/theme/theme_test.dart
+// Purpose: Tests for theme switching and appearance.
+
 import 'package:flutter/material.dart';
 import 'package:flutter_app/core/services/theme/button_test.dart';
 import 'package:flutter_app/core/services/theme/cell.dart';

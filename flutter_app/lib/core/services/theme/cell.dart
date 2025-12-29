@@ -1,3 +1,5 @@
+// File: lib/core/services/theme/cell.dart
+// Purpose: Small reusable container widget used by theme examples/tests.
 import 'package:flutter/material.dart';
 
 class MyCell extends StatelessWidget{

@@ -1,4 +1,7 @@
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
+// File: lib/features/calendar/repository/calendar_repository.dart
+// Purpose: Repository contract describing domain-facing data operations
+// for calendar tasks (business-facing interface).
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 
 abstract class CalendarRepository {

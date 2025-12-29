@@ -1,3 +1,5 @@
+// File: lib/features/calendar/presentation/widgets/add_event_sheet.dart
+// Purpose: Bottom sheet UI for creating calendar events (non-task items).
 import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'package:intl/intl.dart';

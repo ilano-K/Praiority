@@ -1,3 +1,5 @@
+// File: lib/features/calendar/datasources/calendar_local_data_source.dart
+// Purpose: Abstract contract for local calendar data operations (CRUD + queries).
 import 'package:flutter_app/features/calendar/data/models/task_tags_model.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';

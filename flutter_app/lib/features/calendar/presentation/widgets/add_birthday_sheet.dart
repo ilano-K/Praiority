@@ -1,3 +1,5 @@
+// File: lib/features/calendar/presentation/widgets/add_birthday_sheet.dart
+// Purpose: UI sheet for adding birthday events; simplifies pre-filled fields.
 import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'package:intl/intl.dart';
