@@ -1,3 +1,6 @@
+// File: lib/features/calendar/presentation/widgets/add_task_sheet.dart
+// Purpose: Bottom sheet for creating/editing tasks with fields for title,
+// time, tags, and category. Comments added only for clarity.
 import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
