@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'package:flutter_app/features/calendar/presentation/controllers/calendar_controller_providers.dart';
 import 'package:flutter_app/features/calendar/presentation/services/save_task.dart';
+import 'package:flutter_app/features/calendar/presentation/utils/date_only.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 
@@ -63,7 +64,7 @@ class AddSheetHeader extends ConsumerWidget {
             ElevatedButton(
               onPressed: () async {
                 final task = data.saveTemplate();
-                final taskDay = DateTime(task.startTime!.year, task.startTime!.month, task.startTime!.day);
+                final taskDay = dateOnly(task.startTime!);
                 await saveTask(ref, task);
                 ref.invalidate(calendarControllerProvider(taskDay));
                 Navigator.pop(context);

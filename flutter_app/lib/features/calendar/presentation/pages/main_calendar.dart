@@ -2,6 +2,7 @@
 // Purpose: Main calendar page UI that displays day/week/month views and tasks.
 import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/presentation/controllers/calendar_controller_providers.dart';
+import 'package:flutter_app/features/calendar/presentation/utils/date_only.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'dart:math' as math; 
@@ -27,7 +28,7 @@ class MainCalendar extends ConsumerStatefulWidget {
 }
 
 class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerProviderStateMixin {
-  DateTime _selectedDate = DateTime.now();
+  DateTime _selectedDate = dateOnly(DateTime.now());
 
   //THIS IS THE ONLY RED LINE
   final CalendarController _calendarController = CalendarController();
