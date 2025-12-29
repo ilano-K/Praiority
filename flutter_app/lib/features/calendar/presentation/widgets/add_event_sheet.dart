@@ -2,6 +2,7 @@
 // Purpose: Bottom sheet UI for creating calendar events (non-task items).
 import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
+import 'package:flutter_app/features/calendar/presentation/utils/time_adjust.dart';
 import 'package:intl/intl.dart';
 
 // Import your separate widgets
@@ -133,8 +134,30 @@ class _AddEventSheetState extends State<AddEventSheet> {
                       value: DateFormat('MMMM d, y').format(_startDate),
                       trailing: _startTime.format(context), 
                       colors: colorScheme,
-                      onTapValue: () => _pickDate(context, _startDate, (date) => setState(() => _startDate = date)),
-                      onTapTrailing: () => _pickTime(context, _startTime, (time) => setState(() => _startTime = time)),
+                      onTapValue: () => _pickDate(context, _startDate, (date) {
+                        // When start date changes, ensure end datetime is not
+                        // before the new start. Preserve end time if possible.
+                        setState(() {
+                          _startDate = date;
+                          final reference = DateTime(date.year, date.month, date.day, _endTime.hour, _endTime.minute);
+                          final currentEnd = DateTime(_endDate.year, _endDate.month, _endDate.day, _endTime.hour, _endTime.minute);
+                          final adjusted = ensureNotBefore(currentEnd, reference, bumpIfBefore: const Duration(hours: 0));
+                          _endDate = DateTime(adjusted.year, adjusted.month, adjusted.day);
+                          _endTime = TimeOfDay(hour: adjusted.hour, minute: adjusted.minute);
+                        });
+                      }),
+                      onTapTrailing: () => _pickTime(context, _startTime, (time) {
+                        // When start time changes, ensure end is after start;
+                        // if not, bump end by 1 hour after start.
+                        setState(() {
+                          _startTime = time;
+                          final newStart = DateTime(_startDate.year, _startDate.month, _startDate.day, _startTime.hour, _startTime.minute);
+                          final currentEnd = DateTime(_endDate.year, _endDate.month, _endDate.day, _endTime.hour, _endTime.minute);
+                          final adjusted = ensureNotBefore(currentEnd, newStart, bumpIfBefore: const Duration(hours: 1));
+                          _endDate = DateTime(adjusted.year, adjusted.month, adjusted.day);
+                          _endTime = TimeOfDay(hour: adjusted.hour, minute: adjusted.minute);
+                        });
+                      }),
                     ),
                     _buildInteractiveRow(
                       label: "To", 
@@ -237,10 +260,10 @@ class _AddEventSheetState extends State<AddEventSheet> {
               dialHandColor: colorScheme.primary,
               dialTextColor: colorScheme.onSurface,
               dialBackgroundColor: colorScheme.surfaceVariant,
-              dayPeriodTextColor: WidgetStateColor.resolveWith((states) =>
-                  states.contains(WidgetState.selected) ? Colors.white : colorScheme.onSurface),
-              dayPeriodColor: WidgetStateColor.resolveWith((states) =>
-                  states.contains(WidgetState.selected) ? colorScheme.primary : Colors.transparent),
+                dayPeriodTextColor: MaterialStateColor.resolveWith((states) =>
+                  states.contains(MaterialState.selected) ? Colors.white : colorScheme.onSurface),
+                dayPeriodColor: MaterialStateColor.resolveWith((states) =>
+                  states.contains(MaterialState.selected) ? colorScheme.primary : Colors.transparent),
               dayPeriodBorderSide: BorderSide(color: colorScheme.primary),
             ),
             textButtonTheme: TextButtonThemeData(

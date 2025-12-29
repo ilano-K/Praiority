@@ -11,6 +11,7 @@ import 'package:flutter_app/features/calendar/presentation/providers/calendar_pr
 import 'package:flutter_app/features/calendar/presentation/widgets/date_picker.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/pick_time.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../utils/time_adjust.dart';
 import 'package:intl/intl.dart';
 
 // Import your separate widgets
@@ -231,18 +232,71 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                     trailing: _startTime.format(context),
                     colors: colorScheme,
                     onTapValue: () async {
+                      // Pick a new start date and ensure the deadline date/time
+                      // does not end up before the new start. Use the shared
+                      // helper so behavior is consistent across sheets.
                       final picked = await pickDate(
                         context,
                         initialDate: _startDate,
                       );
                       if (picked != null) {
-                        setState(() => _startDate = picked);
+                        setState(() {
+                          _startDate = picked;
+
+                          // Compose reference = start date but at the current
+                          // deadline time; we want the deadline to be at least
+                          // this DateTime (preserving its time-of-day if possible).
+                          final reference = DateTime(
+                            picked.year,
+                            picked.month,
+                            picked.day,
+                            _deadlineTime.hour,
+                            _deadlineTime.minute,
+                          );
+
+                          final currentDeadline = DateTime(
+                            _deadlineDate.year,
+                            _deadlineDate.month,
+                            _deadlineDate.day,
+                            _deadlineTime.hour,
+                            _deadlineTime.minute,
+                          );
+
+                          final adjusted = ensureNotBefore(currentDeadline, reference);
+                          _deadlineDate = DateTime(adjusted.year, adjusted.month, adjusted.day);
+                          _deadlineTime = TimeOfDay(hour: adjusted.hour, minute: adjusted.minute);
+                        });
                       }
                     },
                     onTapTrailing: () async {
+                      // Pick a new start time and ensure the deadline datetime
+                      // remains after the new start; if it would be before,
+                      // bump the deadline by one hour after the start.
                       final picked = await pickTime(context);
                       if (picked != null) {
-                        setState(() => _startTime = picked);
+                        setState(() {
+                          _startTime = picked;
+
+                          final newStartDT = DateTime(
+                            _startDate.year,
+                            _startDate.month,
+                            _startDate.day,
+                            _startTime.hour,
+                            _startTime.minute,
+                          );
+
+                          final currentDeadlineDT = DateTime(
+                            _deadlineDate.year,
+                            _deadlineDate.month,
+                            _deadlineDate.day,
+                            _deadlineTime.hour,
+                            _deadlineTime.minute,
+                          );
+
+                          final adjusted = ensureNotBefore(currentDeadlineDT, newStartDT, bumpIfBefore: const Duration(hours: 1));
+                          _deadlineDate = DateTime(adjusted.year, adjusted.month, adjusted.day);
+                          _deadlineTime = TimeOfDay(hour: adjusted.hour, minute: adjusted.minute);
+                        });
                       }
                     },
                   ),
