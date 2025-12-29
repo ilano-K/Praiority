@@ -1,3 +1,5 @@
+// File: lib/features/calendar/presentation/widgets/tag_selector.dart
+// Purpose: Widget that lets users pick or create tags for tasks/events.
 import 'package:flutter/material.dart';
 
 class TagSelector extends StatefulWidget {

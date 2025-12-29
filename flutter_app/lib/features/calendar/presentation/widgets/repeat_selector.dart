@@ -1,3 +1,5 @@
+// File: lib/features/calendar/presentation/widgets/repeat_selector.dart
+// Purpose: UI control to select recurring patterns (daily/weekly/etc.).
 import 'package:flutter/material.dart';
 
 class RepeatSelector extends StatelessWidget {

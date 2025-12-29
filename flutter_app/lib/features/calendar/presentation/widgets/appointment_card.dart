@@ -1,3 +1,5 @@
+// File: lib/features/calendar/presentation/widgets/appointment_card.dart
+// Purpose: Small card widget that displays a single appointment/task in lists.
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 

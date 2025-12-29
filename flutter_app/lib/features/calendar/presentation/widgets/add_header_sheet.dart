@@ -1,3 +1,5 @@
+// File: lib/features/calendar/presentation/widgets/add_header_sheet.dart
+// Purpose: Header UI for add/edit sheets, shows title and actions.
 import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'package:flutter_app/features/calendar/presentation/controllers/calendar_controller_providers.dart';

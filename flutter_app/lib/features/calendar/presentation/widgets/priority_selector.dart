@@ -1,3 +1,5 @@
+// File: lib/features/calendar/presentation/widgets/priority_selector.dart
+// Purpose: UI widget for choosing a task's priority level (low/med/high).
 import 'package:flutter/material.dart';
 
 class PrioritySelector extends StatelessWidget {
