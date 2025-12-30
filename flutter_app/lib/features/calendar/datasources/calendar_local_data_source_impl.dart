@@ -83,7 +83,7 @@ class CalendarLocalDataSourceImpl implements CalendarLocalDataSource{
     final startOfDay = DateTime(date.year, date.month, date.day);
     final endOfDay = startOfDay.add(const Duration(days: 1)).subtract(const Duration(seconds: 1));
 
-    var q = isar.taskModels.filter().startTimeBetween(startOfDay, endOfDay);
+    var q = isar.taskModels.filter().group((g) => g.startTimeBetween(startOfDay, endOfDay).or().recurrenceRuleIsNotNull());
 
     // optional filters
     if (status != null){
@@ -124,7 +124,7 @@ class CalendarLocalDataSourceImpl implements CalendarLocalDataSource{
         .add(const Duration(days: 7))
         .subtract(const Duration(seconds: 1));
 
-    var q = isar.taskModels.filter().startTimeBetween(startOfWeek, endOfWeek);
+    var q = isar.taskModels.filter().group((g) => g.startTimeBetween(startOfWeek, endOfWeek).or().recurrenceRuleIsNotNull());
 
     if (category != null){
       q = q.and().categoryEqualTo(category);
@@ -155,7 +155,7 @@ class CalendarLocalDataSourceImpl implements CalendarLocalDataSource{
     final startOfNextMonth = DateTime(date.year, date.month + 1, 1);
     final endOfMonth = startOfNextMonth.subtract(const Duration(seconds: 1));
     
-    var q = isar.taskModels.filter().startTimeBetween(startOfMonth, endOfMonth);
+    var q = isar.taskModels.filter().group((g) => g.startTimeBetween(startOfMonth, endOfMonth).or().recurrenceRuleIsNotNull());
 
     if (category != null){
       q = q.and().categoryEqualTo(category);

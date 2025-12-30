@@ -5,6 +5,7 @@ import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task_tags.dart';
 import 'package:flutter_app/features/calendar/presentation/providers/calendar_providers.dart';
+import 'package:flutter_app/features/calendar/presentation/utils/repeat_to_rrule.dart';
 import 'package:flutter_app/features/calendar/presentation/utils/time_adjust.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -84,14 +85,14 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
     );
 
     DateTime endTime = DateTime(
-        _startDate.year,
-        _startDate.month,
-        _startDate.day,
+        _endDate.year,
+        _endDate.month,
+        _endDate.day,
         _endTime.hour,
         _endTime.minute,
     );
     TaskTags? tag = (_tag.trim().isEmpty || _tag == "None") ? null : TaskTags(name: _tag);
-    
+    print(repeatToRRule(_repeat));
     final template = Task.create(
       type: TaskType.event,
       title: _titleController.text.trim().isEmpty
@@ -101,7 +102,8 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
       startTime: startTime,
       endTime: endTime,
       tags: tag,
-      status: TaskStatus.scheduled
+      status: TaskStatus.scheduled,
+      recurrenceRule: repeatToRRule(_repeat)
     );
     // location and repeat to follow.
 

@@ -387,6 +387,7 @@ class _TaskDataSource extends CalendarDataSource {
         // or let AppointmentCard handle it with transparent.
         color: Colors.transparent, 
         isAllDay: task.isAllDay,
+        recurrenceRule: task.recurrenceRule
       );
     }).toList();
   }
