@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'package:flutter_app/features/calendar/presentation/providers/calendar_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_app/features/calendar/presentation/utils/task_utils.dart';
 
 final calendarControllerProvider = AsyncNotifierProvider.autoDispose.family<CalendarStateController, List<Task>, DateTime>(CalendarStateController.new);
 
@@ -17,9 +19,29 @@ class CalendarStateController extends AutoDisposeFamilyAsyncNotifier<List<Task>,
     state = const AsyncValue.loading();
     final repository = ref.read(calendarRepositoryProvider);
     state = await AsyncValue.guard(() async {
-      //add conflict logic + exception to catch.
+      debugPrint('addTask: called with task=${task.id}');
 
-      await repository.saveAndUpdateTask(task);
+      final tasksForDay = await repository.getTasksDay(arg);
+      debugPrint('addTask: after getTasksDay, count=${tasksForDay.length}');
+
+      try {
+        if (TaskUtils.taskConflict(tasksForDay, DateTime.now(), task)){
+          debugPrint('addTask: task is conflicting with another task');
+        }
+        if (!TaskUtils.taskConflict(tasksForDay, DateTime.now(), task)){
+          debugPrint('addTask: task is not conflicting with another task');
+        }
+      } catch(e){
+          debugPrint("failed to check conflict. ERROR: $e");
+      }
+
+      try {
+        await repository.saveAndUpdateTask(task);
+        debugPrint('addTask: save complete.');
+      } catch (e, st) {
+        debugPrint('addTask: save failed: $e\n$st');
+        rethrow;
+      }
 
       //update week and month views
       ref.invalidate(monthControllerProvider);

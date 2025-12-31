@@ -42,6 +42,7 @@ dependencies:
   path_provider: ^2.1.5
   provider:
   syncfusion_flutter_calendar: ^31.2.15
+  rrule: ^0.2.10
 
 dev_dependencies:
   flutter_test:

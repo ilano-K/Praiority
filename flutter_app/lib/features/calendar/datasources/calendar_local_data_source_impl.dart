@@ -1,6 +1,7 @@
 // File: lib/features/calendar/datasources/calendar_local_data_source_impl.dart
 // Purpose: Isar-backed implementation of CalendarLocalDataSource.
 // Handles persisting, updating, deleting tasks and linking tag models.
+import 'package:flutter/foundation.dart';
 import 'package:flutter_app/features/calendar/data/models/task_model.dart';
 import 'package:flutter_app/features/calendar/data/models/task_tags_model.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
@@ -17,43 +18,55 @@ class CalendarLocalDataSourceImpl implements CalendarLocalDataSource{
   @override
   // FIX: Change Parameter from TaskModel -> Task
   Future<void> saveAndUpdateTask(Task task) async {
-    // 1. Create the Model from the Entity here
-    final taskModel = TaskModel.fromEntity(task);
+    debugPrint('saveAndUpdateTask: start originalId=${task.id}');
+    try {
+      // 1. Create the Model from the Entity here
+      final taskModel = TaskModel.fromEntity(task);
 
-    await isar.writeTxn(() async {
-      // 2. Check if task exists to preserve the Isar ID
-      final existingTask = await isar.taskModels
-          .filter()
-          .originalIdEqualTo(task.id)
-          .findFirst();
-
-      if (existingTask != null) {
-        taskModel.id = existingTask.id;
-      }
-
-      // 3. Save the Task Model first (so it gets an ID)
-      await isar.taskModels.put(taskModel);
-
-      // 4. Handle Tag Linking using the ENTITY data
-      // If the task has a tag name (and it's not a placeholder like 'None'),
-      // attempt to find an existing tag; if none exists, create it and link.
-      if (task.tags != null && task.tags!.name.trim().isNotEmpty && task.tags!.name != 'None') {
-        var tagModel = await isar.taskTagsModels
+      await isar.writeTxn(() async {
+        debugPrint('saveAndUpdateTask: in txn - checking existing task');
+        // 2. Check if task exists to preserve the Isar ID
+        final existingTask = await isar.taskModels
             .filter()
-            .nameEqualTo(task.tags!.name)
+            .originalIdEqualTo(task.id)
             .findFirst();
 
-        if (tagModel == null) {
-          tagModel = TaskTagsModel.fromEntity(task.tags!);
-          await isar.taskTagsModels.put(tagModel);
+        debugPrint('saveAndUpdateTask: existingTask=${existingTask?.id}');
+
+        if (existingTask != null) {
+          taskModel.id = existingTask.id;
         }
 
-        await taskModel.tags.load();
-        taskModel.tags.clear();
-        taskModel.tags.add(tagModel);
-        await taskModel.tags.save();
-      }
-    });
+        // 3. Save the Task Model first (so it gets an ID)
+        await isar.taskModels.put(taskModel);
+        debugPrint('saveAndUpdateTask: put taskModel id=${taskModel.id}');
+
+        // 4. Handle Tag Linking using the ENTITY data
+        if (task.tags != null && task.tags!.name.trim().isNotEmpty && task.tags!.name != 'None') {
+          var tagModel = await isar.taskTagsModels
+              .filter()
+              .nameEqualTo(task.tags!.name)
+              .findFirst();
+
+          if (tagModel == null) {
+            tagModel = TaskTagsModel.fromEntity(task.tags!);
+            await isar.taskTagsModels.put(tagModel);
+            debugPrint('saveAndUpdateTask: created tagModel id=${tagModel.id}');
+          }
+
+          await taskModel.tags.load();
+          taskModel.tags.clear();
+          taskModel.tags.add(tagModel);
+          await taskModel.tags.save();
+          debugPrint('saveAndUpdateTask: linked tag ${tagModel.name} to taskModel');
+        }
+      });
+
+      debugPrint('saveAndUpdateTask: txn complete for originalId=${task.id}');
+    } catch (e, st) {
+      debugPrint('saveAndUpdateTask: ERROR $e\n$st');
+      rethrow;
+    }
   }
   
   @override

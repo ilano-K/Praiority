@@ -7,7 +7,7 @@ import 'package:flutter_app/features/calendar/datasources/calendar_local_data_so
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'package:flutter_app/features/calendar/repository/calendar_repository.dart';
-import 'package:flutter_app/core/utils/task_utils.dart';
+import 'package:flutter_app/features/calendar/presentation/utils/task_utils.dart';
 
 class CalendarRepositoryImpl implements CalendarRepository{
   final CalendarLocalDataSource localDataSource;
@@ -23,20 +23,6 @@ class CalendarRepositoryImpl implements CalendarRepository{
   @override
   Future<void> deleteTask(String id) async {
     await localDataSource.deleteTask(id);
-  }
-
-  @override
-  Future<bool> hasConflict(Task taskToSchedule) async {
-    final tasksToday = await getTasksDay(DateTime.now(), status: TaskStatus.scheduled);
-
-    for(final task in tasksToday){
-      bool conflict = TaskUtils.taskConflict(task, taskToSchedule);
-
-      if(conflict){
-        return true;
-      }
-    }
-    return false;
   }
 
   @override
