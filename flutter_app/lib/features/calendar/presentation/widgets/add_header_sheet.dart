@@ -1,6 +1,7 @@
 // File: lib/features/calendar/presentation/widgets/add_header_sheet.dart
 // Purpose: Header UI for add/edit sheets, shows title and actions.
 import 'package:flutter/material.dart';
+import 'package:flutter_app/core/errors/task_conflict_exception.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'package:flutter_app/features/calendar/presentation/controllers/calendar_controller_providers.dart';
 import 'package:flutter_app/features/calendar/presentation/services/save_task.dart';
@@ -65,9 +66,24 @@ class AddSheetHeader extends ConsumerWidget {
               onPressed: () async {
                 final task = data.saveTemplate();
                 final taskDay = dateOnly(task.startTime!);
-                await saveTask(ref, task);
-                ref.invalidate(calendarControllerProvider(taskDay));
-                Navigator.pop(context);
+                try {
+                    await saveTask(ref, task);
+
+                    // only runs if NO conflict
+                    ref.invalidate(calendarControllerProvider(taskDay));
+                    Navigator.pop(context);
+                  } on TaskConflictException {
+                    // Close the sheet first, then show a SnackBar from the
+                    // captured ScaffoldMessenger so the SnackBar is visible
+                    // above the app (bottom sheet would otherwise cover it).
+                    final messenger = ScaffoldMessenger.of(context);
+                    Navigator.pop(context);
+                    messenger.showSnackBar(
+                      const SnackBar(
+                        content: Text('This task conflicts with another task'),
+                      ),
+                    );
+                  }
                 }, // Use the provided save callback
               style: ElevatedButton.styleFrom(
                 backgroundColor: colorScheme.primary,

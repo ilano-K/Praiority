@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_app/core/errors/task_conflict_exception.dart';
 
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'package:flutter_app/features/calendar/presentation/providers/calendar_providers.dart';
@@ -18,34 +19,23 @@ class CalendarStateController extends AutoDisposeFamilyAsyncNotifier<List<Task>,
   Future<void>addTask(Task task) async {
     state = const AsyncValue.loading();
     final repository = ref.read(calendarRepositoryProvider);
+
+    // Get tasks for the day first and check for conflicts before
+    // entering AsyncValue.guard so we can throw the specific
+    // TaskConflictException and let upstream UI handle it.
+    final tasksForDay = await repository.getTasksDay(arg);
+    if (TaskUtils.taskConflict(tasksForDay, DateTime.now(), task)) {
+      throw TaskConflictException();
+    }
+
     state = await AsyncValue.guard(() async {
-      debugPrint('addTask: called with task=${task.id}');
-
-      final tasksForDay = await repository.getTasksDay(arg);
-      debugPrint('addTask: after getTasksDay, count=${tasksForDay.length}');
-
-      try {
-        if (TaskUtils.taskConflict(tasksForDay, DateTime.now(), task)){
-          debugPrint('addTask: task is conflicting with another task');
-        }
-        if (!TaskUtils.taskConflict(tasksForDay, DateTime.now(), task)){
-          debugPrint('addTask: task is not conflicting with another task');
-        }
-      } catch(e){
-          debugPrint("failed to check conflict. ERROR: $e");
-      }
-
-      try {
-        await repository.saveAndUpdateTask(task);
-        debugPrint('addTask: save complete.');
-      } catch (e, st) {
-        debugPrint('addTask: save failed: $e\n$st');
-        rethrow;
-      }
+      //save the task
+      await repository.saveAndUpdateTask(task);
 
       //update week and month views
       ref.invalidate(monthControllerProvider);
       ref.invalidate(weekControllerProvider);
+
       return repository.getTasksDay(arg);
     });
   }
