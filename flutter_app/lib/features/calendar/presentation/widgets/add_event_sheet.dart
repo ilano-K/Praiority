@@ -6,6 +6,7 @@ import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task_tags.dart';
 import 'package:flutter_app/features/calendar/presentation/providers/calendar_providers.dart';
 import 'package:flutter_app/features/calendar/presentation/utils/repeat_to_rrule.dart';
+import 'package:flutter_app/features/calendar/presentation/utils/task_utils.dart';
 import 'package:flutter_app/features/calendar/presentation/utils/time_adjust.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -71,26 +72,23 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
 
   // --- SAVE CALLBACK ---
   Task createTaskSaveTemplate() {
-    //start time
-    //end time
-    //repeat
-    //location
-    //tags
-    DateTime startTime = DateTime(
-        _startDate.year,
-        _startDate.month,
-        _startDate.day,
-        _startTime.hour,
-        _startTime.minute,
-    );
+    DateTime? startTime;
+    DateTime? endTime;
 
-    DateTime endTime = DateTime(
-        _endDate.year,
-        _endDate.month,
-        _endDate.day,
-        _endTime.hour,
-        _endTime.minute,
-    );
+    if(_isAllDay){
+      startTime = TaskUtils.startOfDay(_startDate);
+      endTime = TaskUtils.endOfDay(_startDate);
+    } else {
+      startTime = DateTime(
+        _startDate.year,_startDate.month,_startDate.day,
+        _startTime.hour,_startTime.minute,
+      );
+      endTime = DateTime(
+        _endDate.year,_endDate.month,_endDate.day,
+        _endTime.hour,_endTime.minute,
+      );
+    }
+  
     TaskTags? tag = (_tag.trim().isEmpty || _tag == "None") ? null : TaskTags(name: _tag);
     print(repeatToRRule(_repeat));
     final template = Task.create(
@@ -101,6 +99,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
       description: _descController.text.trim(),
       startTime: startTime,
       endTime: endTime,
+      isAllDay: _isAllDay,
       tags: tag,
       status: TaskStatus.scheduled,
       recurrenceRule: repeatToRRule(_repeat)
