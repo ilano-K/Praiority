@@ -73,9 +73,7 @@ class AddSheetHeader extends ConsumerWidget {
                     ref.invalidate(calendarControllerProvider(taskDay));
                     Navigator.pop(context);
                   } on TaskConflictException {
-                    // Close the sheet first, then show a SnackBar from the
-                    // captured ScaffoldMessenger so the SnackBar is visible
-                    // above the app (bottom sheet would otherwise cover it).
+                    // TEMPORARY ONLY 
                     final messenger = ScaffoldMessenger.of(context);
                     Navigator.pop(context);
                     messenger.showSnackBar(

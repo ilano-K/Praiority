@@ -64,20 +64,35 @@ class CalendarRepositoryImpl implements CalendarRepository{
 
   @override
   Future<List<Task>> getTasksDay(DateTime date, {TaskStatus?status, TaskCategory? category, TaskType? type, String? tag}) async {
+    final startDay = TaskUtils.startOfDay(date);
+    final endDay = TaskUtils.endOfDay(date);
     final models = await localDataSource.getTasksDay(date, category: category, type: type, tag: tag);
-    return models.map((model) => model.toEntity()).toList();
+    return TaskUtils.filterValidTasksForDate(models.map(
+      (model) => model.toEntity()).toList(), 
+      startDay, 
+      endDay);
   }
 
   @override
   Future<List<Task>> getTasksMonth(DateTime date, {TaskCategory? category, TaskType? type, String? tag}) async{
-    final models = await localDataSource.getTasksMonth(date, category: category, type: type, tag: tag);
-    return models.map((model) => model.toEntity()).toList();
+    final startMonth = TaskUtils.startOfMonth(date);
+    final endMonth = TaskUtils.endOfMonth(date);
+    final models = await localDataSource.getTasksMonth(startMonth, endMonth, category: category, type: type, tag: tag);
+    return TaskUtils.filterValidTasksForDate(models.map(
+      (model) => model.toEntity()).toList(), 
+      startMonth, 
+      endMonth);
   }
 
   @override
   Future<List<Task>> getTasksWeek(DateTime date, {TaskCategory? category, TaskType? type, String? tag}) async{
-    final models = await localDataSource.getTasksWeek(date, category: category, type: type, tag: tag);
-    return models.map((model) => model.toEntity()).toList();
+    final startWeek = TaskUtils.startOfWeek(date);
+    final endWeek = TaskUtils.endOfWeek(date);
+    final models = await localDataSource.getTasksWeek(startWeek, endWeek, category: category, type: type, tag: tag);
+    return TaskUtils.filterValidTasksForDate(models.map(
+      (model) => model.toEntity()).toList(), 
+      startWeek, 
+      endWeek);
   }
 
   @override

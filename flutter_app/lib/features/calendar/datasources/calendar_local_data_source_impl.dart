@@ -6,6 +6,7 @@ import 'package:flutter_app/features/calendar/data/models/task_model.dart';
 import 'package:flutter_app/features/calendar/data/models/task_tags_model.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
+import 'package:flutter_app/features/calendar/presentation/utils/task_utils.dart';
 import 'calendar_local_data_source.dart';
 import 'package:isar/isar.dart';
 
@@ -115,29 +116,20 @@ class CalendarLocalDataSourceImpl implements CalendarLocalDataSource{
       q = q.and().tags((t) => t.nameEqualTo(tag));
     }
     return await q.sortByStartTime().findAll();
-  }
+  } 
+
+
 
   @override
   Future<List<TaskModel>> getTasksWeek(
-    DateTime date,{
+    DateTime startWeek, DateTime endWeek, {
       TaskCategory? category, 
       TaskType? type,
       String? tag
     }
     ) async {
-    // Start of the week (Monday)
-    final startOfWeek = DateTime(
-      date.year,
-      date.month,
-      date.day - (date.weekday - 1),
-    );
 
-    // End of the week (Sunday)
-    final endOfWeek = startOfWeek
-        .add(const Duration(days: 7))
-        .subtract(const Duration(seconds: 1));
-
-    var q = isar.taskModels.filter().group((g) => g.startTimeBetween(startOfWeek, endOfWeek).or().recurrenceRuleIsNotNull());
+    var q = isar.taskModels.filter().group((g) => g.startTimeBetween(startWeek, endWeek).or().recurrenceRuleIsNotNull());
 
     if (category != null){
       q = q.and().categoryEqualTo(category);
@@ -155,20 +147,14 @@ class CalendarLocalDataSourceImpl implements CalendarLocalDataSource{
   // get tasks for the month
   @override
   Future<List<TaskModel>> getTasksMonth(
-    DateTime date,{
+    DateTime startMonth, DateTime endMonth, {
       TaskCategory? category, 
       TaskType? type,
       String? tag
     }
     ) async {
-    // Current day (00:00:00)
-    final startOfMonth = DateTime(date.year, date.month, 1);
-
-    // Handling for december
-    final startOfNextMonth = DateTime(date.year, date.month + 1, 1);
-    final endOfMonth = startOfNextMonth.subtract(const Duration(seconds: 1));
     
-    var q = isar.taskModels.filter().group((g) => g.startTimeBetween(startOfMonth, endOfMonth).or().recurrenceRuleIsNotNull());
+    var q = isar.taskModels.filter().group((g) => g.startTimeBetween(startMonth, endMonth).or().recurrenceRuleIsNotNull());
 
     if (category != null){
       q = q.and().categoryEqualTo(category);

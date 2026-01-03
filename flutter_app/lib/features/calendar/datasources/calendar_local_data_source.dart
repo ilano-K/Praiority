@@ -8,10 +8,10 @@ import '../data/models/task_model.dart';
 abstract class CalendarLocalDataSource {
   Future<void>saveAndUpdateTask(Task task);
   Future<void>deleteTask(String id);
-
+  
   Future<List<TaskModel>> getTasksDay(DateTime date, {TaskStatus? status, TaskCategory? category, TaskType? type, String? tag});
-  Future<List<TaskModel>> getTasksWeek(DateTime date, {TaskCategory? category, TaskType? type, String? tag});
-  Future<List<TaskModel>> getTasksMonth(DateTime date, {TaskCategory? category, TaskType? type, String? tag});
+  Future<List<TaskModel>> getTasksWeek(DateTime startWeek, DateTime endWeek, {TaskCategory? category, TaskType? type, String? tag});
+  Future<List<TaskModel>> getTasksMonth(DateTime startMonth, DateTime endMonth, {TaskCategory? category, TaskType? type, String? tag});
 
   Future<List<TaskModel>>getTasksByStatus(TaskStatus status);// unscheduled, scheduled, completed, past deadline wala pa
   Future<List<TaskModel>>getTasksByCategory(TaskCategory category);

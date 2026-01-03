@@ -7,75 +7,61 @@ import  'package:rrule/rrule.dart';
 
 class TaskUtils{
   static bool taskConflict(List<Task> tasks, DateTime date, Task taskToSchedule){
-    for(final task in tasks){
-      // normal tasks have reccurence rule as null
-      // take normal tasks and other tasks that occur on the specified date.
-      if(task.recurrenceRule == null || occursOnDate(task, date)){
-        if (timeConflict(taskToSchedule, task)){
-          return true; 
-        }
-      }
+    for (final task in tasks) {
+      if (task.id == taskToSchedule.id) continue;
+      if (timeConflict(task, taskToSchedule)) return true;
     }
     return false;
   }
 
   static bool timeConflict(Task a, Task b){
+    if (a.startTime == null || a.endTime == null || b.startTime == null || b.endTime == null) {
+      return false;
+    }
     return a.startTime!.isBefore(b.endTime!) && a.endTime!.isAfter(b.startTime!);
   }
 
-  // check if a recurring task occurs on the specified date
-  static bool occursOnDate(Task task, DateTime date){
-    //task has no recurrence rule 
+  static List<Task> filterValidTasksForDate(List<Task> tasks, DateTime rangeStart, DateTime rangeEnd){
+    return tasks
+      .where((task) => validTaskForDate(task, rangeStart, rangeEnd))
+      .toList();
+  }
+
+  static bool validTaskForDate(Task task, DateTime rangeStart , DateTime rangeEnd){
+    final taskStartTime = task.startTime!;
+    final taskEndTime = task.endTime!;
+
+    // for tasks that doesn't repeat.
     if(task.recurrenceRule == "None" || task.recurrenceRule == "" || task.recurrenceRule == null){
-      return false; // non-recurring
+      return !taskEndTime.isBefore(rangeStart) && !taskStartTime.isAfter(rangeEnd); // task fits the date range 
     }
 
-    //parse RRULE as per requirement
-    final ruleString = task.recurrenceRule!.startsWith('RRULE:')
-      ? task.recurrenceRule!
-      : 'RRULE:${task.recurrenceRule!}';
-
-    //take the recurrence rule
+    // parse rrule 
+    final ruleString = task.recurrenceRule!.startsWith('RRULE:') ? task.recurrenceRule! : 'RRULE:${task.recurrenceRule!}';
     final rule = RecurrenceRule.fromString(ruleString);
-    
-    final taskStartTime = task.startTime;
 
-    if (taskStartTime == null) return false;
-
-    // rrule package requires a DateTime in a valid RRULE form. Normalize the
-    // start to second precision and use UTC for the `start` argument because
-    // the library's validation expects an appropriate timezone form. Use UTC
-    // for the range bounds as well so comparisons align.
-    final sanitizedStartLocal = DateTime(
-      taskStartTime.year,
-      taskStartTime.month,
-      taskStartTime.day,
-      taskStartTime.hour,
-      taskStartTime.minute,
-      taskStartTime.second,
+    // remove seconds precision and convert to utc
+    // rrule pacakge requires the use of UTC
+    final startLocal = DateTime(
+      taskStartTime.year, taskStartTime.month, taskStartTime.day,
+      taskStartTime.hour, taskStartTime.minute,taskStartTime.second,
     );
-    final sanitizedStartUtc = sanitizedStartLocal.toUtc();
+    final startUtc = startLocal.toUtc();
+    final afterUTC = startOfDay(rangeStart).toUtc();
+    final beforeUTC = endOfDay(rangeEnd).toUtc();
 
-    final dayStartUtc = startOfDay(date).toUtc();
-    final dayEndUtc = endOfDay(date).toUtc();
-
-    // Ensure `after` passed to getInstances is not before `start` (the
-    // rrule package asserts `after >= start`). Use the later of
-    // dayStartUtc-1s and sanitizedStartUtc.
-    DateTime afterArg = dayStartUtc.subtract(const Duration(seconds: 1));
-    if (afterArg.isBefore(sanitizedStartUtc)) {
-      afterArg = sanitizedStartUtc;
+    DateTime afterArg = afterUTC.subtract(const Duration(seconds: 1));
+    if (afterArg.isBefore(startUtc)) {
+      afterArg = startUtc;
     }
 
-    // check if there is an occurrence of the task on the specified date.
     final instances = rule.getInstances(
-      start: sanitizedStartUtc,
+      start: startUtc,
       after: afterArg,
-      before: dayEndUtc,
+      before: beforeUTC,
       includeAfter: true,
     );
 
-    debugPrint('occursOnDate: instances found=${instances.length} for task=${task.title} on $date');
     return instances.isNotEmpty;
   }
 
@@ -86,5 +72,23 @@ class TaskUtils{
   static DateTime endOfDay(DateTime date){
     return DateTime(date.year, date.month, date.day, 23, 59, 59, 999);
   }
-  
+
+  static DateTime startOfWeek(DateTime date) {
+    final monday = date.subtract(Duration(days: date.weekday - 1));
+    return DateTime(monday.year, monday.month, monday.day);
+  }
+  static DateTime endOfWeek(DateTime date) {
+    final sunday = date.add(Duration(days: 7 - date.weekday));
+    return DateTime(sunday.year, sunday.month, sunday.day, 23, 59, 59);
+  }
+
+  static DateTime startOfMonth(DateTime date) {
+    return DateTime(date.year, date.month, 1); 
+  }
+  static DateTime endOfMonth(DateTime date) {
+    final firstOfNextMonth = (date.month < 12) 
+        ? DateTime(date.year, date.month + 1, 1)
+        : DateTime(date.year + 1, 1, 1); // handle December
+    return firstOfNextMonth.subtract(const Duration(seconds: 1));
+  }
 }
