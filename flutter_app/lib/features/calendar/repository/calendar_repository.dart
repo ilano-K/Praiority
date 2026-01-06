@@ -8,9 +8,7 @@ abstract class CalendarRepository {
   Future<void>saveAndUpdateTask(Task task);
   Future<void>deleteTask(String id);
 
-  Future<List<Task>> getTasksDay(DateTime date, {TaskStatus?status, TaskCategory? category, TaskType? type, String? tag});
-  Future<List<Task>> getTasksWeek(DateTime date, {TaskCategory? category, TaskType? type, String? tag});
-  Future<List<Task>> getTasksMonth(DateTime date, {TaskCategory? category, TaskType? type, String? tag});
+  Future<List<Task>> getTasksByRange(DateTime start, DateTime end, {TaskStatus?status, TaskCategory? category, TaskType? type, String? tag});
 
   Future<List<Task>>getUnscheduledTasks();// unscheduled
   Future<List<Task>>getScheduledTasks();// scheduled

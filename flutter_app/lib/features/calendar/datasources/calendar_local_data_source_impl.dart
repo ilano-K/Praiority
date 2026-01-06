@@ -83,21 +83,16 @@ class CalendarLocalDataSourceImpl implements CalendarLocalDataSource{
   // ---------------------------------------------------------------------------
   // DATE VIEW LOGIC (CALENDAR PAGE)
   // ---------------------------------------------------------------------------
-
   @override
-  Future<List<TaskModel>> getTasksDay(
-    DateTime date,{
+  Future<List<TaskModel>> getTasksByRange(
+    DateTime start, DateTime end,{
       TaskStatus? status, 
       TaskCategory? category, 
       TaskType? type,
       String? tag
     }
     ) async {
-    
-    final startOfDay = DateTime(date.year, date.month, date.day);
-    final endOfDay = startOfDay.add(const Duration(days: 1)).subtract(const Duration(seconds: 1));
-
-    var q = isar.taskModels.filter().group((g) => g.startTimeBetween(startOfDay, endOfDay).or().recurrenceRuleIsNotNull());
+    var q = isar.taskModels.filter().group((g) => g.startTimeBetween(start, end).or().recurrenceRuleIsNotNull());
 
     // optional filters
     if (status != null){
@@ -115,60 +110,13 @@ class CalendarLocalDataSourceImpl implements CalendarLocalDataSource{
     if (tag != null) {
       q = q.and().tags((t) => t.nameEqualTo(tag));
     }
-    return await q.sortByStartTime().findAll();
+
+    final tasks = await q.sortByStartTime().findAll();
+
+    return tasks
+      .where((task) => TaskUtils.validTaskModelForDate(task, start, end))
+      .toList();
   } 
-
-
-
-  @override
-  Future<List<TaskModel>> getTasksWeek(
-    DateTime startWeek, DateTime endWeek, {
-      TaskCategory? category, 
-      TaskType? type,
-      String? tag
-    }
-    ) async {
-
-    var q = isar.taskModels.filter().group((g) => g.startTimeBetween(startWeek, endWeek).or().recurrenceRuleIsNotNull());
-
-    if (category != null){
-      q = q.and().categoryEqualTo(category);
-    }
-
-    if (type != null){
-      q = q.and().typeEqualTo(type);
-    }
-
-    if (tag != null) {
-      q = q.and().tags((t) => t.nameEqualTo(tag));
-    }
-    return await q.sortByStartTime().findAll();
-  }
-  // get tasks for the month
-  @override
-  Future<List<TaskModel>> getTasksMonth(
-    DateTime startMonth, DateTime endMonth, {
-      TaskCategory? category, 
-      TaskType? type,
-      String? tag
-    }
-    ) async {
-    
-    var q = isar.taskModels.filter().group((g) => g.startTimeBetween(startMonth, endMonth).or().recurrenceRuleIsNotNull());
-
-    if (category != null){
-      q = q.and().categoryEqualTo(category);
-    }
-
-    if (type != null){
-      q = q.and().typeEqualTo(type);
-    }
-
-    if (tag != null) {
-      q = q.and().tags((t) => t.nameEqualTo(tag));
-    }
-    return await q.sortByStartTime().findAll();
-  }
 
   // ---------------------------------------------------------------------------
   // FILTER LOGIC

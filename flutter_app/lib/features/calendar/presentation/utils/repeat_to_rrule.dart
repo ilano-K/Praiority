@@ -1,4 +1,4 @@
-Map<String, String?> repeatToRRuleMap = {
+Map<String, String?> _baseMap = {
   "None": null,
   "Daily": "FREQ=DAILY;INTERVAL=1",
   "Weekly": "FREQ=WEEKLY;INTERVAL=1",
@@ -6,6 +6,17 @@ Map<String, String?> repeatToRRuleMap = {
   "Yearly": "FREQ=YEARLY;INTERVAL=1",
 };
 
-String? repeatToRRule(String repeat) {
-  return repeatToRRuleMap[repeat];
-} 
+String? repeatToRRule(String repeat, {DateTime? start}) {
+  final base = _baseMap[repeat];
+  if (base == null) return null;
+
+  // For weekly recurrences, include the BYDAY token derived from the start
+  // date so calendar renderers know which weekday to repeat on.
+  if (repeat == 'Weekly' && start != null) {
+    const days = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'];
+    final byday = days[(start.weekday - 1) % 7];
+    return '$base;BYDAY=$byday';
+  }
+
+  return base;
+}

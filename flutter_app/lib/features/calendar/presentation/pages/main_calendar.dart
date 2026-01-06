@@ -1,8 +1,10 @@
 // File: lib/features/calendar/presentation/pages/main_calendar.dart
 // Purpose: Main calendar page UI that displays day/week/month views and tasks.
 import 'package:flutter/material.dart';
+import 'package:flutter_app/features/calendar/domain/entities/date_range.dart';
 import 'package:flutter_app/features/calendar/presentation/controllers/calendar_controller_providers.dart';
-import 'package:flutter_app/features/calendar/presentation/utils/date_only.dart';
+import 'package:flutter_app/features/calendar/presentation/utils/time_utils.dart';
+import 'package:flutter_app/features/calendar/presentation/utils/task_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'dart:math' as math; 
@@ -70,8 +72,26 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
     // 1. WATCH THE DATABASE
     // This automatically fetches tasks for the selected date.
     // When you swipe to a new day, _selectedDate updates, and this refetches.
-    final tasksAsync = ref.watch(calendarControllerProvider(_selectedDate));
+    DateRange dateRange = DateRange(
+    scope: CalendarScope.day,
+    startTime: dateOnly(_selectedDate),
+    );
 
+    final tasksAsync = ref.watch(calendarControllerProvider(dateRange));
+
+    tasksAsync.when(
+    data: (tasks) {
+      if (tasks.isNotEmpty) {
+        debugPrint(tasks.first.toString());
+      }
+    },
+    loading: () {
+      debugPrint('Loading...');
+    },
+    error: (e, st) {
+      debugPrint('Error: $e');
+    },
+    );
     //add task logic here
     return Scaffold(
       backgroundColor: colorScheme.surface,

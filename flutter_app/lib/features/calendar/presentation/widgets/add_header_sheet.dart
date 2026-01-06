@@ -2,10 +2,11 @@
 // Purpose: Header UI for add/edit sheets, shows title and actions.
 import 'package:flutter/material.dart';
 import 'package:flutter_app/core/errors/task_conflict_exception.dart';
+import 'package:flutter_app/features/calendar/domain/entities/date_range.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'package:flutter_app/features/calendar/presentation/controllers/calendar_controller_providers.dart';
 import 'package:flutter_app/features/calendar/presentation/services/save_task.dart';
-import 'package:flutter_app/features/calendar/presentation/utils/date_only.dart';
+import 'package:flutter_app/features/calendar/presentation/utils/time_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 
@@ -66,11 +67,13 @@ class AddSheetHeader extends ConsumerWidget {
               onPressed: () async {
                 final task = data.saveTemplate();
                 final taskDay = dateOnly(task.startTime!);
+
+                final dateRange = DateRange(scope: CalendarScope.day, startTime: DateTime.now());
                 try {
                     await saveTask(ref, task);
 
                     // only runs if NO conflict
-                    ref.invalidate(calendarControllerProvider(taskDay));
+                    ref.invalidate(calendarControllerProvider(dateRange));
                     Navigator.pop(context);
                   } on TaskConflictException {
                     // TEMPORARY ONLY 

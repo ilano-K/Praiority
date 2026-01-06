@@ -8,6 +8,7 @@ import 'package:flutter_app/features/calendar/presentation/providers/calendar_pr
 import 'package:flutter_app/features/calendar/presentation/utils/repeat_to_rrule.dart';
 import 'package:flutter_app/features/calendar/presentation/utils/task_utils.dart';
 import 'package:flutter_app/features/calendar/presentation/utils/time_adjust.dart';
+import 'package:flutter_app/features/calendar/presentation/utils/time_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -76,8 +77,8 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
     DateTime? endTime;
 
     if(_isAllDay){
-      startTime = TaskUtils.startOfDay(_startDate);
-      endTime = TaskUtils.endOfDay(_startDate);
+      startTime = startOfDay(_startDate);
+      endTime = endOfDay(_startDate);
     } else {
       startTime = DateTime(
         _startDate.year,_startDate.month,_startDate.day,
@@ -90,7 +91,14 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
     }
   
     TaskTags? tag = (_tag.trim().isEmpty || _tag == "None") ? null : TaskTags(name: _tag);
-    print(repeatToRRule(_repeat));
+    DateTime? startTimeForRule;
+    if (_isAllDay) {
+      startTimeForRule = startOfDay(_startDate);
+    } else {
+      startTimeForRule = DateTime(
+        _startDate.year, _startDate.month, _startDate.day, _startTime.hour, _startTime.minute);
+    }
+    print(repeatToRRule(_repeat, start: startTimeForRule));
     final template = Task.create(
       type: TaskType.event,
       title: _titleController.text.trim().isEmpty
@@ -102,7 +110,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
       isAllDay: _isAllDay,
       tags: tag,
       status: TaskStatus.scheduled,
-      recurrenceRule: repeatToRRule(_repeat)
+      recurrenceRule: repeatToRRule(_repeat, start: startTimeForRule)
     );
     // location and repeat to follow.
 
