@@ -13,14 +13,14 @@ Future<TimeOfDay?> pickTime(BuildContext context, {TimeOfDay? initialTime}) asyn
             backgroundColor: colorScheme.surface,
             dialHandColor: colorScheme.primary,
             dialTextColor: colorScheme.onSurface,
-            dialBackgroundColor: colorScheme.surfaceVariant,
-            dayPeriodTextColor: MaterialStateColor.resolveWith(
-              (states) => states.contains(MaterialState.selected)
+            dialBackgroundColor: colorScheme.surfaceContainerHighest,
+            dayPeriodTextColor: WidgetStateColor.resolveWith(
+              (states) => states.contains(WidgetState.selected)
                   ? Colors.white
                   : colorScheme.onSurface,
             ),
-            dayPeriodColor: MaterialStateColor.resolveWith(
-              (states) => states.contains(MaterialState.selected)
+            dayPeriodColor: WidgetStateColor.resolveWith(
+              (states) => states.contains(WidgetState.selected)
                   ? colorScheme.primary
                   : Colors.transparent,
             ),

@@ -24,11 +24,10 @@ import 'color_selector.dart'; // Ensure this is imported for CalendarColor
 import 'add_header_sheet.dart'; // Assuming the file is named '_add_sheet_header.dart'
 
 // IMPORT THE EVENT & BIRTHDAY SHEETS
-import 'add_event_sheet.dart'; 
-import 'add_birthday_sheet.dart'; 
 
 class AddTaskSheet extends ConsumerStatefulWidget {
-  const AddTaskSheet({super.key});
+  final Task? task;   
+  const AddTaskSheet({super.key, this.task});
 
   @override
   ConsumerState<AddTaskSheet> createState() => _AddTaskSheetState();
@@ -189,7 +188,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                         scale: 0.8,
                         child: Switch(
                           value: _isSmartScheduleEnabled,
-                          activeColor: Colors.white, 
+                          activeThumbColor: Colors.white, 
                           activeTrackColor: colorScheme.primary, 
                           onChanged: (val) => setState(() => _isSmartScheduleEnabled = val),
                         ),
@@ -223,7 +222,8 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                         );
                       }
                     ),
-                  ] else 
+                  ] else ...[ 
+                    // --- ONLY SHOW THESE IF SMART SCHEDULE IS DISABLED ---
                     const SizedBox(height: 10),
                   
                   // 3. START TIME
@@ -314,7 +314,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                       }
                     },
                   ),
-
+                ],
                   // 3. DEADLINE
                   _buildInteractiveRow(
                     label: "Deadline", 

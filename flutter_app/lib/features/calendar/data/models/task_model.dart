@@ -1,6 +1,5 @@
 import 'package:flutter_app/features/calendar/data/models/task_tags_model.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
-import 'package:flutter_app/features/calendar/domain/entities/task_tags.dart';
 
 import '../../domain/entities/task.dart';
 

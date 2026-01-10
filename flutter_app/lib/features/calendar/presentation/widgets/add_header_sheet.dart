@@ -8,7 +8,6 @@ import 'package:flutter_app/features/calendar/presentation/controllers/calendar_
 import 'package:flutter_app/features/calendar/presentation/services/save_task.dart';
 import 'package:flutter_app/features/calendar/presentation/utils/time_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:syncfusion_flutter_calendar/calendar.dart';
 
 // Import necessary widgets and data structures
 import 'color_selector.dart';

@@ -4,11 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/domain/entities/date_range.dart';
 import 'package:flutter_app/features/calendar/presentation/controllers/calendar_controller_providers.dart';
 import 'package:flutter_app/features/calendar/presentation/utils/time_utils.dart';
-import 'package:flutter_app/features/calendar/presentation/utils/task_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'dart:math' as math; 
-import 'package:provider/provider.dart' as provider; // Alias to avoid conflict with Riverpod
+// Alias to avoid conflict with Riverpod
 
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 
@@ -17,7 +16,7 @@ import '../widgets/add_task_sheet.dart';
 import '../widgets/appointment_card.dart'; 
 
 // IMPORTANT: Import your ThemeProvider
-import '../../../../core/services/theme/theme_controller.dart'; 
+import '../../../../core/services/theme/theme_notifier.dart'; 
 
 // IMPORTANT: Import Backend
 import '../../domain/entities/task.dart';
@@ -139,7 +138,7 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
                 children: [
                   GestureDetector(
                     onTap: () {
-                      provider.Provider.of<ThemeController>(context, listen: false).toggleTheme();
+                      ref.read(themeProvider.notifier).toggleTheme();
                     },
                     child: Icon(Icons.menu, size: 30, color: colorScheme.onSurface),
                   ),

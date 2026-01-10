@@ -6,7 +6,6 @@ import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task_tags.dart';
 import 'package:flutter_app/features/calendar/presentation/providers/calendar_providers.dart';
 import 'package:flutter_app/features/calendar/presentation/utils/repeat_to_rrule.dart';
-import 'package:flutter_app/features/calendar/presentation/utils/task_utils.dart';
 import 'package:flutter_app/features/calendar/presentation/utils/time_adjust.dart';
 import 'package:flutter_app/features/calendar/presentation/utils/time_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,8 +20,6 @@ import 'color_selector.dart'; // <--- Required for CalendarColor
 import 'add_header_sheet.dart'; // <--- NEW IMPORT
 
 // IMPORTANT: Import other sheets for switching
-import 'add_task_sheet.dart';
-import 'add_birthday_sheet.dart'; 
 
 class AddEventSheet extends ConsumerStatefulWidget {
   const AddEventSheet({super.key});
@@ -167,7 +164,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                         scale: 0.8,
                         child: Switch(
                           value: _isAllDay,
-                          activeColor: Colors.white,
+                          activeThumbColor: Colors.white,
                           activeTrackColor: colorScheme.primary,
                           onChanged: (val) => setState(() => _isAllDay = val),
                         ),
@@ -318,11 +315,11 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
               backgroundColor: colorScheme.surface,
               dialHandColor: colorScheme.primary,
               dialTextColor: colorScheme.onSurface,
-              dialBackgroundColor: colorScheme.surfaceVariant,
-                dayPeriodTextColor: MaterialStateColor.resolveWith((states) =>
-                  states.contains(MaterialState.selected) ? Colors.white : colorScheme.onSurface),
-                dayPeriodColor: MaterialStateColor.resolveWith((states) =>
-                  states.contains(MaterialState.selected) ? colorScheme.primary : Colors.transparent),
+              dialBackgroundColor: colorScheme.surfaceContainerHighest,
+                dayPeriodTextColor: WidgetStateColor.resolveWith((states) =>
+                  states.contains(WidgetState.selected) ? Colors.white : colorScheme.onSurface),
+                dayPeriodColor: WidgetStateColor.resolveWith((states) =>
+                  states.contains(WidgetState.selected) ? colorScheme.primary : Colors.transparent),
               dayPeriodBorderSide: BorderSide(color: colorScheme.primary),
             ),
             textButtonTheme: TextButtonThemeData(

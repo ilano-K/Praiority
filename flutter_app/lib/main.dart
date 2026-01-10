@@ -1,9 +1,7 @@
 // File: lib/main.dart
 // Purpose: Application entry point; initializes services and runs the app.
 import 'package:flutter/material.dart';
-import 'package:flutter_app/core/services/theme/theme_provider.dart';
-import 'package:flutter_app/features/calendar/domain/entities/task.dart';
-import 'package:flutter_app/features/calendar/presentation/controllers/calendar_controller_providers.dart';
+import 'package:flutter_app/core/services/theme/theme_notifier.dart';
 import 'package:flutter_app/features/calendar/presentation/pages/main_calendar.dart';
 import 'package:flutter_app/features/calendar/presentation/providers/calendar_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -86,12 +84,12 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final themeController = ref.watch(themeProvider);
+    final themeData = ref.watch(themeProvider);
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: themeController.themeData,
-      home: MainCalendar(),
+      theme: themeData,
+      home: const MainCalendar(),
     );
   }
 }
