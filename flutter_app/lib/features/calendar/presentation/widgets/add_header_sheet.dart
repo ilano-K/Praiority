@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/core/errors/task_conflict_exception.dart';
 import 'package:flutter_app/features/calendar/domain/entities/date_range.dart';
+import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'package:flutter_app/features/calendar/presentation/controllers/calendar_controller_providers.dart';
 import 'package:flutter_app/features/calendar/presentation/services/save_task.dart';
@@ -188,20 +189,35 @@ class AddSheetHeader extends ConsumerWidget {
 
   // --- WIDGET HELPER: Type Button (Handles switching between sheets) ---
   Widget _buildTypeButton(String label, ColorScheme colors, BuildContext context) {
-    bool isSelected = data.selectedType == label;
+      bool isSelected = data.selectedType == label;
 
-    return GestureDetector(
-      onTap: () {
-        // Notify parent of type change (mainly for state update visual)
-        data.onTypeSelected(label);
+      return GestureDetector(
+        onTap: () {
+        if (isSelected) return;
 
-        // Then switch sheets if needed
-        if (label == 'Task' && data.selectedType != 'Task') {
-          _switchSheet(context, const AddTaskSheet());
-        } else if (label == 'Event' && data.selectedType != 'Event') {
-          _switchSheet(context, const AddEventSheet());
-        } else if (label == 'Birthday' && data.selectedType != 'Birthday') {
-          _switchSheet(context, const AddBirthdaySheet());
+        // 1. Capture the current data
+        final currentDraft = data.saveTemplate();
+
+        // 2. Determine new type
+        TaskType newType;
+        if (label == 'Event') {
+          newType = TaskType.event;
+        } else if (label == 'Birthday') newType = TaskType.birthday;
+        else newType = TaskType.task;
+
+        // 3. Create the update. 
+        // IMPORTANT: Ensure you pass the tags and color here too!
+        final updatedDraft = currentDraft.copyWith(
+          type: newType,
+          // This ensures tags and basic info move to the next sheet's constructor
+        );
+
+        if (label == 'Task') {
+          _switchSheet(context, AddTaskSheet(task: updatedDraft));
+        } else if (label == 'Event') {
+          _switchSheet(context, AddEventSheet(task: updatedDraft));
+        } else if (label == 'Birthday') {
+          _switchSheet(context, AddBirthdaySheet(task: updatedDraft));
         }
       },
       child: Container(
@@ -227,8 +243,10 @@ class AddSheetHeader extends ConsumerWidget {
   }
 
   void _switchSheet(BuildContext context, Widget newSheet) {
-    // Pop the current sheet and push the new one
+    // Pop the current sheet
     Navigator.pop(context); 
+    
+    // Re-open with the new sheet (which now contains the draft data)
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,

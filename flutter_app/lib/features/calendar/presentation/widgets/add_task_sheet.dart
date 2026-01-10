@@ -52,6 +52,24 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
   void initState() {
     super.initState();
 
+    // --- PRE-FILL LOGIC ---
+    if (widget.task != null) {
+      final t = widget.task!;
+      _titleController.text = t.title;
+      _descController.text = t.description ?? "";
+      _isSmartScheduleEnabled = t.isSmartSchedule;
+      _startDate = t.startTime ?? DateTime.now();
+      _startTime = TimeOfDay.fromDateTime(t.startTime ?? DateTime.now());
+      _endTime = TimeOfDay.fromDateTime(t.endTime ?? DateTime.now().add(const Duration(hours: 1)));
+      _deadlineDate = t.deadline ?? DateTime.now();
+      _deadlineTime = TimeOfDay.fromDateTime(t.deadline ?? DateTime.now());
+      _tag = t.tags?.name ?? "None";
+      
+      // Map Enums to Strings
+      _priority = t.priority.name[0].toUpperCase() + t.priority.name.substring(1);
+      _category = t.category.name[0].toUpperCase() + t.category.name.substring(1);
+    }
+
     // Fetch tags from repository
     ref.read(calendarRepositoryProvider).getAllTagNames().then((tags) {
       setState(() {
@@ -119,24 +137,26 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
 
     TaskTags? tag = (_tag.trim().isEmpty || _tag == "None") ? null : TaskTags(name: _tag);
 
-    final template = Task.create(
-      type: TaskType.task,
-      title: _titleController.text.trim().isEmpty
-        ? "New Task"
-        : _titleController.text.trim(),
-      description: _descController.text.trim(),
-      isSmartSchedule: _isSmartScheduleEnabled,
-      priority: priorityMap[_priority]!,
-      startTime: startTime,
-      endTime: endTime,
-      deadline: deadline,
-      category: categoryMap[_category]!,
-      tags: tag,
-      status: TaskStatus.scheduled
-    );
-
-    return template;
-  }
+      // --- 2. THE DECISION (The part you are replacing) ---
+          if (widget.task != null) {
+            return widget.task!.copyWith(
+              title: _titleController.text.trim(),
+              description: _descController.text.trim(),
+              priority: priorityMap[_priority]!,
+              category: categoryMap[_category]!,
+              tags: (_tag == "None") ? null : TaskTags(name: _tag), // Ensure tags are captured
+              // Note: Ensure your Task entity has a location field to store this!
+            );
+          } else {
+            return Task.create(
+              type: TaskType.task,
+              title: _titleController.text.trim(),
+              description: _descController.text.trim(),
+              tags: (_tag == "None") ? null : TaskTags(name: _tag),
+              // ... rest of parameters
+            );
+          }
+        }
 
   @override
   Widget build(BuildContext context) {

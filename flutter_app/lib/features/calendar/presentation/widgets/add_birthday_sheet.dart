@@ -1,7 +1,9 @@
 // File: lib/features/calendar/presentation/widgets/add_birthday_sheet.dart
 // Purpose: UI sheet for adding birthday events; simplifies pre-filled fields.
 import 'package:flutter/material.dart';
+import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
+import 'package:flutter_app/features/calendar/presentation/utils/time_utils.dart';
 import 'package:intl/intl.dart';
 
 // Import switching sheets
@@ -11,7 +13,8 @@ import 'color_selector.dart';
 import 'add_header_sheet.dart'; // <--- NEW IMPORT
 
 class AddBirthdaySheet extends StatefulWidget {
-  const AddBirthdaySheet({super.key});
+  final Task? task; // <--- ADDED: Data pocket for editing
+  const AddBirthdaySheet({super.key, this.task}); // <--- UPDATED constructor
 
   @override
   State<AddBirthdaySheet> createState() => _AddBirthdaySheetState();
@@ -32,10 +35,49 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
 
-  // --- SAVE CALLBACK ---
+  @override
+    void initState() {
+      super.initState();
+
+      // 1. EDIT MODE: Pre-fill if an existing birthday was passed
+      if (widget.task != null) {
+        final b = widget.task!;
+        _titleController.text = b.title;
+        _descController.text = b.description ?? "";
+        _birthdayDate = b.startTime ?? DateTime.now();
+        _location = b.location ?? "None";
+        // If location is stored in description or another field, map it here
+      }
+    }
+
+    
+
+// --- SAVE CALLBACK ---
   Task _handleSave() {
-    // Placeholder for save logic (to be replaced by Riverpod/Repository call later)
-    return Task(id: "id", title: "title");
+    // Birthdays are typically All Day events
+    final startTime = startOfDay(_birthdayDate);
+    final endTime = endOfDay(_birthdayDate);
+
+    // 2. THE DECISION: Update vs Create
+    if (widget.task != null) {
+      // EDIT MODE: Preserves the original Task ID
+      return widget.task!.copyWith(
+        title: _titleController.text.trim().isEmpty ? "Birthday" : _titleController.text.trim(),
+        description: _descController.text.trim(),
+        isAllDay: true,
+        location: _location,
+      );
+    } else {
+      // CREATE MODE: Generates a new unique ID
+      return Task.create(
+        type: TaskType.birthday,
+        title: _titleController.text.trim().isEmpty ? "Birthday" : _titleController.text.trim(),
+        description: _descController.text.trim(),
+        isAllDay: true,
+        location: _location,
+        status: TaskStatus.scheduled,
+      );
+    }
   }
 
   @override

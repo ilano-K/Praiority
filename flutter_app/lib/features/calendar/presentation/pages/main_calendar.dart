@@ -2,8 +2,11 @@
 // Purpose: Main calendar page UI that displays day/week/month views and tasks.
 import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/domain/entities/date_range.dart';
+import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/presentation/controllers/calendar_controller_providers.dart';
 import 'package:flutter_app/features/calendar/presentation/utils/time_utils.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/add_birthday_sheet.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/add_event_sheet.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'dart:math' as math; 
@@ -232,10 +235,36 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
                                 }
                               },
 
+                              
                               onTap: (CalendarTapDetails details) {
-                                // Handle tap on appointment or empty slot
-                              },
+                              // 1. Check if an appointment was actually tapped
+                              if (details.targetElement == CalendarElement.appointment && details.appointments != null) {
+                                
+                                // 2. This is currently an 'Appointment' object, not a 'Task'
+                                final Appointment selectedAppt = details.appointments!.first;
 
+                                // 3. Get the list of tasks currently loaded in the calendar
+                                // We use the 'tasks' list from your tasksAsync.when(data: (tasks) => ...)
+                                // If you are outside that scope, you may need to find it from the provider
+                                final Task tappedTask = tasks.firstWhere((t) => t.id == selectedAppt.id);
+
+                                // 4. Now pass the actual Task entity to the sheet
+                                showModalBottomSheet(
+                                  context: context,
+                                  isScrollControlled: true,
+                                  backgroundColor: Colors.transparent,
+                                  builder: (context) {
+                                    if (tappedTask.type == TaskType.event) {
+                                      return AddEventSheet(task: tappedTask);
+                                    } else if (tappedTask.type == TaskType.birthday) {
+                                      return AddBirthdaySheet(task: tappedTask);
+                                    } else {
+                                      return AddTaskSheet(task: tappedTask);
+                                    }
+                                  },
+                                );
+                              }
+                            },
                               timeSlotViewSettings: TimeSlotViewSettings(
                                 timeRulerSize: 60,
                                 timeTextStyle: TextStyle(

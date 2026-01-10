@@ -22,7 +22,8 @@ import 'add_header_sheet.dart'; // <--- NEW IMPORT
 // IMPORTANT: Import other sheets for switching
 
 class AddEventSheet extends ConsumerStatefulWidget {
-  const AddEventSheet({super.key});
+  final Task? task; // <--- ADDED
+  const AddEventSheet({super.key, this.task}); // <--- UPDATED
 
   @override
   ConsumerState<AddEventSheet> createState() => _AddEventSheetState();
@@ -56,6 +57,20 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
   void initState() {
     super.initState();
 
+    if (widget.task != null) {
+      final e = widget.task!;
+      _titleController.text = e.title;
+      _descController.text = e.description ?? "";
+      _isAllDay = e.isAllDay;
+      _startDate = e.startTime ?? DateTime.now();
+      _startTime = TimeOfDay.fromDateTime(e.startTime ?? DateTime.now());
+      _endDate = e.endTime ?? DateTime.now();
+      _endTime = TimeOfDay.fromDateTime(e.endTime ?? DateTime.now());
+      _tag = e.tags?.name ?? "None";
+      _location = e.location ?? "None";
+      // _repeat would need rrule parsing logic here
+    }
+
     // Fetch tags from repository
     ref.read(calendarRepositoryProvider).getAllTagNames().then((tags) {
       setState(() {
@@ -88,31 +103,40 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
     }
   
     TaskTags? tag = (_tag.trim().isEmpty || _tag == "None") ? null : TaskTags(name: _tag);
-    DateTime? startTimeForRule;
-    if (_isAllDay) {
-      startTimeForRule = startOfDay(_startDate);
-    } else {
-      startTimeForRule = DateTime(
-        _startDate.year, _startDate.month, _startDate.day, _startTime.hour, _startTime.minute);
-    }
-    print(repeatToRRule(_repeat, start: startTimeForRule));
-    final template = Task.create(
-      type: TaskType.event,
-      title: _titleController.text.trim().isEmpty
-        ? "New Task"
-        : _titleController.text.trim(),
-      description: _descController.text.trim(),
-      startTime: startTime,
-      endTime: endTime,
-      isAllDay: _isAllDay,
-      tags: tag,
-      status: TaskStatus.scheduled,
-      recurrenceRule: repeatToRRule(_repeat, start: startTimeForRule)
-    );
-    // location and repeat to follow.
 
-    return template;
-  }
+    DateTime startTimeForRule = _isAllDay 
+        ? startOfDay(_startDate) 
+        : DateTime(_startDate.year, _startDate.month, _startDate.day, _startTime.hour, _startTime.minute);
+
+    // 2. THE DECISION: Edit vs Create
+        if (widget.task != null) {
+          // EDIT MODE: Preserves the Task ID
+          return widget.task!.copyWith(
+            title: _titleController.text.trim().isEmpty ? "Untitled Event" : _titleController.text.trim(),
+            description: _descController.text.trim(),
+            startTime: startTime,
+            endTime: endTime,
+            isAllDay: _isAllDay,
+            tags: (_tag == "None") ? null : TaskTags(name: _tag), 
+            location: _location,
+            recurrenceRule: repeatToRRule(_repeat, start: startTimeForRule),
+          );
+        } else {
+          // CREATE MODE: Generates a new ID
+          return Task.create(
+            type: TaskType.event,
+            title: _titleController.text.trim().isEmpty ? "New Event" : _titleController.text.trim(),
+            description: _descController.text.trim(),
+            startTime: startTime,
+            endTime: endTime,
+            isAllDay: _isAllDay,
+            tags: (_tag == "None") ? null : TaskTags(name: _tag), 
+            location: _location,
+            status: TaskStatus.scheduled,
+            recurrenceRule: repeatToRRule(_repeat, start: startTimeForRule)
+          );
+        }
+      }
 
   @override
   Widget build(BuildContext context) {
