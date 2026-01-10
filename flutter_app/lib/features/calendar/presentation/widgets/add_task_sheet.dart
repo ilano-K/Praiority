@@ -142,9 +142,12 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
             return widget.task!.copyWith(
               title: _titleController.text.trim(),
               description: _descController.text.trim(),
+              startTime: startTime,
+              endTime: endTime,
+              deadline: deadline,
               priority: priorityMap[_priority]!,
               category: categoryMap[_category]!,
-              tags: (_tag == "None") ? null : TaskTags(name: _tag), // Ensure tags are captured
+              tags: tag, // Ensure tags are captured
               // Note: Ensure your Task entity has a location field to store this!
             );
           } else {
@@ -152,7 +155,11 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
               type: TaskType.task,
               title: _titleController.text.trim(),
               description: _descController.text.trim(),
-              tags: (_tag == "None") ? null : TaskTags(name: _tag),
+              startTime: startTime,
+              endTime: endTime,
+              deadline: deadline,
+              tags: tag,
+              category: categoryMap[_category]!
               // ... rest of parameters
             );
           }

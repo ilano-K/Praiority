@@ -57,6 +57,13 @@ class TaskUtils{
     final afterUTC = startOfDay(rangeStart).toUtc();
     final beforeUTC = endOfDay(rangeEnd).toUtc();
 
+    // If the computed "before" bound is earlier than the rule start,
+    // there can be no instances — avoid calling getInstances with
+    // before < start which triggers an assertion in the rrule package.
+    if (beforeUTC.isBefore(startUtc)) {
+      return false;
+    }
+
     DateTime afterArg = afterUTC.subtract(const Duration(seconds: 1));
     if (afterArg.isBefore(startUtc)) {
       afterArg = startUtc;

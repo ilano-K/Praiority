@@ -68,7 +68,10 @@ class AddSheetHeader extends ConsumerWidget {
                 final task = data.saveTemplate();
                 final taskDay = dateOnly(task.startTime!);
 
-                final dateRange = DateRange(scope: CalendarScope.day, startTime: DateTime.now());
+                //returns the day the task is supposed to be scheduled on 
+                final dateRange = DateRange(
+                  scope: CalendarScope.day, 
+                  startTime: taskDay);
                 try {
                     await saveTask(ref, task);
 
