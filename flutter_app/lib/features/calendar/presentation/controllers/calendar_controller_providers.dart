@@ -9,15 +9,25 @@ import 'package:flutter_app/features/calendar/presentation/utils/time_utils.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_app/features/calendar/presentation/utils/task_utils.dart';
 
-final calendarControllerProvider = AsyncNotifierProvider.autoDispose.family<CalendarStateController, List<Task>, DateRange>(CalendarStateController.new);
+final calendarControllerProvider = AsyncNotifierProvider<CalendarStateController, List<Task>>(CalendarStateController.new);
 
-class CalendarStateController extends AutoDisposeFamilyAsyncNotifier<List<Task>, DateRange>{
+class CalendarStateController extends AsyncNotifier<List<Task>>{
+  DateRange? _currentRange;
   @override
-  FutureOr<List<Task>> build(DateRange arg) {
+  FutureOr<List<Task>> build() {
+    _currentRange ??=
+      DateRange(scope: CalendarScope.day, startTime: DateTime.now());
     final repository = ref.watch(calendarRepositoryProvider);
-    return repository.getTasksByRange(arg.start, arg.end);
+    return repository.getTasksByRange(_currentRange!.start, _currentRange!.end);
   }
-
+  Future<void>setRange(DateRange range) async {
+    _currentRange = range;
+    final repository = ref.read(calendarRepositoryProvider);
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      return repository.getTasksByRange(_currentRange!.start, _currentRange!.end);
+    });
+  }
   Future<void>addTask(Task task) async {
     final previous = state;
     state = const AsyncValue.loading();
@@ -80,14 +90,16 @@ class CalendarStateController extends AutoDisposeFamilyAsyncNotifier<List<Task>,
 
     state = await AsyncValue.guard(() async {
       await repository.saveAndUpdateTask(task);
-      return repository.getTasksByRange(arg.start, arg.end);
+      return repository.getTasksByRange(_currentRange!.start, _currentRange!.end);
     });
   }
   Future<void>deleteTask(String taskId) async {
       final repository = ref.read(calendarRepositoryProvider);
       state = await AsyncValue.guard(() async {
         await repository.deleteTask(taskId);
-        return repository.getTasksByRange(arg.start, arg.end);
+        return repository.getTasksByRange(_currentRange!.start, _currentRange!.end);
       });
     }
+
 }
+

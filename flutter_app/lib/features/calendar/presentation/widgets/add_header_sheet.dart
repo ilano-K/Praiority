@@ -76,7 +76,7 @@ class AddSheetHeader extends ConsumerWidget {
                     await saveTask(ref, task);
 
                     // only runs if NO conflict
-                    ref.invalidate(calendarControllerProvider(dateRange));
+                    ref.invalidate(calendarControllerProvider);
                     Navigator.pop(context);
                   } on TaskConflictException {
                     // TEMPORARY ONLY 

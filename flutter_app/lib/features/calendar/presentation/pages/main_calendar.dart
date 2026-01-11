@@ -10,6 +10,7 @@ import 'package:flutter_app/features/calendar/presentation/widgets/add_event_she
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'dart:math' as math; 
+import 'dart:async';
 // Alias to avoid conflict with Riverpod
 
 import 'package:syncfusion_flutter_calendar/calendar.dart';
@@ -34,6 +35,9 @@ class MainCalendar extends ConsumerStatefulWidget {
 class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerProviderStateMixin {
   DateTime _selectedDate = dateOnly(DateTime.now());
 
+  DateTime? _lastRangeDate;
+  Timer? _debounceTimer;
+
   //THIS IS THE ONLY RED LINE
   final CalendarController _calendarController = CalendarController();
   late AnimationController _fabController;
@@ -51,6 +55,14 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
       parent: _fabController, 
       curve: Curves.easeOut,
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(calendarControllerProvider.notifier).setRange(
+        DateRange(
+          scope: CalendarScope.day,
+          startTime: _selectedDate,
+        ),
+      );
+    });
   }
 
   @override
@@ -66,7 +78,7 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
       _fabController.reverse(); 
     }
   }
-
+  
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -74,12 +86,12 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
     // 1. WATCH THE DATABASE
     // This automatically fetches tasks for the selected date.
     // When you swipe to a new day, _selectedDate updates, and this refetches.
-    DateRange dateRange = DateRange(
-    scope: CalendarScope.day,
-    startTime: dateOnly(_selectedDate),
-    );
+    // DateRange dateRange = DateRange(
+    // scope: CalendarScope.day,
+    // startTime: dateOnly(_selectedDate),
+    // );
 
-    final tasksAsync = ref.watch(calendarControllerProvider(dateRange));
+    final tasksAsync = ref.watch(calendarControllerProvider);
 
     tasksAsync.when(
     data: (tasks) {
@@ -224,15 +236,31 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
                               specialRegions: _getGreyBlocks(colorScheme),
                               
                               onViewChanged: (ViewChangedDetails details) {
-                                if (details.visibleDates.isNotEmpty) {
-                                  Future.microtask(() {
-                                    if (mounted && details.visibleDates.first.day != _selectedDate.day) {
-                                      setState(() {
-                                        _selectedDate = details.visibleDates.first;
-                                      });
-                                    }
+                                 if (details.visibleDates.isEmpty) return;
+
+                                final newDate = dateOnly(details.visibleDates.first);
+
+                                // Ignore if same as last notified
+                                if (_lastRangeDate != null && _lastRangeDate == newDate) return;
+
+                                // Cancel previous debounce timer
+                                _debounceTimer?.cancel();
+
+                                _debounceTimer = Timer(const Duration(milliseconds: 150), () {
+                                  if (!mounted) return;
+
+                                  setState(() {
+                                    _selectedDate = newDate;
                                   });
-                                }
+
+                                  _lastRangeDate = newDate;
+
+                                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                                    ref.read(calendarControllerProvider.notifier).setRange(
+                                      DateRange(scope: CalendarScope.day, startTime: newDate),
+                                    );
+                                  });
+                                });
                               },
 
                               
