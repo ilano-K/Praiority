@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_app/core/services/theme/theme_notifier.dart';
 import 'package:flutter_app/features/calendar/presentation/pages/main_calendar.dart';
 import 'package:flutter_app/features/calendar/presentation/providers/calendar_providers.dart';
+import 'package:flutter_app/features/calendar/presentation/services/notification_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_app/core/services/local_database_service.dart';
 
@@ -12,7 +13,8 @@ void main() async {
 
   final dbService = LocalDatabaseService();
   await dbService.init();
-
+  await NotificationService.init();
+  await NotificationService.requestPermissions();
   runApp(
     ProviderScope(
       overrides: [

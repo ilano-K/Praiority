@@ -43,6 +43,8 @@ dependencies:
   provider:
   syncfusion_flutter_calendar: ^31.2.15
   rrule: ^0.2.10
+  flutter_local_notifications: ^19.5.0
+  timezone: ^0.10.0
 
 dev_dependencies:
   flutter_test:
