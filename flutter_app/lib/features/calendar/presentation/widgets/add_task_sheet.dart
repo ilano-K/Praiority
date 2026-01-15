@@ -136,9 +136,9 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
     );
 
     TaskTags? tag = (_tag.trim().isEmpty || _tag == "None") ? null : TaskTags(name: _tag);
-
       // --- 2. THE DECISION (The part you are replacing) ---
           if (widget.task != null) {
+            debugPrint("This is the selected tag: ${tag!.name}");
             return widget.task!.copyWith(
               title: _titleController.text.trim(),
               description: _descController.text.trim(),
@@ -158,8 +158,9 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
               startTime: startTime,
               endTime: endTime,
               deadline: deadline,
+              priority: priorityMap[_priority]!,
+              category: categoryMap[_category]!,
               tags: tag,
-              category: categoryMap[_category]!
               // ... rest of parameters
             );
           }
