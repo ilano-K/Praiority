@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_app/core/errors/task_conflict_exception.dart';
 import 'package:flutter_app/features/calendar/domain/entities/date_range.dart';
+import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'package:flutter_app/features/calendar/presentation/providers/calendar_providers.dart';
@@ -81,10 +82,12 @@ class CalendarStateController extends AsyncNotifier<List<Task>>{
     // Fetch all tasks once for the whole span, then check day-by-day for conflicts.
     final tasksInRange = await repository.getTasksByRange(checkStart, checkEnd);
 
-    for (var d = checkStart; !d.isAfter(checkEnd); d = d.add(const Duration(days: 1))) {
-      if (TaskUtils.checkTaskConflict(tasksInRange, dateOnly(d), task)) {
-        state = previous;
-        throw TaskConflictException();
+    if(task.type != TaskType.birthday){
+      for (var d = checkStart; !d.isAfter(checkEnd); d = d.add(const Duration(days: 1))) {
+        if (TaskUtils.checkTaskConflict(tasksInRange, dateOnly(d), task)) {
+          state = previous;
+          throw TaskConflictException();
+        }
       }
     }
 

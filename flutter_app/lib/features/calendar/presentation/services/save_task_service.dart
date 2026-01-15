@@ -13,7 +13,7 @@ Future <void> saveTask(WidgetRef ref, Task taskTemplate)async{
     if(!validDateTime(taskTemplate.startTime!, taskTemplate.endTime!, 
     taskTemplate.deadline!)){throw TaskInvalidTimeException();}
   }
-
+  
   // controller and notif service
   final controller = ref.read(calendarControllerProvider.notifier); 
   final notificationService = ref.read(notificationServiceProvider);

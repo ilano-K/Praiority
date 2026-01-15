@@ -61,6 +61,7 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
     // 2. THE DECISION: Update vs Create
     if (widget.task != null) {
       // EDIT MODE: Preserves the original Task ID
+      debugPrint(widget.task!.startTime.toString());
       return widget.task!.copyWith(
         title: _titleController.text.trim().isEmpty ? "Birthday" : _titleController.text.trim(),
         description: _descController.text.trim(),
