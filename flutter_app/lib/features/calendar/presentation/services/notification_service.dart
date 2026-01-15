@@ -51,4 +51,9 @@ class NotificationService {
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
     );
   }
+  Future<void> cancelNotification(String id) async {
+    int notificationId = id.hashCode.abs();
+    await _plugin.cancel(notificationId);
+    print("Notification $notificationId (Original ID: $id) canceled.");
+  }
 }

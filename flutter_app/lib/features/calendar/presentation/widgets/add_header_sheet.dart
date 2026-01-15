@@ -7,6 +7,7 @@ import 'package:flutter_app/features/calendar/domain/entities/date_range.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'package:flutter_app/features/calendar/presentation/controllers/calendar_controller_providers.dart';
+import 'package:flutter_app/features/calendar/presentation/services/delete_task_service.dart';
 import 'package:flutter_app/features/calendar/presentation/services/save_task_service.dart';
 import 'package:flutter_app/features/calendar/presentation/utils/time_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -62,7 +63,7 @@ class AddSheetHeader extends ConsumerWidget {
             IconButton(
               icon: Icon(
                 // Switches icon based on whether data exists
-                data.saveTemplate().id != null ? Icons.delete_outline : Icons.close, 
+                Icons.delete_outline,
                 size: 28, 
                 // Always uses your theme's onSurface color (Black in Light, White in Dark)
                 color: colorScheme.onSurface,
@@ -71,13 +72,7 @@ class AddSheetHeader extends ConsumerWidget {
               constraints: const BoxConstraints(),
               onPressed: () async {
                 final task = data.saveTemplate();
-                
-                // If it's an existing task, perform the delete logic
-                if (task.id != null) {
-                  await ref.read(calendarControllerProvider.notifier).deleteTask(task.id!);
-                  ref.invalidate(calendarControllerProvider);
-                }
-                
+                await deleteTask(ref, task.id);
                 // Close the sheet
                 Navigator.pop(context);
               },

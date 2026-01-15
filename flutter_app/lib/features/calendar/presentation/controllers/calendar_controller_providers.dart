@@ -93,6 +93,7 @@ class CalendarStateController extends AsyncNotifier<List<Task>>{
 
     state = await AsyncValue.guard(() async {
       await repository.saveAndUpdateTask(task);
+      ref.invalidate(calendarRepositoryProvider);
       return repository.getTasksByRange(_currentRange!.start, _currentRange!.end);
     });
   }
@@ -100,6 +101,7 @@ class CalendarStateController extends AsyncNotifier<List<Task>>{
       final repository = ref.read(calendarRepositoryProvider);
       state = await AsyncValue.guard(() async {
         await repository.deleteTask(taskId);
+        ref.invalidate(calendarRepositoryProvider);
         return repository.getTasksByRange(_currentRange!.start, _currentRange!.end);
       });
     }
