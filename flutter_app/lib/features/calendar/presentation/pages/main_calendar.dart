@@ -25,6 +25,9 @@ import '../../../../core/services/theme/theme_notifier.dart';
 // IMPORTANT: Import Backend
 import '../../domain/entities/task.dart';
 
+// IMPORTANT: Import the task view
+import 'task_view.dart';
+
 class MainCalendar extends ConsumerStatefulWidget {
   const MainCalendar({super.key});
 
@@ -117,8 +120,8 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
         children: [
           _buildAnimatedFabOption("ReOrganize", colorScheme),
           const SizedBox(height: 10),
-          _buildAnimatedFabOption("Chatbot", colorScheme),
-          const SizedBox(height: 10),
+          // _buildAnimatedFabOption("Chatbot", colorScheme),
+          // const SizedBox(height: 10),
           _buildAnimatedFabOption("Task", colorScheme),
           const SizedBox(height: 10),
           SizedBox(
@@ -179,7 +182,15 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
                   const SizedBox(width: 10),
                   Icon(Icons.swap_vert, size: 24, color: colorScheme.onSurface),
                   const SizedBox(width: 10),
-                  Icon(Icons.paste, size: 24, color: colorScheme.onSurface),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const TaskView()),
+                      );
+                    },
+                    child: Icon(Icons.paste, size: 24, color: colorScheme.onSurface),
+                  ),
                 ],
               ),
             ),

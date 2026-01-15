@@ -53,41 +53,60 @@ class AddSheetHeader extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // --- HEADER (Close & Save Buttons) ---
+        // --- HEADER (Close/Delete & Save Buttons) ---
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
+            // If the task has an ID, show Trash Bin. If not, show the standard X.
             IconButton(
-              icon: Icon(Icons.close, size: 28, color: colorScheme.onSurface),
+              icon: Icon(
+                // Switches icon based on whether data exists
+                data.saveTemplate().id != null ? Icons.delete_outline : Icons.close, 
+                size: 28, 
+                // Always uses your theme's onSurface color (Black in Light, White in Dark)
+                color: colorScheme.onSurface,
+              ),
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
-              onPressed: () => Navigator.pop(context),
+              onPressed: () async {
+                final task = data.saveTemplate();
+                
+                // If it's an existing task, perform the delete logic
+                if (task.id != null) {
+                  await ref.read(calendarControllerProvider.notifier).deleteTask(task.id!);
+                  ref.invalidate(calendarControllerProvider);
+                }
+                
+                // Close the sheet
+                Navigator.pop(context);
+              },
             ),
+
+            // SAVE BUTTON
             ElevatedButton(
               onPressed: () async {
                 final task = data.saveTemplate();
                 try {
-                    await saveTask(ref, task);
-
-                    // only runs if NO conflict
-                    ref.invalidate(calendarControllerProvider);
-                    Navigator.pop(context);
-                  } on TaskConflictException {
-                    // TEMPORARY ONLY 
-                    final messenger = ScaffoldMessenger.of(context);
-                    Navigator.pop(context);
-                    messenger.showSnackBar(
-                      const SnackBar(
-                        content: Text('This task conflicts with another task'),
-                      ),
-                    );
-                  }
-                  on TaskInvalidTimeException{
-                    // same code but display task invalid time
-                    debugPrint("INVALID TIME OH NO");
-                  }
-                }, // Use the provided save callback
+                  await saveTask(ref, task);
+                  ref.invalidate(calendarControllerProvider);
+                  Navigator.pop(context);
+                } on TaskConflictException {
+                  _showErrorWarning(
+                    context, 
+                    "Schedule Conflict", 
+                    "This task overlaps with an existing schedule. Please adjust the time."
+                  );
+                } on TaskInvalidTimeException {
+                  _showErrorWarning(
+                    context, 
+                    "Invalid Time", 
+                    "The end time must be after the start time. Please correct the duration."
+                  );
+                } catch (e) {
+                  _showErrorWarning(context, "Error", "An unexpected error occurred: $e");
+                }
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: colorScheme.primary,
                 foregroundColor: colorScheme.onSurface,
@@ -104,7 +123,6 @@ class AddSheetHeader extends ConsumerWidget {
             ),
           ],
         ),
-
         const SizedBox(height: 20),
 
         // --- TITLE ---
@@ -256,4 +274,45 @@ class AddSheetHeader extends ConsumerWidget {
       builder: (context) => newSheet,
     );
   }
+
+// -- ERROR METHOD EWAN --
+void _showErrorWarning(BuildContext context, String title, String message) {
+  // Extract colorScheme from the current context
+  final colorScheme = Theme.of(context).colorScheme;
+
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      backgroundColor: colorScheme.surface, // Set dialog background to match theme
+      title: Row(
+        children: [
+          const Icon(Icons.warning_rounded, color: Colors.orange, size: 28),
+          const SizedBox(width: 10),
+          Text(
+            title, 
+            style: TextStyle(color: colorScheme.onSurface), // Title color
+          ),
+        ],
+      ),
+      content: Text(
+        message,
+        style: TextStyle(color: colorScheme.onSurface.withOpacity(0.8)), // Content color
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          style: TextButton.styleFrom(
+            // --- THIS CHANGES THE TEXT COLOR ---
+            foregroundColor: colorScheme.onSurface, 
+          ),
+          child: const Text(
+            "OK", 
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ),
+      ],
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+    ),
+  );
+}
 }

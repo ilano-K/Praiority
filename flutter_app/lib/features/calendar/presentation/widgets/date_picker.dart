@@ -14,8 +14,17 @@ Future<DateTime?> pickDate(
     lastDate: lastDate ?? DateTime(2030),
     builder: (context, child) {
       final colorScheme = Theme.of(context).colorScheme;
+      
       return Theme(
-        data: Theme.of(context).copyWith(colorScheme: colorScheme),
+        data: Theme.of(context).copyWith(
+          colorScheme: colorScheme,
+          // --- TARGETING OK AND CANCEL BUTTONS ---
+          textButtonTheme: TextButtonThemeData(
+            style: TextButton.styleFrom(
+              foregroundColor: colorScheme.onSurface, // Text color for OK/Cancel
+            ),
+          ),
+        ),
         child: child!,
       );
     },
