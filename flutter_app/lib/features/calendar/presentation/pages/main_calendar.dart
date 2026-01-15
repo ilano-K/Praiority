@@ -7,6 +7,7 @@ import 'package:flutter_app/features/calendar/presentation/controllers/calendar_
 import 'package:flutter_app/features/calendar/presentation/utils/time_utils.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/add_birthday_sheet.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/add_event_sheet.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/date_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'dart:math' as math; 
@@ -415,28 +416,18 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
 
   // --- Date Picker Logic ---
   Future<void> _pickDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(context).colorScheme,
-          ),
-          child: child!,
-        );
-      },
-    );
+      final DateTime? picked = await pickDate(
+        context,
+        initialDate: _selectedDate,
+      );
 
-    if (picked != null && picked != _selectedDate) {
-      setState(() {
-        _selectedDate = picked;
-        _calendarController.displayDate = picked;
-      });
+      if (picked != null && picked != _selectedDate) {
+        setState(() {
+          _selectedDate = picked;
+          _calendarController.displayDate = picked;
+        });
+      }
     }
-  }
 
   // --- GAP LOGIC ---
   List<TimeRegion> _getGreyBlocks(ColorScheme colors) {
