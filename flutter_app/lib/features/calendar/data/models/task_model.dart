@@ -26,6 +26,7 @@ class TaskModel {
 
   String? description;
   String? location;
+  late int colorValue;
 
   DateTime? startTime; 
   DateTime? endTime; 
@@ -63,6 +64,7 @@ class TaskModel {
       title: title,
       description: description,
       location: location,
+      colorValue: colorValue,
       startTime: startTime,
       endTime: endTime,
       deadline: deadline,
@@ -87,6 +89,7 @@ class TaskModel {
       ..title = task.title
       ..description = task.description
       ..location = task.location
+      ..colorValue = task.colorValue
       ..startTime = task.startTime
       ..endTime = task.endTime
       ..deadline = task.deadline
