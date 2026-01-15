@@ -120,6 +120,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
             tags: (_tag == "None") ? null : TaskTags(name: _tag), 
             location: _location,
             recurrenceRule: repeatToRRule(_repeat, start: startTimeForRule),
+            // color VALUE here ex: color.value
           );
         } else {
           // CREATE MODE: Generates a new ID
@@ -134,6 +135,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
             location: _location,
             status: TaskStatus.scheduled,
             recurrenceRule: repeatToRRule(_repeat, start: startTimeForRule)
+            // color VALUE here ex: color.value
           );
         }
       }

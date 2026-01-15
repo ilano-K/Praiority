@@ -147,6 +147,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
               priority: priorityMap[_priority]!,
               category: categoryMap[_category]!,
               tags: tag, // Ensure tags are captured
+              // color VALUE here ex: color.value
             );
           } else {
             return Task.create(
@@ -159,7 +160,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
               priority: priorityMap[_priority]!,
               category: categoryMap[_category]!,
               tags: tag,
-              // ... rest of parameters
+              // color VALUE here ex: color.value
             );
           }
         }

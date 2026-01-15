@@ -26,7 +26,7 @@ class TaskModel {
 
   String? description;
   String? location;
-  late int colorValue;
+  int? colorValue;
 
   DateTime? startTime; 
   DateTime? endTime; 

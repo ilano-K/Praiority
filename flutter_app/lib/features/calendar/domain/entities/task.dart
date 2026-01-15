@@ -1,5 +1,4 @@
 import 'package:equatable/equatable.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task_tags.dart';
 import 'package:uuid/uuid.dart';
 import 'enums.dart';
@@ -17,7 +16,7 @@ class Task extends Equatable{
   // optional fields
   final String? description;
   final String? location;
-  final Color? color;
+  final int? colorValue;
 
   // time
   final DateTime? startTime; //may be null if smart scheduled
@@ -49,7 +48,7 @@ class Task extends Equatable{
     this.tags,
     this.description,
     this.location,
-    this.color,
+    this.colorValue,
     this.startTime,
     this.endTime,
     this.deadline,
@@ -71,7 +70,7 @@ class Task extends Equatable{
     TaskTags? tags,
     String? description,
     String? location,
-    Color? color,
+    int? colorValue,
     DateTime? startTime,
     DateTime? endTime,
     DateTime? deadline,
@@ -92,7 +91,7 @@ class Task extends Equatable{
       tags: tags,
       description: description,
       location: location,
-      color: color,
+      colorValue: colorValue,
       startTime: startTime,
       endTime: endTime,
       deadline: deadline,
@@ -115,7 +114,7 @@ class Task extends Equatable{
     String? title,
     String? description,
     String? location,
-    Color? color,
+    int? colorValue,
     DateTime? startTime,
     DateTime? endTime,
     DateTime? deadline,
@@ -137,7 +136,7 @@ class Task extends Equatable{
       title: title ?? this.title,
       description: description ?? this.description,
       location: location ?? this.location,
-      color: color ?? this.color,
+      colorValue: colorValue ?? this.colorValue,
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,
       deadline: deadline ?? this.deadline,
@@ -162,7 +161,7 @@ class Task extends Equatable{
         title,
         description,
         location,
-        color,
+        colorValue,
         startTime,
         endTime,
         deadline,

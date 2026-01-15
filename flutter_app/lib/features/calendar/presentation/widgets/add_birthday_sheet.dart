@@ -54,11 +54,6 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
 
 // --- SAVE CALLBACK ---
   Task _handleSave() {
-    // Birthdays are typically All Day events
-    final startTime = startOfDay(_birthdayDate);
-    final endTime = endOfDay(_birthdayDate);
-
-    // 2. THE DECISION: Update vs Create
     if (widget.task != null) {
       // EDIT MODE: Preserves the original Task ID
       debugPrint(widget.task!.startTime.toString());
@@ -67,6 +62,7 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
         description: _descController.text.trim(),
         isAllDay: true,
         location: _location,
+        // color VALUE here ex: color.value
       );
     } else {
       // CREATE MODE: Generates a new unique ID
@@ -77,6 +73,7 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
         isAllDay: true,
         location: _location,
         status: TaskStatus.scheduled,
+        // color VALUE here ex: color.value
       );
     }
   }

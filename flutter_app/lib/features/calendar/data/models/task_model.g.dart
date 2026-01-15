@@ -222,7 +222,7 @@ TaskModel _taskModelDeserialize(
   object.category =
       _TaskModelcategoryValueEnumMap[reader.readStringOrNull(offsets[0])] ??
           TaskCategory.easy;
-  object.colorValue = reader.readLong(offsets[1]);
+  object.colorValue = reader.readLongOrNull(offsets[1]);
   object.deadline = reader.readDateTimeOrNull(offsets[2]);
   object.description = reader.readStringOrNull(offsets[3]);
   object.durationMinutes = reader.readLongOrNull(offsets[4]);
@@ -261,7 +261,7 @@ P _taskModelDeserializeProp<P>(
       return (_TaskModelcategoryValueEnumMap[reader.readStringOrNull(offset)] ??
           TaskCategory.easy) as P;
     case 1:
-      return (reader.readLong(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 2:
       return (reader.readDateTimeOrNull(offset)) as P;
     case 3:
@@ -670,8 +670,25 @@ extension TaskModelQueryFilter
     });
   }
 
+  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> colorValueIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'colorValue',
+      ));
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition>
+      colorValueIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'colorValue',
+      ));
+    });
+  }
+
   QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> colorValueEqualTo(
-      int value) {
+      int? value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'colorValue',
@@ -682,7 +699,7 @@ extension TaskModelQueryFilter
 
   QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition>
       colorValueGreaterThan(
-    int value, {
+    int? value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -695,7 +712,7 @@ extension TaskModelQueryFilter
   }
 
   QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> colorValueLessThan(
-    int value, {
+    int? value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -708,8 +725,8 @@ extension TaskModelQueryFilter
   }
 
   QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> colorValueBetween(
-    int lower,
-    int upper, {
+    int? lower,
+    int? upper, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
@@ -2930,7 +2947,7 @@ extension TaskModelQueryProperty
     });
   }
 
-  QueryBuilder<TaskModel, int, QQueryOperations> colorValueProperty() {
+  QueryBuilder<TaskModel, int?, QQueryOperations> colorValueProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'colorValue');
     });
