@@ -2,6 +2,7 @@
 // Purpose: Header UI for add/edit sheets, shows title and actions.
 import 'package:flutter/material.dart';
 import 'package:flutter_app/core/errors/task_conflict_exception.dart';
+import 'package:flutter_app/core/errors/task_invalid_time_exception.dart';
 import 'package:flutter_app/features/calendar/domain/entities/date_range.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
@@ -66,12 +67,6 @@ class AddSheetHeader extends ConsumerWidget {
             ElevatedButton(
               onPressed: () async {
                 final task = data.saveTemplate();
-                final taskDay = dateOnly(task.startTime!);
-
-                //returns the day the task is supposed to be scheduled on 
-                final dateRange = DateRange(
-                  scope: CalendarScope.day, 
-                  startTime: taskDay);
                 try {
                     await saveTask(ref, task);
 
@@ -87,6 +82,10 @@ class AddSheetHeader extends ConsumerWidget {
                         content: Text('This task conflicts with another task'),
                       ),
                     );
+                  }
+                  on TaskInvalidTimeException{
+                    // same code but display task invalid time
+                    debugPrint("INVALID TIME OH NO");
                   }
                 }, // Use the provided save callback
               style: ElevatedButton.styleFrom(

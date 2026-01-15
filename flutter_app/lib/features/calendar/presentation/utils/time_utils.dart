@@ -1,4 +1,6 @@
 // Returns a DateTime object with only the date components (year, month, day)
+import 'dart:ffi';
+
 DateTime dateOnly(DateTime dateTime) {
   return DateTime(dateTime.year, dateTime.month, dateTime.day);
 }
@@ -28,3 +30,14 @@ DateTime endOfMonth(DateTime date) {
         : DateTime(date.year + 1, 1, 1); // handle December
     return firstOfNextMonth.subtract(const Duration(seconds: 1));
   }
+
+bool validDateTime(DateTime startTime, DateTime endTime, DateTime? deadline){
+  if(!startTime.isBefore(endTime)){
+    return false;
+  }
+  // if task type is task 
+  if(deadline != null){
+    return !deadline.isBefore(endTime);
+  }
+  return true;
+}
