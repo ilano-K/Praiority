@@ -1,5 +1,5 @@
 // File: lib/features/calendar/presentation/pages/main_calendar.dart
-// Purpose: Main calendar page UI that displays day/week/month views and tasks.
+// Purpose: Main calendar page UI with side-by-side layout, scrollable header, and custom theme integration.
 import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/domain/entities/date_range.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
@@ -12,21 +12,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'dart:math' as math; 
 import 'dart:async';
-// Alias to avoid conflict with Riverpod
 
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 
-// IMPORTANT: Import your Widgets
 import '../widgets/add_task_sheet.dart'; 
 import '../widgets/appointment_card.dart'; 
-
-// IMPORTANT: Import your ThemeProvider
 import '../../../../core/services/theme/theme_notifier.dart'; 
-
-// IMPORTANT: Import Backend
 import '../../domain/entities/task.dart';
-
-// IMPORTANT: Import the task view
 import 'task_view.dart';
 
 class MainCalendar extends ConsumerStatefulWidget {
@@ -38,11 +30,9 @@ class MainCalendar extends ConsumerStatefulWidget {
 
 class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerProviderStateMixin {
   DateTime _selectedDate = dateOnly(DateTime.now());
-
   DateTime? _lastRangeDate;
   Timer? _debounceTimer;
 
-  //THIS IS THE ONLY RED LINE
   final CalendarController _calendarController = CalendarController();
   late AnimationController _fabController;
   late Animation<double> _fabAnimation;
@@ -59,12 +49,10 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
       parent: _fabController, 
       curve: Curves.easeOut,
     );
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(calendarControllerProvider.notifier).setRange(
-        DateRange(
-          scope: CalendarScope.day,
-          startTime: _selectedDate,
-        ),
+        DateRange(scope: CalendarScope.day, startTime: _selectedDate),
       );
     });
   }
@@ -72,293 +60,144 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
   @override
   void dispose() {
     _fabController.dispose();
+    _debounceTimer?.cancel();
     super.dispose();
   }
 
   void _toggleFab() {
-    if (_fabController.isDismissed) {
-      _fabController.forward(); 
-    } else {
-      _fabController.reverse(); 
-    }
+    _fabController.isDismissed ? _fabController.forward() : _fabController.reverse();
+  }
+
+  void _openTaskSheet(Task task) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        if (task.type == TaskType.event) {
+          return AddEventSheet(task: task);
+        } else if (task.type == TaskType.birthday) {
+          return AddBirthdaySheet(task: task);
+        } else {
+          return AddTaskSheet(task: task);
+        }
+      },
+    );
   }
   
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-
-    // 1. WATCH THE DATABASE
-    // This automatically fetches tasks for the selected date.
-    // When you swipe to a new day, _selectedDate updates, and this refetches.
-    // DateRange dateRange = DateRange(
-    // scope: CalendarScope.day,
-    // startTime: dateOnly(_selectedDate),
-    // );
-
     final tasksAsync = ref.watch(calendarControllerProvider);
 
-    tasksAsync.when(
-    data: (tasks) {
-      if (tasks.isNotEmpty) {
-        debugPrint(tasks.first.toString());
-      }
-    },
-    loading: () {
-      debugPrint('Loading...');
-    },
-    error: (e, st) {
-      debugPrint('Error: $e');
-    },
-    );
-    //add task logic here
     return Scaffold(
       backgroundColor: colorScheme.surface,
-
-      // --- ANIMATED FAB ---
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          _buildAnimatedFabOption("ReOrganize", colorScheme),
-          const SizedBox(height: 10),
-          // _buildAnimatedFabOption("Chatbot", colorScheme),
-          // const SizedBox(height: 10),
-          _buildAnimatedFabOption("Task", colorScheme),
-          const SizedBox(height: 10),
-          SizedBox(
-            width: 65,
-            height: 65,
-            child: FloatingActionButton(
-              backgroundColor: colorScheme.primary,
-              shape: const CircleBorder(),
-              elevation: 4,
-              onPressed: _toggleFab,
-              child: AnimatedBuilder(
-                animation: _fabController,
-                builder: (context, child) {
-                  return Transform.rotate(
-                    angle: _fabController.value * math.pi / 4,
-                    child: Icon(Icons.add, size: 32, color: colorScheme.onSurface),
-                  );
-                },
-              ),
-            ),
-          ),
-        ],
-      ),
-
+      floatingActionButton: _buildMainFab(colorScheme),
       body: SafeArea(
         child: Column(
           children: [
-            // --- Top Menu Header ---
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      ref.read(themeProvider.notifier).toggleTheme();
-                    },
-                    child: Icon(Icons.menu, size: 30, color: colorScheme.onSurface),
-                  ),
-                  const SizedBox(width: 15),
-                  GestureDetector(
-                    onTap: () => _pickDate(context),
-                    child: Row(
-                      children: [
-                        Text(
-                          DateFormat('MMMM').format(_selectedDate),
-                          style: TextStyle(
-                            fontSize: 22, 
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.onSurface
-                          ),
-                        ),
-                        Icon(Icons.arrow_drop_down, color: colorScheme.onSurface),
-                      ],
-                    ),
-                  ),
-                  const Spacer(),
-                  Icon(Icons.refresh, size: 24, color: colorScheme.onSurface),
-                  const SizedBox(width: 10),
-                  Icon(Icons.swap_vert, size: 24, color: colorScheme.onSurface),
-                  const SizedBox(width: 10),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const TaskView()),
-                      );
-                    },
-                    child: Icon(Icons.paste, size: 24, color: colorScheme.onSurface),
-                  ),
-                ],
-              ),
-            ),
+            // --- 1. Top Navigation Menu ---
+            _buildAppBar(context, colorScheme),
 
-            // --- Main Content Area ---
+            // --- 2. Main Content (Sidebar + Calendar) ---
             Expanded(
-              child: Stack(
-                children: [
-                  // LAYER 1: Scrollable Content
-                  Column(
+              child: tasksAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (err, stack) => Center(child: Text("Error: $err")),
+                data: (tasks) {
+                  final allDayTasks = tasks.where((t) => t.isAllDay || t.type == TaskType.birthday).toList();
+                  final scheduledTasks = tasks.where((t) => !t.isAllDay && t.type != TaskType.birthday && t.startTime != null).toList();
+
+                  return Column(
                     children: [
-                      // --- 1. Fixed Height Panel (70px) ---
+                      // --- HEADER ROW (RESTORED TO GREEN) ---
                       Container(
-                        padding: const EdgeInsets.only(left: 60), 
-                        constraints: const BoxConstraints(minHeight: 90),
+                        color: Colors.green, // Restored to hardcoded Green
                         width: double.infinity,
-                        color: colorScheme.surface,
-                        child: const Column(
+                        child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                        ),
-                      ),
-
-                      // --- 2. THE CALENDAR (Connected to Riverpod) ---
-                      Expanded(
-                        child: tasksAsync.when(
-                          // LOADING STATE
-                          loading: () => const Center(child: CircularProgressIndicator()),
-                          
-                          // ERROR STATE
-                          error: (err, stack) => Center(child: Text("Error: $err")),
-                          
-                          // SUCCESS STATE
-                          data: (tasks) {
-                            // Filter only scheduled tasks for the calendar view
-                            final scheduledTasks = tasks.where((t) => t.startTime != null && t.endTime != null).toList();
-
-                            return SfCalendar(
-                              view: CalendarView.day,
-                              controller: _calendarController,
-                              headerHeight: 0,
-                              viewHeaderHeight: 0,
-                              backgroundColor: colorScheme.surface,
-                              cellBorderColor: Colors.transparent,
-                              
-                              // 2a. CONNECT THE DATA SOURCE
-                              dataSource: _TaskDataSource(scheduledTasks),
-                              
-                              // 2b. USE YOUR CUSTOM CARD
-                              appointmentBuilder: (context, details) {
-                                final Appointment appointment = details.appointments.first;
-                                return AppointmentCard(appointment: appointment);
-                              },
-
-                              specialRegions: _getGreyBlocks(colorScheme),
-                              
-                              onViewChanged: (ViewChangedDetails details) {
-                                 if (details.visibleDates.isEmpty) return;
-
-                                final newDate = dateOnly(details.visibleDates.first);
-
-                                // Ignore if same as last notified
-                                if (_lastRangeDate != null && _lastRangeDate == newDate) return;
-
-                                // Cancel previous debounce timer
-                                _debounceTimer?.cancel();
-
-                                _debounceTimer = Timer(const Duration(milliseconds: 150), () {
-                                  if (!mounted) return;
-
-                                  setState(() {
-                                    _selectedDate = newDate;
-                                  });
-
-                                  _lastRangeDate = newDate;
-
-                                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                                    ref.read(calendarControllerProvider.notifier).setRange(
-                                      DateRange(scope: CalendarScope.day, startTime: newDate),
-                                    );
-                                  });
-                                });
-                              },
-
-                              
-                              onTap: (CalendarTapDetails details) {
-                              // 1. Check if an appointment was actually tapped
-                              if (details.targetElement == CalendarElement.appointment && details.appointments != null) {
-                                
-                                // 2. This is currently an 'Appointment' object, not a 'Task'
-                                final Appointment selectedAppt = details.appointments!.first;
-
-                                // 3. Get the list of tasks currently loaded in the calendar
-                                // We use the 'tasks' list from your tasksAsync.when(data: (tasks) => ...)
-                                // If you are outside that scope, you may need to find it from the provider
-                                final Task tappedTask = tasks.firstWhere((t) => t.id == selectedAppt.id);
-
-                                // 4. Now pass the actual Task entity to the sheet
-                                showModalBottomSheet(
-                                  context: context,
-                                  isScrollControlled: true,
-                                  backgroundColor: Colors.transparent,
-                                  builder: (context) {
-                                    if (tappedTask.type == TaskType.event) {
-                                      return AddEventSheet(task: tappedTask);
-                                    } else if (tappedTask.type == TaskType.birthday) {
-                                      return AddBirthdaySheet(task: tappedTask);
-                                    } else {
-                                      return AddTaskSheet(task: tappedTask);
-                                    }
-                                  },
-                                );
-                              }
-                            },
-                              timeSlotViewSettings: TimeSlotViewSettings(
-                                timeRulerSize: 60,
-                                timeTextStyle: TextStyle(
-                                  color: colorScheme.onSurface,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 12,
-                                ),
-                                timeIntervalHeight: 80,
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  // LAYER 2: Sidebar Overlay (Date Indicator)
-                  Positioned(
-                    left: 0,
-                    top: 0,
-                    width: 60,
-                    child: Container(
-                      color: Colors.transparent, 
-                      padding: const EdgeInsets.only(top: 10, bottom: 10),
-                      child: GestureDetector(
-                        onTap: () => _pickDate(context),
-                        behavior: HitTestBehavior.opaque,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(
-                              DateFormat('E').format(_selectedDate), 
-                              style: TextStyle(
-                                fontSize: 16, 
-                                fontWeight: FontWeight.w500,
-                                color: colorScheme.onSurface,
+                            // Left Sidebar: Date Indicator
+                            _buildDateSidebar(colorScheme),
+
+                            // Right: Scrollable All-Day/Birthday Tasks
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.only(top: 12, right: 12, bottom: 8),
+                                child: SizedBox(
+                                  height: 80, 
+                                  child: SingleChildScrollView(
+                                    physics: const BouncingScrollPhysics(),
+                                    child: Column(
+                                      children: allDayTasks.map((task) => Padding(
+                                        padding: const EdgeInsets.only(bottom: 4),
+                                        child: GestureDetector(
+                                          onTap: () => _openTaskSheet(task),
+                                          child: Container(
+                                            width: double.infinity,
+                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                            decoration: BoxDecoration(
+                                              color: colorScheme.tertiary, // Uses your "Clicked" theme color
+                                              borderRadius: BorderRadius.circular(4),
+                                            ),
+                                            child: Text(
+                                              task.title,
+                                              style: TextStyle(
+                                                fontSize: 13, 
+                                                fontWeight: FontWeight.w600, 
+                                                color: colorScheme.onSurface
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ),
+                                      )).toList(),
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              DateFormat('d').format(_selectedDate), 
-                              style: TextStyle(
-                                fontSize: 26, 
-                                fontWeight: FontWeight.bold,
-                                color: colorScheme.onSurface
-                              ),
-                            ),
-                            Icon(Icons.arrow_drop_down, size: 20, color: colorScheme.onSurface),
                           ],
                         ),
                       ),
-                    ),
-                  ),
-                ],
+
+                      // --- CALENDAR GRID ---
+                      Expanded(
+                        child: SfCalendar(
+                          view: CalendarView.day,
+                          controller: _calendarController,
+                          headerHeight: 0,
+                          viewHeaderHeight: 0,
+                          backgroundColor: colorScheme.surface,
+                          cellBorderColor: Colors.transparent,
+                          dataSource: _TaskDataSource(scheduledTasks),
+                          appointmentBuilder: (context, details) {
+                            return AppointmentCard(appointment: details.appointments.first);
+                          },
+                          // Reverted hourly slots back to your Theme's Secondary (DFDFDF or 3A3A3A)
+                          specialRegions: _getGreyBlocks(colorScheme.secondary), 
+                          onViewChanged: _handleViewChanged,
+                          onTap: (CalendarTapDetails details) {
+                            if (details.targetElement == CalendarElement.appointment && details.appointments != null) {
+                              final Appointment selectedAppt = details.appointments!.first;
+                              final Task tappedTask = tasks.firstWhere((t) => t.id == selectedAppt.id);
+                              _openTaskSheet(tappedTask); 
+                            }
+                          },
+                          timeSlotViewSettings: TimeSlotViewSettings(
+                            timeRulerSize: 60,
+                            timeTextStyle: TextStyle(
+                              color: colorScheme.onSurface, 
+                              fontWeight: FontWeight.w600, 
+                              fontSize: 11
+                            ),
+                            timeIntervalHeight: 80,
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           ],
@@ -367,8 +206,136 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
     );
   }
 
+  // --- UI Component Builders ---
 
-  // --- FAB OPTION BUILDER ---
+  Widget _buildAppBar(BuildContext context, ColorScheme colorScheme) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () => ref.read(themeProvider.notifier).toggleTheme(),
+            child: Icon(Icons.menu, size: 30, color: colorScheme.onSurface),
+          ),
+          const SizedBox(width: 15),
+          GestureDetector(
+            onTap: () => _pickDate(context),
+            child: Row(
+              children: [
+                Text(
+                  DateFormat('MMMM').format(_selectedDate), 
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: colorScheme.onSurface)
+                ),
+                Icon(Icons.arrow_drop_down, color: colorScheme.onSurface),
+              ],
+            ),
+          ),
+          const Spacer(),
+          Icon(Icons.refresh, size: 24, color: colorScheme.onSurface),
+          const SizedBox(width: 10),
+          Icon(Icons.swap_vert, size: 24, color: colorScheme.onSurface),
+          const SizedBox(width: 10),
+          GestureDetector(
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TaskView())),
+            child: Icon(Icons.paste, size: 24, color: colorScheme.onSurface),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDateSidebar(ColorScheme colorScheme) {
+    return Container(
+      width: 60,
+      padding: const EdgeInsets.only(top: 10),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            DateFormat('E').format(_selectedDate), 
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: colorScheme.onSurface)
+          ),
+          Text(
+            DateFormat('d').format(_selectedDate), 
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: colorScheme.onSurface)
+          ),
+          Icon(Icons.arrow_drop_down, size: 18, color: colorScheme.onSurface),
+        ],
+      ),
+    );
+  }
+
+  // --- Logic & Helpers ---
+
+  void _handleViewChanged(ViewChangedDetails details) {
+    if (details.visibleDates.isEmpty) return;
+    final newDate = dateOnly(details.visibleDates.first);
+    if (_lastRangeDate == newDate) return;
+
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 150), () {
+      if (!mounted) return;
+      setState(() => _selectedDate = newDate);
+      _lastRangeDate = newDate;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(calendarControllerProvider.notifier).setRange(DateRange(scope: CalendarScope.day, startTime: newDate));
+      });
+    });
+  }
+
+  Future<void> _pickDate(BuildContext context) async {
+    final DateTime? picked = await pickDate(context, initialDate: _selectedDate);
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+        _calendarController.displayDate = picked;
+      });
+    }
+  }
+
+  List<TimeRegion> _getGreyBlocks(Color color) {
+    List<TimeRegion> regions = [];
+    final DateTime anchorDate = DateTime(2020, 1, 1);
+    for (int i = 0; i < 24; i++) {
+      regions.add(TimeRegion(
+        startTime: anchorDate.copyWith(hour: i, minute: 0),
+        endTime: anchorDate.copyWith(hour: i, minute: 52), 
+        color: color, 
+        enablePointerInteraction: true,
+        recurrenceRule: 'FREQ=DAILY;INTERVAL=1',
+      ));
+    }
+    return regions;
+  }
+
+  Widget _buildMainFab(ColorScheme colorScheme) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        _buildAnimatedFabOption("ReOrganize", colorScheme),
+        const SizedBox(height: 10),
+        _buildAnimatedFabOption("Task", colorScheme),
+        const SizedBox(height: 10),
+        SizedBox(
+          width: 65, height: 65,
+          child: FloatingActionButton(
+            backgroundColor: colorScheme.primary, 
+            shape: const CircleBorder(),
+            onPressed: _toggleFab,
+            child: AnimatedBuilder(
+              animation: _fabController,
+              builder: (context, child) => Transform.rotate(
+                angle: _fabController.value * math.pi / 4,
+                child: Icon(Icons.add, size: 32, color: colorScheme.onSurface), 
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildAnimatedFabOption(String label, ColorScheme colors) {
     return ScaleTransition(
       scale: _fabAnimation, 
@@ -377,96 +344,39 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
         opacity: _fabAnimation, 
         child: GestureDetector(
           onTap: () {
-            _toggleFab(); 
+            _toggleFab();
             if (label == "Task") {
-               showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (context) => const AddTaskSheet(),
-              );
+              showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: Colors.transparent, builder: (context) => const AddTaskSheet());
             }
           },
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             decoration: BoxDecoration(
-              color: colors.primary.withOpacity(0.9),
-              borderRadius: BorderRadius.circular(30),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+              color: colors.primary.withOpacity(0.9), 
+              borderRadius: BorderRadius.circular(30)
             ),
             child: Text(
-              label,
-              style: TextStyle(
-                color: colors.onSurface,
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-              ),
+              label, 
+              style: TextStyle(color: colors.onSurface, fontWeight: FontWeight.w600, fontSize: 14) 
             ),
           ),
         ),
       ),
     );
   }
-
-  // --- Date Picker Logic ---
-  Future<void> _pickDate(BuildContext context) async {
-      final DateTime? picked = await pickDate(
-        context,
-        initialDate: _selectedDate,
-      );
-
-      if (picked != null && picked != _selectedDate) {
-        setState(() {
-          _selectedDate = picked;
-          _calendarController.displayDate = picked;
-        });
-      }
-    }
-
-  // --- GAP LOGIC ---
-  List<TimeRegion> _getGreyBlocks(ColorScheme colors) {
-    List<TimeRegion> regions = [];
-    final DateTime anchorDate = DateTime(2020, 1, 1);
-
-    for (int i = 0; i < 24; i++) {
-      regions.add(TimeRegion(
-        startTime: anchorDate.copyWith(hour: i, minute: 0, second: 0),
-        endTime: anchorDate.copyWith(hour: i, minute: 52, second: 0), 
-        color: colors.secondary, 
-        enablePointerInteraction: true,
-        text: '',
-        recurrenceRule: 'FREQ=DAILY;INTERVAL=1',
-      ));
-    }
-    return regions;
-  }
 }
 
-// -----------------------------------------------------------------------------
-// HELPER: DATA SOURCE
-// Bridges your Task Entity to Syncfusion's Appointment System
-// -----------------------------------------------------------------------------
 class _TaskDataSource extends CalendarDataSource {
   _TaskDataSource(List<Task> tasks) {
-    appointments = tasks.map((task) {
-      return Appointment(
-        id: task.id,
-        subject: task.title,
-        startTime: task.startTime!,
-        endTime: task.endTime!,
-        notes: task.description,
-        // You can map category to color here if needed, 
-        // or let AppointmentCard handle it with transparent.
-        color: Colors.transparent, 
-        isAllDay: task.isAllDay,
-        recurrenceRule: task.recurrenceRule
-      );
-    }).toList();
+    appointments = tasks.map((task) => Appointment(
+      id: task.id,
+      subject: task.title,
+      startTime: task.startTime!,
+      endTime: task.endTime!,
+      notes: task.description,
+      color: Colors.transparent, 
+      isAllDay: task.isAllDay,
+      recurrenceRule: task.recurrenceRule,
+    )).toList();
   }
 }
