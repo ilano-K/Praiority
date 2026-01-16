@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/data/models/task_model.dart';
+import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'package:flutter_app/features/calendar/presentation/utils/time_utils.dart';
 import  'package:rrule/rrule.dart';
@@ -11,10 +12,8 @@ class TaskUtils{
   static bool checkTaskConflict(List<Task> tasks, DateTime date, Task taskToSchedule){
     for (final task in tasks) {
       if (task.id == taskToSchedule.id) continue;
-      if (timeConflict(task, taskToSchedule)){
-
-        return true;
-      }
+      if(task.type == TaskType.birthday) return false;
+      if (timeConflict(task, taskToSchedule)) return true;
     }
     return false;
   }

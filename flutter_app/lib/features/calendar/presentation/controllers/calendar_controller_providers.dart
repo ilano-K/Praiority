@@ -77,8 +77,6 @@ class CalendarStateController extends AsyncNotifier<List<Task>>{
       }
     }
 
-    debugPrint("Saving task... check range: $checkStart -> $checkEnd");
-
     // Fetch all tasks once for the whole span, then check day-by-day for conflicts.
     final tasksInRange = await repository.getTasksByRange(checkStart, checkEnd);
 
