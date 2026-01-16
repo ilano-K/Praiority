@@ -35,7 +35,7 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
 
   final CalendarController _calendarController = CalendarController();
   late AnimationController _fabController;
-  late Animation<double> _fabAnimation;
+  late Animation<double> _fabAnimation; 
 
   @override
   void initState() {
@@ -368,7 +368,9 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
 
 class _TaskDataSource extends CalendarDataSource {
   _TaskDataSource(List<Task> tasks) {
-    appointments = tasks.map((task) => Appointment(
+    appointments = tasks
+    .where((task) => task.status == TaskStatus.scheduled)
+    .map((task) => Appointment(
       id: task.id,
       subject: task.title,
       startTime: task.startTime!,

@@ -134,7 +134,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
             tags: (_tag == "None") ? null : TaskTags(name: _tag), 
             location: _location,
             status: TaskStatus.scheduled,
-            recurrenceRule: repeatToRRule(_repeat, start: startTimeForRule)
+            recurrenceRule: repeatToRRule(_repeat, start: startTimeForRule),
             // color VALUE here ex: color.value
           );
         }

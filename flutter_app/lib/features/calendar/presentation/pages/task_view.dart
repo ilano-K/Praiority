@@ -1,30 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
+import 'package:flutter_app/features/calendar/domain/entities/task.dart';
+import 'package:flutter_app/features/calendar/presentation/controllers/calendar_controller_providers.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/date_picker.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../widgets/tag_selector.dart';
 import '../widgets/category_selector.dart';
 
-class TaskView extends StatefulWidget {
+class TaskView extends ConsumerStatefulWidget {
   const TaskView({super.key});
 
   @override
-  State<TaskView> createState() => _TaskViewState();
+  ConsumerState<TaskView> createState() => _TaskViewState();
 }
 
-class _TaskViewState extends State<TaskView> {
+class _TaskViewState extends ConsumerState<TaskView> {
   // --- STATE FOR EXPANSION ---
   bool _isScheduledExpanded = false;
-
+  bool _isPendingExpanded = false;
+  bool _isCompletedExpanded = false;
+  bool _isPastDeadlineExpanded = false;
   // --- DUMMY DATA ---
   // NOTE: This is dummy data for demonstration purposes.
-  final List<String> _dummyTasks = [
-    "TASK NAME",
-    "TASK NAME",
-  ];
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final tasksAsync = ref.watch(calendarControllerProvider);
     
+    // final scheduleTasks = tasks.whenData((data) => data.where((t)=> t.status == TaskStatus.scheduled).toList());
+    // final pending = tasks.whenData((data) => data.where((t)=> t.status == TaskStatus.unscheduled).toList());
+    // final completed = tasks.whenData((data) => data.where((t)=> t.status == TaskStatus.completed).toList());
     return Scaffold(
       backgroundColor: colorScheme.surface,
       appBar: AppBar(
@@ -56,42 +62,58 @@ class _TaskViewState extends State<TaskView> {
           child: Divider(color: colorScheme.onSurface.withOpacity(0.1), height: 1),
         ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-        children: [
-          // 1. My Scheduled Tasks (Animated Expansion)
-          _buildExpandableCategory(
-            context, 
-            "My Scheduled Tasks", 
-            2, 
-            _isScheduledExpanded,
-            () => setState(() => _isScheduledExpanded = !_isScheduledExpanded),
-          ),
-          
-          _buildTaskCategory(context, "Pending", 0),
-          _buildTaskCategory(context, "Completed", 0),
-          _buildTaskCategory(context, "Past Deadlines", 0),
+      body: tasksAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text(e.toString())),
+        data: (tasks) {
+          final scheduled = tasks
+              .where((t) => t.status == TaskStatus.scheduled)
+              .toList();
 
-          const SizedBox(height: 40),
-          Center(
-            child: Text(
-              "Note: Task names shown above are temporary dummy data.",
-              style: TextStyle(
-                color: colorScheme.onSurface.withOpacity(0.4),
-                fontSize: 12,
-                fontStyle: FontStyle.italic,
+          final pending = tasks
+              .where((t) => t.status == TaskStatus.unscheduled)
+              .toList();
+
+          final completed = tasks
+              .where((t) => t.status == TaskStatus.completed)
+              .toList();
+
+          return ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+            children: [
+              _buildExpandableCategory(
+                context,
+                scheduled, 
+                "My Scheduled Tasks",
+                _isScheduledExpanded,
+                () => setState(() => _isScheduledExpanded = !_isScheduledExpanded),
               ),
-            ),
-          ),
-        ],
+              _buildExpandableCategory(
+                context,
+                pending, 
+                "My Pending Tasks",
+                _isPendingExpanded,
+                () => setState(() => _isPendingExpanded = !_isPendingExpanded),
+              ),
+              _buildExpandableCategory(
+                context,
+                completed, 
+                "My Completed Tasks",
+                _isCompletedExpanded,
+                () => setState(() => _isCompletedExpanded = !_isCompletedExpanded),
+              ),
+
+            ],
+          );
+        },
       ),
     );
   }
 
   // --- WIDGET HELPER: Animated Expandable Category ---
-  Widget _buildExpandableCategory(BuildContext context, String title, int count, bool isExpanded, VoidCallback onTap) {
+  Widget _buildExpandableCategory(BuildContext context, List<Task>tasks, String title,  bool isExpanded, VoidCallback onTap) {
     final colorScheme = Theme.of(context).colorScheme;
-
+    final tasksCount = tasks.length;
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -109,7 +131,7 @@ class _TaskViewState extends State<TaskView> {
                 children: [
                   const Spacer(flex: 3),
                   Text(
-                    "$title ($count)",
+                    "$title ($tasksCount)",
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -135,10 +157,10 @@ class _TaskViewState extends State<TaskView> {
                 ? Padding(
                     padding: const EdgeInsets.only(bottom: 16),
                     child: Column(
-                      children: _dummyTasks.map((task) => Padding(
+                      children: tasks.map((task) => Padding(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         child: Text(
-                          task,
+                          task.title,
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,

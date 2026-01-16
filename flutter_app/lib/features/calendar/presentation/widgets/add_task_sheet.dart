@@ -160,6 +160,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
               priority: priorityMap[_priority]!,
               category: categoryMap[_category]!,
               tags: tag,
+              status: TaskStatus.scheduled
               // color VALUE here ex: color.value
             );
           }
