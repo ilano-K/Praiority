@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
-import 'package:flutter_app/features/calendar/domain/entities/task_tags.dart';
+import 'package:flutter_app/features/calendar/domain/entities/task_tag.dart';
 import 'package:flutter_app/features/calendar/presentation/providers/calendar_providers.dart';
 import 'package:flutter_app/features/calendar/presentation/utils/repeat_to_rrule.dart';
 import 'package:flutter_app/features/calendar/presentation/utils/time_adjust.dart';
@@ -46,11 +46,11 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
 
   String _repeat = "None";
   String _location = "None"; 
-  String _tag = "None";
+  List<String> _selectedTags = [];
 
   // --- SELECTED COLOR STATE ---
   CalendarColor _selectedColor = appEventColors[0];
-
+  
   // MASTER TAG LIST (Persists new tags)
   List<String> _tagsList = [];
   @override
@@ -66,7 +66,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
       _startTime = TimeOfDay.fromDateTime(e.startTime ?? DateTime.now());
       _endDate = e.endTime ?? DateTime.now();
       _endTime = TimeOfDay.fromDateTime(e.endTime ?? DateTime.now());
-      _tag = e.tags?.name ?? "None";
+      _selectedTags = e.tags;
       _location = e.location ?? "None";
       // _repeat would need rrule parsing logic here
     }
@@ -74,7 +74,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
     // Fetch tags from repository
     ref.read(calendarRepositoryProvider).getAllTagNames().then((tags) {
       setState(() {
-        _tagsList = tags.isEmpty ? ["None"] : tags;
+        _tagsList = tags.toList();
       });
     });
   }
@@ -102,7 +102,6 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
       );
     }
   
-    TaskTags? tag = (_tag.trim().isEmpty || _tag == "None") ? null : TaskTags(name: _tag);
 
     DateTime startTimeForRule = _isAllDay 
         ? startOfDay(_startDate) 
@@ -117,7 +116,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
             startTime: startTime,
             endTime: endTime,
             isAllDay: _isAllDay,
-            tags: (_tag == "None") ? null : TaskTags(name: _tag), 
+            tags: _selectedTags, 
             location: _location,
             recurrenceRule: repeatToRRule(_repeat, start: startTimeForRule),
             // color VALUE here ex: color.value
@@ -131,7 +130,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
             startTime: startTime,
             endTime: endTime,
             isAllDay: _isAllDay,
-            tags: (_tag == "None") ? null : TaskTags(name: _tag), 
+            tags: _selectedTags, 
             location: _location,
             status: TaskStatus.scheduled,
             recurrenceRule: repeatToRRule(_repeat, start: startTimeForRule),
@@ -279,26 +278,45 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                   // 5. TAGS
                   _buildInteractiveRow(
                     label: "Tags", 
-                    value: _tag, 
+                    value: _selectedTags.isEmpty ? "None" : _selectedTags.join(", "), 
                     colors: colorScheme,
                     onTap: () {
                       showModalBottomSheet(
                         context: context,
                         isScrollControlled: true,
                         backgroundColor: Colors.transparent,
-                        builder: (context) => TagSelector(
-                          currentTag: _tag,
-                          availableTags: _tagsList,
-                          onTagSelected: (val) => setState(() => _tag = val),
-                          onTagAdded: (newTag) => setState(() => _tagsList.add(newTag)),
-                          onTagRemoved: (tagToRemove) {
-                            setState(() {
-                              _tagsList.remove(tagToRemove);
-                              if (_tag == tagToRemove) _tag = "None";
-                            });
-                            Navigator.pop(context); 
-                          },
-                        ),
+                        builder: (context) {
+                          // StatefulBuilder allows the BottomSheet to refresh itself
+                          return StatefulBuilder(
+                            builder: (BuildContext context, StateSetter sheetSetState) {
+                              return TagSelector(
+                                selectedTags: _selectedTags,
+                                availableTags: _tagsList, 
+                                onTagsChanged: (newList) {
+                                  // Update BOTH the parent and the sheet
+                                  setState(() => _selectedTags = newList);
+                                  sheetSetState(() {}); 
+                                },
+                                onTagAdded: (newTag) {
+                                  setState(() {
+                                    if (!_tagsList.contains(newTag)) {
+                                      _tagsList.add(newTag);
+                                    }
+                                  });
+                                  // Update the sheet so the new tag appears immediately
+                                  sheetSetState(() {});
+                                },
+                                onTagRemoved: (removedTag) {
+                                  setState(() {
+                                    _tagsList = List<String>.from(_tagsList)..remove(removedTag);
+                                    _selectedTags = List<String>.from(_selectedTags)..remove(removedTag);
+                                  });
+                                  sheetSetState(() {});
+                                },
+                              );
+                            },
+                          );
+                        }
                       );
                     }
                   ),

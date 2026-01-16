@@ -6,7 +6,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
-import 'package:flutter_app/features/calendar/domain/entities/task_tags.dart';
+import 'package:flutter_app/features/calendar/domain/entities/task_tag.dart';
+import 'package:flutter_app/features/calendar/presentation/controllers/calendar_controller_providers.dart';
 import 'package:flutter_app/features/calendar/presentation/providers/calendar_providers.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/date_picker.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/pick_time.dart';
@@ -41,7 +42,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
   // Dynamic Fields
   String _priority = "Medium";
   String _category = "None";
-  String _tag = "None"; 
+  List<String> _selectedTags = [];
   
   // --- SELECTED COLOR STATE ---
   CalendarColor _selectedColor = appEventColors[0];
@@ -63,7 +64,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
       _endTime = TimeOfDay.fromDateTime(t.endTime ?? DateTime.now().add(const Duration(hours: 1)));
       _deadlineDate = t.deadline ?? DateTime.now();
       _deadlineTime = TimeOfDay.fromDateTime(t.deadline ?? DateTime.now());
-      _tag = t.tags?.name ?? "None";
+      _selectedTags = t.tags;
       
       // Map Enums to Strings
       _priority = t.priority.name[0].toUpperCase() + t.priority.name.substring(1);
@@ -73,7 +74,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
     // Fetch tags from repository
     ref.read(calendarRepositoryProvider).getAllTagNames().then((tags) {
       setState(() {
-        _tagsList = tags.isEmpty ? ["None"] : tags;
+        _tagsList = tags.toList();
       });
     });
   }
@@ -134,10 +135,10 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
         _endTime.hour,
         _endTime.minute,
     );
-
-    TaskTags? tag = (_tag.trim().isEmpty || _tag == "None") ? null : TaskTags(name: _tag);
       // --- 2. THE DECISION (The part you are replacing) ---
           if (widget.task != null) {
+            debugPrint("This is the tags of the task: ${widget.task!.tags}");
+            debugPrint("This is the tags of the task: ${widget.task!.title}");
             return widget.task!.copyWith(
               title: _titleController.text.trim(),
               description: _descController.text.trim(),
@@ -146,10 +147,11 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
               deadline: deadline,
               priority: priorityMap[_priority]!,
               category: categoryMap[_category]!,
-              tags: tag, // Ensure tags are captured
+              tags: _selectedTags, // Ensure tags are captured
               // color VALUE here ex: color.value
             );
           } else {
+            debugPrint("These are the tags $_selectedTags");
             return Task.create(
               type: TaskType.task,
               title: _titleController.text.trim(),
@@ -159,7 +161,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
               deadline: deadline,
               priority: priorityMap[_priority]!,
               category: categoryMap[_category]!,
-              tags: tag,
+              tags: _selectedTags,
               status: TaskStatus.scheduled
               // color VALUE here ex: color.value
             );
@@ -386,26 +388,47 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                   // 6. TAGS
                   _buildInteractiveRow(
                     label: "Tags", 
-                    value: _tag, 
+                    value: _selectedTags.isEmpty ? "None" : _selectedTags.join(", "), 
                     colors: colorScheme,
                     onTap: () {
                       showModalBottomSheet(
                         context: context,
                         isScrollControlled: true,
                         backgroundColor: Colors.transparent,
-                        builder: (context) => TagSelector(
-                          currentTag: _tag,
-                          availableTags: _tagsList,
-                          onTagSelected: (val) => setState(() => _tag = val),
-                          onTagAdded: (newTag) => setState(() => _tagsList.add(newTag)),
-                          onTagRemoved: (removedTag) {
-                            setState(() {
-                              _tagsList.remove(removedTag);
-                              if (_tag == removedTag) _tag = "None";
-                            });
-                            Navigator.pop(context); 
-                          },
-                        ),
+                        builder: (context) {
+                          // StatefulBuilder allows the BottomSheet to refresh itself
+                          return StatefulBuilder(
+                            builder: (BuildContext context, StateSetter sheetSetState) {
+                              return TagSelector(
+                                selectedTags: _selectedTags,
+                                availableTags: _tagsList, 
+                                onTagsChanged: (newList) {
+                                  // Update BOTH the parent and the sheet
+                                  setState(() => _selectedTags = newList);
+                                  sheetSetState(() {}); 
+                                },
+                                onTagAdded: (newTag) async {
+                                  setState(() {
+                                    if (!_tagsList.contains(newTag)) {
+                                      _tagsList.add(newTag);
+                                    }
+                                  });
+                                  await ref.read(calendarControllerProvider.notifier).addTag(newTag);
+                                  // Update the sheet so the new tag appears immediately
+                                  sheetSetState(() {});
+                                },
+                                onTagRemoved: (removedTag) async{
+                                  setState(() {
+                                    _tagsList = List<String>.from(_tagsList)..remove(removedTag);
+                                    _selectedTags = List<String>.from(_selectedTags)..remove(removedTag);
+                                  });
+                                  await ref.read(calendarControllerProvider.notifier).deleteTag(removedTag);
+                                  sheetSetState(() {});
+                                },
+                              );
+                            },
+                          );
+                        }
                       );
                     }
                   ),

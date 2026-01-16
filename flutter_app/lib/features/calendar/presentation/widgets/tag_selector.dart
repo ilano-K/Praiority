@@ -1,21 +1,21 @@
-// File: lib/features/calendar/presentation/widgets/tag_selector.dart
-// Purpose: Widget that lets users pick or create tags for tasks/events.
 import 'package:flutter/material.dart';
 
 class TagSelector extends StatefulWidget {
-  final String currentTag;
-  final List<String> availableTags; 
-  final ValueChanged<String> onTagSelected;
-  final ValueChanged<String> onTagAdded; 
-  final ValueChanged<String> onTagRemoved; 
+  // 1. Change currentTag to a List
+  final List<String> selectedTags; 
+  final List<String> availableTags;
+  // 2. Change callback to return the full updated list
+  final ValueChanged<List<String>> onTagsChanged;
+  final ValueChanged<String> onTagAdded;
+  final ValueChanged<String> onTagRemoved;
 
   const TagSelector({
     super.key,
-    required this.currentTag,
+    required this.selectedTags,
     required this.availableTags,
-    required this.onTagSelected,
+    required this.onTagsChanged,
     required this.onTagAdded,
-    required this.onTagRemoved, 
+    required this.onTagRemoved,
   });
 
   @override
@@ -23,152 +23,163 @@ class TagSelector extends StatefulWidget {
 }
 
 class _TagSelectorState extends State<TagSelector> {
+  
+  // Helper to toggle a tag in the list
+  void _toggleTag(String tag) {
+    List<String> updatedTags = List.from(widget.selectedTags);
+    if (updatedTags.contains(tag)) {
+      updatedTags.remove(tag);
+    } else {
+      updatedTags.add(tag);
+    }
+    widget.onTagsChanged(updatedTags);
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.5,
+        maxHeight: MediaQuery.of(context).size.height * 0.7, // Slightly taller for multi-select
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "Select Tag", 
-            style: TextStyle(
-              fontSize: 20, 
-              fontWeight: FontWeight.bold,
-              color: colorScheme.onSurface, 
-            ),
-          ),
+          _buildHeader(colorScheme),
           const SizedBox(height: 15),
           
-          // --- SCROLLABLE LIST ---
-          Flexible(
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ...widget.availableTags.map((tag) => _buildOption(context, tag)),
-                ],
-              ),
-            ),
-          ),
-
+          _buildInteractiveRow(colorScheme),
+          
           const Divider(),
 
-          // --- ADD NEW BUTTON ---
-          ListTile(
-            onTap: () => _showAddDialog(context),
-            leading: CircleAvatar(
-              backgroundColor: colorScheme.secondary, 
-              radius: 16,
-              child: Icon(Icons.add, size: 20, color: colorScheme.onSurface),
+          Flexible(
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: widget.availableTags.length,
+              itemBuilder: (context, index) {
+                return _buildOption(context, widget.availableTags[index]);
+              },
             ),
-            title: Text(
-              "Add new tag",
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: colorScheme.onSurface,
+          ),
+
+          Padding(
+            padding: const EdgeInsets.only(bottom: 20, top: 10),
+            child: ListTile(
+              onTap: () => _showAddDialog(context),
+              leading: CircleAvatar(
+                backgroundColor: colorScheme.secondaryContainer,
+                radius: 16,
+                child: Icon(Icons.add, size: 20, color: colorScheme.onSecondaryContainer),
+              ),
+              title: Text(
+                "Add new tag",
+                style: TextStyle(fontWeight: FontWeight.w600, color: colorScheme.onSurface),
               ),
             ),
           ),
-          
-          SizedBox(height: MediaQuery.of(context).viewInsets.bottom), 
         ],
       ),
     );
   }
 
+  Widget _buildHeader(ColorScheme colorScheme) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          "Select Tags",
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
+        ),
+        // Add a "Done" button since we no longer pop automatically
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text("Done"),
+        )
+      ],
+    );
+  }
+
+  Widget _buildInteractiveRow(ColorScheme colorScheme) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: widget.availableTags.map((tag) {
+          bool isSelected = widget.selectedTags.contains(tag);
+          return Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: FilterChip( // Changed ChoiceChip to FilterChip
+              label: Text(tag),
+              selected: isSelected,
+              onSelected: (_) => _toggleTag(tag),
+              selectedColor: colorScheme.primaryContainer,
+              checkmarkColor: colorScheme.primary,
+              labelStyle: TextStyle(
+                color: isSelected ? colorScheme.onPrimaryContainer : colorScheme.onSurface,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
   Widget _buildOption(BuildContext context, String label) {
-    bool isSelected = widget.currentTag == label;
+    bool isSelected = widget.selectedTags.contains(label);
     final colorScheme = Theme.of(context).colorScheme;
 
     return ListTile(
-      onTap: () {
-        widget.onTagSelected(label);
-        Navigator.pop(context);
-      },
+      onTap: () => _toggleTag(label),
       leading: Icon(
-        Icons.label_outline, 
-        // Icon is Black (onSurface) if selected, faded if not
-        color: isSelected ? colorScheme.onSurface : colorScheme.onSurface.withOpacity(0.5),
+        isSelected ? Icons.check_circle : Icons.circle_outlined,
+        color: isSelected ? colorScheme.primary : colorScheme.onSurface.withOpacity(0.5),
       ),
       title: Text(
         label,
         style: TextStyle(
-          // Text is Bold if selected
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          // Text is always Black (onSurface)
           color: colorScheme.onSurface,
         ),
       ),
-      // --- TRAILING: Only Delete Button (No Checkmark) ---
       trailing: IconButton(
-        icon: Icon(Icons.close, size: 20, color: colorScheme.onSurface.withOpacity(0.5)),
-        onPressed: () {
-          widget.onTagRemoved(label);
-        },
+        icon: Icon(Icons.close, size: 20, color: colorScheme.error.withOpacity(0.7)),
+        onPressed: () => widget.onTagRemoved(label),
       ),
     );
   }
 
   void _showAddDialog(BuildContext context) {
-    TextEditingController customTagController = TextEditingController();
+    final controller = TextEditingController();
     final colorScheme = Theme.of(context).colorScheme;
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: colorScheme.surface,
-        title: Text("New Tag", style: TextStyle(color: colorScheme.onSurface)),
+        title: const Text("New Tag"),
         content: TextField(
-          controller: customTagController,
+          controller: controller,
           autofocus: true,
-          // 1. Text is onSurface (Black)
-          style: TextStyle(color: colorScheme.onSurface),
-          // 2. Cursor is onSurface (Black)
-          cursorColor: colorScheme.onSurface,
-          decoration: InputDecoration(
-            hintText: "Enter tag name",
-            hintStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.5)),
-            // 3. Focused Line is onSurface (Black)
-            focusedBorder: UnderlineInputBorder(
-              borderSide: BorderSide(color: colorScheme.onSurface),
-            ),
-          ),
+          decoration: const InputDecoration(hintText: "Enter tag name"),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text("Cancel", style: TextStyle(color: colorScheme.onSurface)),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
           ElevatedButton(
             onPressed: () {
-              if (customTagController.text.isNotEmpty) {
-                widget.onTagAdded(customTagController.text);
-                widget.onTagSelected(customTagController.text);
-                Navigator.pop(context); 
+              if (controller.text.isNotEmpty) {
+                widget.onTagAdded(controller.text);
+                _toggleTag(controller.text); // Automatically select the new tag
                 Navigator.pop(context); 
               }
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: colorScheme.primary, 
-              foregroundColor: Colors.black, 
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            ),
-            child: const Text("Add", style: TextStyle(fontWeight: FontWeight.bold)),
+            child: const Text("Add"),
           ),
         ],
       ),

@@ -24,6 +24,15 @@ class CalendarRepositoryImpl implements CalendarRepository{
   }
 
   @override
+  Future<void> saveTag(String tag) async {
+    await localDataSource.saveTag(tag);
+  }
+
+  @override
+  Future<void> deleteTag(String tag) async {
+    await localDataSource.deleteTag(tag);
+  }
+  @override
   Future<List<Task>> getTasksByCategory(TaskCategory category) async {
     final models = await localDataSource.getTasksByCategory(category);
     return models.map((model) => model.toEntity()).toList();
@@ -59,15 +68,6 @@ class CalendarRepositoryImpl implements CalendarRepository{
     final models = await localDataSource.getTasksByType(type);
     return models.map((model) => model.toEntity()).toList();
   }
-
-  // @override
-  // Future<List<Task>> getTasksByRange(DateTime start, DateTime end, {TaskStatus?status, TaskCategory? category, TaskType? type, String? tag}) async {
-  //   final models = await localDataSource.getTasksByRange(start, end, category: category, type: type, tag: tag);
-  //   return TaskUtils.filterValidTasksForDate(models.map(
-  //     (model) => model.toEntity()).toList(), 
-  //     start, 
-  //     end);
-  // }
 
    @override
   Future<List<Task>> getTasksByRange(DateTime start, DateTime end, {TaskStatus?status, TaskCategory? category, TaskType? type, String? tag}) async {

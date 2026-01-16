@@ -94,14 +94,33 @@ class CalendarStateController extends AsyncNotifier<List<Task>>{
       return repository.getTasksByRange(_currentRange!.start, _currentRange!.end);
     });
   }
+
   Future<void>deleteTask(String taskId) async {
-      final repository = ref.read(calendarRepositoryProvider);
-      state = await AsyncValue.guard(() async {
-        await repository.deleteTask(taskId);
-        ref.invalidate(calendarRepositoryProvider);
-        return repository.getTasksByRange(_currentRange!.start, _currentRange!.end);
-      });
-    }
+    final repository = ref.read(calendarRepositoryProvider);
+    state = await AsyncValue.guard(() async {
+      await repository.deleteTask(taskId);
+      ref.invalidate(calendarRepositoryProvider);
+      return repository.getTasksByRange(_currentRange!.start, _currentRange!.end);
+    });
+  }
+
+  Future<void>addTag(String tag) async {
+    final repository = ref.read(calendarRepositoryProvider); 
+    state = await AsyncValue.guard(() async {
+      await repository.saveTag(tag);
+      ref.invalidate(calendarRepositoryProvider);
+      return repository.getTasksByRange(_currentRange!.start, _currentRange!.end);
+    });
+  }
+
+  Future<void>deleteTag(String tag) async {
+    final repository = ref.read(calendarRepositoryProvider); 
+    state = await AsyncValue.guard(() async {
+      await repository.deleteTag(tag);
+      ref.invalidate(calendarRepositoryProvider);
+      return repository.getTasksByRange(_currentRange!.start, _currentRange!.end);
+    });
+  }
 
 }
 

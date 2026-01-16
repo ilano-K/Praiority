@@ -266,21 +266,21 @@ class _TaskViewState extends ConsumerState<TaskView> {
                 );
               }),
 
-              // --- TRIGGER: TAGS ---
-              _buildSortOption(context, "Tags", "None", () {
-                showModalBottomSheet(
-                  context: context,
-                  backgroundColor: Colors.transparent,
-                  isScrollControlled: true,
-                  builder: (context) => TagSelector(
-                    currentTag: "None",
-                    availableTags: const [], // Empty for now
-                    onTagSelected: (val) {},
-                    onTagAdded: (val) {},
-                    onTagRemoved: (val) {},
-                  ),
-                );
-              }),
+              // // --- TRIGGER: TAGS ---
+              // _buildSortOption(context, "Tags", "None", () {
+              //   showModalBottomSheet(
+              //     context: context,
+              //     backgroundColor: Colors.transparent,
+              //     isScrollControlled: true,
+              //     builder: (context) => TagSelector(
+              //       currentTag: "None",
+              //       availableTags: const [], // Empty for now
+              //       onTagSelected: (val) {},
+              //       onTagAdded: (val) {},
+              //       onTagRemoved: (val) {},
+              //     ),
+              //   );
+              // }),
 
               SizedBox(height: MediaQuery.of(context).padding.bottom),
             ],

@@ -7,6 +7,8 @@ import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 abstract class CalendarRepository {
   Future<void>saveAndUpdateTask(Task task);
   Future<void>deleteTask(String id);
+  Future<void> saveTag(String tag);
+  Future<void> deleteTag(String tag);
 
   Future<List<Task>> getTasksByRange(DateTime start, DateTime end, {TaskStatus?status, TaskCategory? category, TaskType? type, String? tag});
 

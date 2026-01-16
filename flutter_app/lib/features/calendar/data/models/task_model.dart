@@ -1,4 +1,4 @@
-import 'package:flutter_app/features/calendar/data/models/task_tags_model.dart';
+import 'package:flutter_app/features/calendar/data/models/task_tag_model.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 
 import '../../domain/entities/task.dart';
@@ -20,7 +20,7 @@ class TaskModel {
   @Enumerated(EnumType.name)
   late TaskCategory category;
 
-  final tags =  IsarLinks<TaskTagsModel>();
+  late List<String> tags;
 
   late String title;
 
@@ -52,15 +52,11 @@ class TaskModel {
 
   // Convert to task object 
   Task toEntity() {
-    final tagEntity = tags.isNotEmpty
-      ? tags.first.toEntity()
-      : null;
-
     return Task(
       id: originalId,
       type: type,
       category: category,
-      tags: tagEntity,
+      tags: tags,
       title: title,
       description: description,
       location: location,
@@ -86,6 +82,7 @@ class TaskModel {
       ..originalId = task.id
       ..type = task.type
       ..category = task.category  
+      ..tags = task.tags
       ..title = task.title
       ..description = task.description
       ..location = task.location
