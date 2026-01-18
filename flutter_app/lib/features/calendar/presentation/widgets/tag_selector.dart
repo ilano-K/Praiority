@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 
 class TagSelector extends StatefulWidget {
-  // 1. Change currentTag to a List
-  final List<String> selectedTags; 
+  final List<String> selectedTags;
   final List<String> availableTags;
-  // 2. Change callback to return the full updated list
   final ValueChanged<List<String>> onTagsChanged;
   final ValueChanged<String> onTagAdded;
   final ValueChanged<String> onTagRemoved;
@@ -23,21 +21,47 @@ class TagSelector extends StatefulWidget {
 }
 
 class _TagSelectorState extends State<TagSelector> {
-  
-  // Helper to toggle a tag in the list
+  final Set<String> _tagsToDelete = {};
+  String _searchQuery = "";
+  bool _isSearching = false; 
+
+  bool get _isDeleting => _tagsToDelete.isNotEmpty;
+  bool get _canSearch => widget.availableTags.length >= 6;
+
   void _toggleTag(String tag) {
-    List<String> updatedTags = List.from(widget.selectedTags);
-    if (updatedTags.contains(tag)) {
-      updatedTags.remove(tag);
+    if (widget.selectedTags.contains(tag)) {
+      widget.onTagsChanged([]);
     } else {
-      updatedTags.add(tag);
+      widget.onTagsChanged([tag]);
     }
-    widget.onTagsChanged(updatedTags);
+  }
+
+  void _toggleDeleteSelection(String tag) {
+    setState(() {
+      if (_tagsToDelete.contains(tag)) {
+        _tagsToDelete.remove(tag);
+      } else {
+        _tagsToDelete.add(tag);
+      }
+    });
+  }
+
+  void _handleBulkDelete() {
+    for (var tag in _tagsToDelete) {
+      widget.onTagRemoved(tag);
+    }
+    setState(() {
+      _tagsToDelete.clear();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+
+    final filteredTags = widget.availableTags
+        .where((tag) => tag.toLowerCase().contains(_searchQuery.toLowerCase()))
+        .toList();
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
@@ -45,42 +69,44 @@ class _TagSelectorState extends State<TagSelector> {
         color: colorScheme.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
+      // --- DYNAMIC SIZE LOGIC ---
+      // We use BoxConstraints so it stays small when empty, grows to 5, 
+      // and locks at 6+ to enable scrolling.
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.7, // Slightly taller for multi-select
+        maxHeight: MediaQuery.of(context).size.height * 0.5,
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: MainAxisSize.min, // Shrinks to content size
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildHeader(colorScheme),
-          const SizedBox(height: 15),
-          
-          _buildInteractiveRow(colorScheme),
-          
-          const Divider(),
+          const SizedBox(height: 10),
+          const Divider(thickness: 1),
 
-          Flexible(
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: widget.availableTags.length,
-              itemBuilder: (context, index) {
-                return _buildOption(context, widget.availableTags[index]);
-              },
+          if (widget.availableTags.isNotEmpty)
+            Flexible( // Flexible allows the list to grow until it hits the maxHeight
+              child: ListView.builder(
+                shrinkWrap: true, // Crucial: allows the list to only take the space it needs
+                itemCount: filteredTags.length,
+                itemBuilder: (context, index) {
+                  return _buildOption(context, filteredTags[index], colorScheme);
+                },
+              ),
             ),
-          ),
 
           Padding(
-            padding: const EdgeInsets.only(bottom: 20, top: 10),
+            padding: const EdgeInsets.only(top: 10, bottom: 20),
             child: ListTile(
               onTap: () => _showAddDialog(context),
-              leading: CircleAvatar(
-                backgroundColor: colorScheme.secondaryContainer,
-                radius: 16,
-                child: Icon(Icons.add, size: 20, color: colorScheme.onSecondaryContainer),
-              ),
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(Icons.add, size: 24, color: colorScheme.onSurface),
               title: Text(
-                "Add new tag",
-                style: TextStyle(fontWeight: FontWeight.w600, color: colorScheme.onSurface),
+                "Add tag",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold, 
+                  color: colorScheme.onSurface,
+                ),
               ),
             ),
           ),
@@ -90,68 +116,111 @@ class _TagSelectorState extends State<TagSelector> {
   }
 
   Widget _buildHeader(ColorScheme colorScheme) {
+    if (_isDeleting) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            "Delete ${_tagsToDelete.length} tags?",
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: colorScheme.onSurface),
+          ),
+          Row(
+            children: [
+              TextButton(
+                onPressed: () => setState(() => _tagsToDelete.clear()),
+                child: Text("Cancel", style: TextStyle(color: colorScheme.onSurface)),
+              ),
+              IconButton(
+                icon: Icon(Icons.delete, color: colorScheme.error),
+                onPressed: _handleBulkDelete,
+              ),
+            ],
+          ),
+        ],
+      );
+    }
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          "Select Tags",
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
-        ),
-        // Add a "Done" button since we no longer pop automatically
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text("Done"),
-        )
+        if (!_isSearching)
+          Text(
+            "Select Tag",
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: colorScheme.onSurface),
+          ),
+        
+        if (_isSearching)
+          Expanded(
+            child: TextField(
+              onChanged: (val) => setState(() => _searchQuery = val),
+              cursorColor: colorScheme.onSurface,
+              autofocus: true,
+              style: TextStyle(color: colorScheme.onSurface),
+              decoration: InputDecoration(
+                hintText: "Search Tag",
+                hintStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.4)),
+                prefixIcon: Icon(Icons.search, color: colorScheme.onSurface),
+                suffixIcon: IconButton(
+                  icon: Icon(Icons.close, color: colorScheme.onSurface),
+                  onPressed: () => setState(() {
+                    _isSearching = false;
+                    _searchQuery = "";
+                  }),
+                ),
+                border: InputBorder.none,
+              ),
+            ),
+          ),
+
+        if (!_isSearching && _canSearch)
+          IconButton(
+            icon: Icon(Icons.search, color: colorScheme.onSurface),
+            onPressed: () => setState(() => _isSearching = true),
+          ),
+        
+        if (!_isSearching && !_canSearch)
+          const SizedBox(height: 48), 
       ],
     );
   }
 
-  Widget _buildInteractiveRow(ColorScheme colorScheme) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: widget.availableTags.map((tag) {
-          bool isSelected = widget.selectedTags.contains(tag);
-          return Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: FilterChip( // Changed ChoiceChip to FilterChip
-              label: Text(tag),
-              selected: isSelected,
-              onSelected: (_) => _toggleTag(tag),
-              selectedColor: colorScheme.primaryContainer,
-              checkmarkColor: colorScheme.primary,
-              labelStyle: TextStyle(
-                color: isSelected ? colorScheme.onPrimaryContainer : colorScheme.onSurface,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              ),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildOption(BuildContext context, String label) {
+  Widget _buildOption(BuildContext context, String label, ColorScheme colorScheme) {
     bool isSelected = widget.selectedTags.contains(label);
-    final colorScheme = Theme.of(context).colorScheme;
+    bool isMarkedForDeletion = _tagsToDelete.contains(label);
 
     return ListTile(
-      onTap: () => _toggleTag(label),
+      onTap: () {
+        if (_isDeleting) {
+          _toggleDeleteSelection(label);
+        } else {
+          _toggleTag(label);
+        }
+      },
+      onLongPress: () => _toggleDeleteSelection(label),
+      contentPadding: EdgeInsets.zero,
       leading: Icon(
-        isSelected ? Icons.check_circle : Icons.circle_outlined,
-        color: isSelected ? colorScheme.primary : colorScheme.onSurface.withOpacity(0.5),
+        _isDeleting
+            ? (isMarkedForDeletion ? Icons.check_box : Icons.check_box_outline_blank)
+            : (isSelected ? Icons.check_circle : Icons.circle_outlined),
+        size: 24,
+        color: _isDeleting && isMarkedForDeletion 
+            ? colorScheme.error 
+            : (isSelected ? colorScheme.primary : colorScheme.onSurface.withOpacity(0.5)),
       ),
       title: Text(
         label,
         style: TextStyle(
+          fontSize: 16,
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           color: colorScheme.onSurface,
         ),
       ),
-      trailing: IconButton(
-        icon: Icon(Icons.close, size: 20, color: colorScheme.error.withOpacity(0.7)),
-        onPressed: () => widget.onTagRemoved(label),
-      ),
+      trailing: _isDeleting 
+        ? null 
+        : IconButton(
+            icon: Icon(Icons.delete_outline, size: 22, color: colorScheme.onSurface),
+            onPressed: () => widget.onTagRemoved(label),
+          ),
     );
   }
 
@@ -163,23 +232,32 @@ class _TagSelectorState extends State<TagSelector> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: colorScheme.surface,
-        title: const Text("New Tag"),
+        title: Text("New Tag", style: TextStyle(color: colorScheme.onSurface, fontWeight: FontWeight.bold)),
         content: TextField(
           controller: controller,
           autofocus: true,
-          decoration: const InputDecoration(hintText: "Enter tag name"),
+          cursorColor: colorScheme.onSurface,
+          style: TextStyle(color: colorScheme.onSurface),
+          decoration: InputDecoration(
+            hintText: "Enter tag name",
+            hintStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.4)),
+            focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: colorScheme.onSurface)),
+          ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
-          ElevatedButton(
+          TextButton(
+            onPressed: () => Navigator.pop(context), 
+            child: Text("Cancel", style: TextStyle(color: colorScheme.onSurface, fontWeight: FontWeight.bold))
+          ),
+          TextButton(
             onPressed: () {
               if (controller.text.isNotEmpty) {
                 widget.onTagAdded(controller.text);
-                _toggleTag(controller.text); // Automatically select the new tag
-                Navigator.pop(context); 
+                _toggleTag(controller.text);
+                Navigator.pop(context);
               }
             },
-            child: const Text("Add"),
+            child: Text("Add", style: TextStyle(color: colorScheme.onSurface, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
