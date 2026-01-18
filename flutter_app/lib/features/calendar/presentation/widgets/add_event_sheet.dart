@@ -69,6 +69,13 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
       _selectedTags = e.tags;
       _location = e.location ?? "None";
       // _repeat would need rrule parsing logic here
+
+      if (e.colorValue != null) {
+        _selectedColor = appEventColors.firstWhere(
+          (c) => c.light.value == e.colorValue || c.dark.value == e.colorValue,
+          orElse: () => appEventColors[0],
+        );
+      }
     }
 
     // Fetch tags from repository
@@ -84,7 +91,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
   final TextEditingController _descController = TextEditingController();
 
   // --- SAVE CALLBACK ---
-  Task createTaskSaveTemplate() {
+  Task createTaskSaveTemplate(bool isDark) {
     DateTime? startTime;
     DateTime? endTime;
 
@@ -108,6 +115,9 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
         : DateTime(_startDate.year, _startDate.month, _startDate.day, _startTime.hour, _startTime.minute);
 
     // 2. THE DECISION: Edit vs Create
+
+    final int colorValue = isDark ? _selectedColor.dark.value : _selectedColor.light.value;
+
         if (widget.task != null) {
           // EDIT MODE: Preserves the Task ID
           return widget.task!.copyWith(
@@ -119,7 +129,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
             tags: _selectedTags, 
             location: _location,
             recurrenceRule: repeatToRRule(_repeat, start: startTimeForRule),
-            // color VALUE here ex: color.value
+            colorValue: colorValue,
           );
         } else {
           // CREATE MODE: Generates a new ID
@@ -134,7 +144,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
             location: _location,
             status: TaskStatus.scheduled,
             recurrenceRule: repeatToRRule(_repeat, start: startTimeForRule),
-            // color VALUE here ex: color.value
+            colorValue: colorValue,
           );
         }
       }
@@ -147,6 +157,8 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
     // 2. USE THEME COLOR
     final Color sheetBackground = colorScheme.inversePrimary; 
 
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     // --- Create Header Data Object ---
     final headerData = HeaderData(
       selectedType: _selectedType,
@@ -156,7 +168,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
       // Update local state when user selects a different type/color
       onTypeSelected: (type) => setState(() => _selectedType = type),
       onColorSelected: (color) => setState(() => _selectedColor = color),
-      saveTemplate: createTaskSaveTemplate,
+      saveTemplate: () => createTaskSaveTemplate(isDark),
     );
 
     return Container(

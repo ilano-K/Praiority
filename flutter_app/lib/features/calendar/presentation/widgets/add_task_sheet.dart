@@ -65,10 +65,18 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
       _deadlineDate = t.deadline ?? DateTime.now();
       _deadlineTime = TimeOfDay.fromDateTime(t.deadline ?? DateTime.now());
       _selectedTags = t.tags;
+
       
       // Map Enums to Strings
       _priority = t.priority.name[0].toUpperCase() + t.priority.name.substring(1);
       _category = t.category.name[0].toUpperCase() + t.category.name.substring(1);
+
+     if (t.colorValue != null) {
+        _selectedColor = appEventColors.firstWhere(
+          (c) => c.light.value == t.colorValue || c.dark.value == t.colorValue,
+          orElse: () => appEventColors[0],
+        );
+      }
     }
 
     // Fetch tags from repository
@@ -111,7 +119,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
   };
 
   // --- SAVE CALLBACK ---
-  Task createTaskSaveTemplate() {
+  Task createTaskSaveTemplate(bool isDark) {
     // Current save logic: just close the sheet (no controller implementation yet)
     DateTime deadline = DateTime(
         _deadlineDate.year,
@@ -136,6 +144,9 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
         _endTime.minute,
     );
       // --- 2. THE DECISION (The part you are replacing) ---
+
+      final int colorValue = isDark ? _selectedColor.dark.value : _selectedColor.light.value;
+
           if (widget.task != null) {
             debugPrint("This is the tags of the task: ${widget.task!.tags}");
             debugPrint("This is the tags of the task: ${widget.task!.title}");
@@ -148,7 +159,8 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
               priority: priorityMap[_priority]!,
               category: categoryMap[_category]!,
               tags: _selectedTags, // Ensure tags are captured
-              // color VALUE here ex: color.value
+              colorValue: colorValue,
+              isAllDay: false
             );
           } else {
             debugPrint("These are the tags $_selectedTags");
@@ -162,8 +174,8 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
               priority: priorityMap[_priority]!,
               category: categoryMap[_category]!,
               tags: _selectedTags,
-              status: TaskStatus.scheduled
-              // color VALUE here ex: color.value
+              status: TaskStatus.scheduled,
+              colorValue: colorValue,
             );
           }
         }
@@ -176,6 +188,8 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
     // 2. USE THEME COLOR
     final Color sheetBackground = colorScheme.inversePrimary; 
 
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     // --- Create Header Data Object ---
     final headerData = HeaderData(
       selectedType: _selectedType,
@@ -185,7 +199,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
       // Update local state when user selects a different type/color
       onTypeSelected: (type) => setState(() => _selectedType = type),
       onColorSelected: (color) => setState(() => _selectedColor = color),
-      saveTemplate: createTaskSaveTemplate,
+      saveTemplate: () => createTaskSaveTemplate(isDark),
     );
 
     return Container(

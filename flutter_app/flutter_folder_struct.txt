@@ -25,11 +25,6 @@ lib/
 │   │   │       ├── pages/        # Full Screen Widgets
 │   │   │       └── widgets/      # Small reusable widgets specific to Calendar
 │   │   │
-│   │   ├── mood_tracker/         # Feature to input/track mood
-│   │   │   └── ... (same data/domain/presentation structure)
-│   │   │
-│   │   ├── ai_assistant/         # UI for Chat/Prompts to reorganize schedule
-│   │   │   └── ... 
 │   │   │
 │   │   └── settings/             # Working hours configuration
 │   │

@@ -104,7 +104,6 @@ class ColorSelector extends StatelessWidget {
                 return GestureDetector(
                   onTap: () {
                     onColorSelected(item);
-                    Navigator.pop(context);
                   },
                   child: Container(
                     decoration: BoxDecoration(

@@ -3,7 +3,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
-import 'package:flutter_app/features/calendar/presentation/utils/time_utils.dart';
 import 'package:intl/intl.dart';
 
 // Import switching sheets
@@ -35,54 +34,66 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
 
-  @override
-    void initState() {
-      super.initState();
+@override
+  void initState() {
+    super.initState();
 
-      // 1. EDIT MODE: Pre-fill if an existing birthday was passed
-      if (widget.task != null) {
-        final b = widget.task!;
-        _titleController.text = b.title;
-        _descController.text = b.description ?? "";
-        _birthdayDate = b.startTime ?? DateTime.now();
-        _location = b.location ?? "None";
-        // If location is stored in description or another field, map it here
+    // 1. EDIT MODE: Pre-fill if an existing birthday was passed
+    if (widget.task != null) {
+      final b = widget.task!; // Defined as 'b' here
+      _titleController.text = b.title;
+      _descController.text = b.description ?? "";
+      _birthdayDate = b.startTime ?? DateTime.now();
+      _location = b.location ?? "None";
+
+      // --- FIXED: Using 'b' instead of 'e' ---
+      if (b.colorValue != null) { // Changed 'e' to 'b' and matched your 'colorValue' parameter
+        _selectedColor = appEventColors.firstWhere(
+          (c) => c.light.value == b.colorValue || c.dark.value == b.colorValue,
+          orElse: () => appEventColors[0],
+        );
       }
     }
+  }
 
     
 
 // --- SAVE CALLBACK ---
-  Task _handleSave() {
-    if (widget.task != null) {
-      // EDIT MODE: Preserves the original Task ID
-      debugPrint(widget.task!.startTime.toString());
-      return widget.task!.copyWith(
-        title: _titleController.text.trim().isEmpty ? "Birthday" : _titleController.text.trim(),
-        description: _descController.text.trim(),
-        isAllDay: true,
-        location: _location,
-        // color VALUE here ex: color.value
-      );
-    } else {
-      // CREATE MODE: Generates a new unique ID
-      return Task.create(
-        type: TaskType.birthday,
-        title: _titleController.text.trim().isEmpty ? "Birthday" : _titleController.text.trim(),
-        description: _descController.text.trim(),
-        isAllDay: true,
-        location: _location,
-        status: TaskStatus.scheduled,
-        // color VALUE here ex: color.value
-      );
-    }
-  }
+  Task _handleSave(bool isDark) {
+  // you must define colorValue here first to fix the red error
+  final int colorValue = isDark ? _selectedColor.dark.value : _selectedColor.light.value;
 
-  @override
+  if (widget.task != null) {
+    // EDIT MODE: Preserves the original Task ID
+    debugPrint(widget.task!.startTime.toString());
+    return widget.task!.copyWith(
+      title: _titleController.text.trim().isEmpty ? "Birthday" : _titleController.text.trim(),
+      description: _descController.text.trim(),
+      isAllDay: true,
+      location: _location,
+      colorValue: colorValue, // now this won't be red
+    );
+  } else {
+    // CREATE MODE: Generates a new unique ID
+    return Task.create(
+      type: TaskType.birthday,
+      title: _titleController.text.trim().isEmpty ? "Birthday" : _titleController.text.trim(),
+      description: _descController.text.trim(),
+      isAllDay: true,
+      location: _location,
+      status: TaskStatus.scheduled,
+      colorValue: colorValue, // now this won't be red
+    );
+  }
+}
+@override
   Widget build(BuildContext context) {
     // 1. ACCESS THEME
     final colorScheme = Theme.of(context).colorScheme;
     
+    // ADD THIS: DETECT THEME MODE
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     // 2. USE THEME COLOR
     final Color sheetBackground = colorScheme.inversePrimary; 
 
@@ -95,9 +106,11 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
       // Update local state when user selects a different type/color
       onTypeSelected: (type) => setState(() => _selectedType = type),
       onColorSelected: (color) => setState(() => _selectedColor = color),
-      saveTemplate: _handleSave,
+      
+      // CHANGE THIS LINE: Wrap it in a function and pass isDark
+      saveTemplate: () => _handleSave(isDark), 
     );
-
+    
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
       decoration: BoxDecoration(

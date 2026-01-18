@@ -7,6 +7,7 @@ import 'package:flutter_app/features/calendar/presentation/controllers/calendar_
 import 'package:flutter_app/features/calendar/presentation/utils/time_utils.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/add_birthday_sheet.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/add_event_sheet.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/color_selector.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/date_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -89,6 +90,7 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final tasksAsync = ref.watch(calendarControllerProvider);
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -112,55 +114,81 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
                     children: [
                       // --- HEADER ROW (RESTORED TO GREEN) ---
                       Container(
-                        color: Colors.green, // Restored to hardcoded Green
-                        width: double.infinity,
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Left Sidebar: Date Indicator
-                            _buildDateSidebar(colorScheme),
+                      color: colorScheme.surface, 
+                      width: double.infinity,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildDateSidebar(colorScheme),
 
-                            // Right: Scrollable All-Day/Birthday Tasks
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.only(top: 12, right: 12, bottom: 8),
-                                child: SizedBox(
-                                  height: 80, 
-                                  child: SingleChildScrollView(
-                                    physics: const BouncingScrollPhysics(),
-                                    child: Column(
-                                      children: allDayTasks.map((task) => Padding(
-                                        padding: const EdgeInsets.only(bottom: 4),
-                                        child: GestureDetector(
-                                          onTap: () => _openTaskSheet(task),
-                                          child: Container(
-                                            width: double.infinity,
-                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                            decoration: BoxDecoration(
-                                              color: colorScheme.tertiary, // Uses your "Clicked" theme color
-                                              borderRadius: BorderRadius.circular(4),
-                                            ),
-                                            child: Text(
-                                              task.title,
-                                              style: TextStyle(
-                                                fontSize: 13, 
-                                                fontWeight: FontWeight.w600, 
-                                                color: colorScheme.onSurface
-                                              ),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
+                        Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 12, right: 12, bottom: 8),
+                          // 1. DYNAMIC HEIGHT: We use ConstrainedBox so it grows with tasks 
+                          // but caps out at roughly 2.5 tasks (115px) to trigger scrolling.
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxHeight: allDayTasks.length >= 3 ? 115 : (allDayTasks.length * 55.0),
+                            ),
+                            child: SingleChildScrollView(
+                              // Only allow scrolling if there are 3 or more tasks
+                              physics: allDayTasks.length >= 3 
+                                  ? const BouncingScrollPhysics() 
+                                  : const NeverScrollableScrollPhysics(),
+                              child: Column(
+                                children: allDayTasks.map((task) {
+                                  final paletteMatch = appEventColors.firstWhere(
+                                    (c) => c.light.value == task.colorValue || c.dark.value == task.colorValue,
+                                    orElse: () => appEventColors[0],
+                                  );
+                                  
+                                  final Color taskColor = isDark ? paletteMatch.dark : paletteMatch.light;
+
+                                  // 2. TEXT FORMATTING: Handle empty titles and force Title Case
+                                  String rawTitle = task.title.trim().isEmpty ? "Birthday" : task.title;
+                                  String displayTitle = rawTitle.isNotEmpty 
+                                      ? "${rawTitle[0].toUpperCase()}${rawTitle.substring(1).toLowerCase()}"
+                                      : "";
+
+                                  return GestureDetector(
+                                    onTap: () => _openTaskSheet(task),
+                                    child: Container(
+                                      width: double.infinity, 
+                                      margin: const EdgeInsets.only(bottom: 6), 
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12), 
+                                      decoration: BoxDecoration(
+                                        color: taskColor,
+                                        borderRadius: BorderRadius.circular(8), 
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(0.05),
+                                            blurRadius: 2,
+                                            offset: const Offset(0, 1),
                                           ),
+                                        ],
+                                      ),
+                                      child: Text(
+                                        displayTitle, 
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w900, 
+                                          color: ThemeData.estimateBrightnessForColor(taskColor) == Brightness.light 
+                                              ? Colors.black87 : Colors.white,
                                         ),
-                                      )).toList(),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                     ),
-                                  ),
-                                ),
+                                  );
+                                }).toList(),
                               ),
                             ),
-                          ],
+                          ),
                         ),
                       ),
-
+                        ],
+                      ),
+                    ),
                       // --- CALENDAR GRID ---
                       Expanded(
                         child: SfCalendar(
@@ -170,7 +198,7 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
                           viewHeaderHeight: 0,
                           backgroundColor: colorScheme.surface,
                           cellBorderColor: Colors.transparent,
-                          dataSource: _TaskDataSource(scheduledTasks),
+                          dataSource: _TaskDataSource(scheduledTasks, context),
                           appointmentBuilder: (context, details) {
                             return AppointmentCard(appointment: details.appointments.first);
                           },
@@ -366,19 +394,47 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
   }
 }
 
+// At the bottom of main_calendar.dart
 class _TaskDataSource extends CalendarDataSource {
-  _TaskDataSource(List<Task> tasks) {
-    appointments = tasks
-    .where((task) => task.status == TaskStatus.scheduled)
-    .map((task) => Appointment(
-      id: task.id,
-      subject: task.title,
-      startTime: task.startTime!,
-      endTime: task.endTime!,
-      notes: task.description,
-      color: Colors.transparent, 
-      isAllDay: task.isAllDay,
-      recurrenceRule: task.recurrenceRule,
-    )).toList();
+  _TaskDataSource(List<Task> tasks, BuildContext context) {
+    // Detect the current theme mode
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
+    appointments = tasks.map((task) {
+      // 1. Resolve the color by looking it up in your appEventColors list
+      final Color displayColor = _resolveColor(task.colorValue, isDark);
+
+      return Appointment(
+        id: task.id,
+        subject: task.title,
+        startTime: task.startTime!,
+        endTime: task.endTime!,
+        notes: task.description,
+        // 2. Pass the resolved color (swaps automatically when theme changes)
+        color: displayColor, 
+        isAllDay: task.isAllDay,
+        recurrenceRule: task.recurrenceRule,
+      );
+    }).toList();
+  }
+
+  // Helper logic to find the palette pair
+  Color _resolveColor(int? savedHex, bool isDark) {
+    if (savedHex == null) {
+      return isDark ? appEventColors[0].dark : appEventColors[0].light;
+    }
+
+    try {
+      // Find which pair in your list matches the saved hex code
+      final paletteMatch = appEventColors.firstWhere(
+        (c) => c.light.value == savedHex || c.dark.value == savedHex,
+      );
+      
+      // Return the variant for the current system theme
+      return isDark ? paletteMatch.dark : paletteMatch.light;
+    } catch (e) {
+      // Fallback if the color isn't in your appEventColors list
+      return Color(savedHex);
+    }
   }
 }
