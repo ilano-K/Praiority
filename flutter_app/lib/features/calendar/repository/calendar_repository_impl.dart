@@ -70,8 +70,19 @@ class CalendarRepositoryImpl implements CalendarRepository{
   }
 
    @override
-  Future<List<Task>> getTasksByRange(DateTime start, DateTime end, {TaskStatus?status, TaskCategory? category, TaskType? type, String? tag}) async {
-    final models = await localDataSource.getTasksByRange(start, end, category: category, type: type, tag: tag);
+  Future<List<Task>> getTasksByRange(DateTime start, DateTime end) async {
+    final models = await localDataSource.getTasksByRange(start, end);
+    return models.map((model) => model.toEntity()).toList();
+  }
+
+  @override
+  Future<List<Task>> getTasksByCondition({DateTime? start, DateTime? end, TaskCategory? category,
+                                              TaskType? type, TaskStatus? status, String? tag,
+                                              }) async {
+    final models = await localDataSource.getTasksByCondition(start: start, end: end, 
+                                                            category: category, type: type, 
+                                                            status: status, tag: tag
+                                                            );
     return models.map((model) => model.toEntity()).toList();
   }
 

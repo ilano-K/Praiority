@@ -109,35 +109,9 @@ class CalendarLocalDataSourceImpl implements CalendarLocalDataSource{
   // DATE VIEW LOGIC (CALENDAR PAGE)
   // ---------------------------------------------------------------------------
   @override
-  Future<List<TaskModel>> getTasksByRange(
-    DateTime start, DateTime end,{
-      TaskStatus? status, 
-      TaskCategory? category, 
-      TaskType? type,
-      String? tag
-    }
-    ) async {
+  Future<List<TaskModel>> getTasksByRange(DateTime start, DateTime end) async {
     var q = isar.taskModels.filter().group((g) => g.startTimeBetween(start, end).or().recurrenceRuleIsNotNull());
-
-    // optional filters
-    if (status != null){
-      q = q.and().statusEqualTo(status);
-    }
-
-    if (category != null){
-      q = q.and().categoryEqualTo(category);
-    }
-
-    if (type != null){
-      q = q.and().typeEqualTo(type);
-    }
-
-    if (tag != null) {
-      q = q.and().tagsElementEqualTo(tag);
-    }
-
     final tasks = await q.sortByStartTime().findAll();
-
     return tasks
       .where((task) => TaskUtils.validTaskModelForDate(task, start, end))
       .toList();
@@ -184,6 +158,50 @@ class CalendarLocalDataSourceImpl implements CalendarLocalDataSource{
         .statusEqualTo(status)
         .sortByStartTime()
         .findAll();
+  }
+  @override
+  Future<List<TaskModel>> getTasksByCondition({
+    DateTime? start, 
+    DateTime? end,
+    TaskCategory? category,
+    TaskType? type,
+    TaskStatus? status,
+    String? tag,
+  }) async {
+
+    var query = isar.taskModels.filter().originalIdIsNotEmpty();
+
+    if (category != null) query = query.categoryEqualTo(category);
+    if (type != null) query = query.typeEqualTo(type);
+    if (status != null) query = query.statusEqualTo(status);
+    if (tag != null) query = query.tagsElementEqualTo(tag);
+
+    final tasks = await query.findAll();
+
+    if (tasks.isEmpty) return [];
+
+    // Remove tasks without valid times
+    final tasksWithTime = tasks
+        .where((t) => t.startTime != null && t.endTime != null)
+        .toList();
+
+    if (tasksWithTime.isEmpty) return [];
+
+    // Find earliest and latest safely
+    DateTime earliest = tasksWithTime.first.startTime!;
+    DateTime latest = tasksWithTime.first.endTime!;
+
+    for (var t in tasksWithTime) {
+      if (t.startTime!.isBefore(earliest)) earliest = t.startTime!;
+      if (t.endTime!.isAfter(latest)) latest = t.endTime!;
+    }
+
+    final startRange = start ?? earliest;
+    final endRange = end ?? latest;
+
+    return tasks
+        .where((task) => TaskUtils.validTaskModelForDate(task, startRange, endRange))
+        .toList();
   }
 
   // tags

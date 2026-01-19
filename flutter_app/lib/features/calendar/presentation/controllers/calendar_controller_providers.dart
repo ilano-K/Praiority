@@ -122,5 +122,17 @@ class CalendarStateController extends AsyncNotifier<List<Task>>{
     });
   }
 
+  Future<void>getTasksByCondition({DateTime? start, DateTime? end, TaskCategory? category,
+                                              TaskType? type, TaskStatus? status, String? tag,
+                                              }) async {
+    final repository = ref.read(calendarRepositoryProvider);
+    state = await AsyncValue.guard(() async {
+      return repository.getTasksByCondition(
+                                            start: start, end: end, 
+                                            category: category, type: type, 
+                                            status: status, tag: tag
+                                            );
+    });
+  }
 }
 

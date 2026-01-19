@@ -229,7 +229,7 @@ class _TaskViewState extends ConsumerState<TaskView> {
                     ),
                   ),
                   ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () => debugPrint("SORT HERE"),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: colorScheme.primary,
                       foregroundColor: colorScheme.onSurface,
@@ -314,4 +314,6 @@ class _TaskViewState extends ConsumerState<TaskView> {
       trailing: null,
     );
   }
+
+
 }

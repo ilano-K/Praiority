@@ -10,7 +10,7 @@ abstract class CalendarRepository {
   Future<void> saveTag(String tag);
   Future<void> deleteTag(String tag);
 
-  Future<List<Task>> getTasksByRange(DateTime start, DateTime end, {TaskStatus?status, TaskCategory? category, TaskType? type, String? tag});
+  Future<List<Task>> getTasksByRange(DateTime start, DateTime end);
 
   Future<List<Task>>getUnscheduledTasks();// unscheduled
   Future<List<Task>>getScheduledTasks();// scheduled
@@ -21,6 +21,8 @@ abstract class CalendarRepository {
   Future<List<Task>>getTasksByTags(String tags);
 
   Future<List<String>> getAllTagNames();
-
+  Future<List<Task>> getTasksByCondition({DateTime? start, DateTime? end, TaskCategory? category,
+                                              TaskType? type, TaskStatus? status, String? tag,
+                                              });
   
 }

@@ -9,9 +9,9 @@ abstract class CalendarLocalDataSource {
   Future<void>saveAndUpdateTask(Task task);
   Future<void>deleteTask(String id);
   Future<void>saveTag(String tag);
-   Future<void>deleteTag(String tag);
+  Future<void>deleteTag(String tag);
   
-  Future<List<TaskModel>> getTasksByRange(DateTime start, DateTime end, {TaskStatus? status, TaskCategory? category, TaskType? type, String? tag});
+  Future<List<TaskModel>> getTasksByRange(DateTime start, DateTime end);
 
   Future<List<TaskModel>>getTasksByStatus(TaskStatus status);// unscheduled, scheduled, completed, past deadline wala pa
   Future<List<TaskModel>>getTasksByCategory(TaskCategory category);
@@ -19,5 +19,8 @@ abstract class CalendarLocalDataSource {
   Future<List<TaskModel>>getTasksByTags(String tags);
 
   Future<List<TaskTagModel>> getAllTagNames();
-}
+  Future<List<TaskModel>>getTasksByCondition({DateTime? start, DateTime? end, TaskCategory? category,
+                                              TaskType? type, TaskStatus? status, String? tag,
+                                              });
+} 
 
