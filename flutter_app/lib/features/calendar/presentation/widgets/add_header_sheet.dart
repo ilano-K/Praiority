@@ -1,22 +1,27 @@
 // File: lib/features/calendar/presentation/widgets/add_header_sheet.dart
-// Purpose: Header UI for add/edit sheets, shows title and actions.
 import 'package:flutter/material.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/dialogs/app_dialog.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+// --- CORE ERRORS ---
 import 'package:flutter_app/core/errors/task_conflict_exception.dart';
 import 'package:flutter_app/core/errors/task_invalid_time_exception.dart';
+
+// --- DOMAIN & CONTROLLERS ---
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'package:flutter_app/features/calendar/presentation/controllers/calendar_controller_providers.dart';
+
+// --- SERVICES ---
 import 'package:flutter_app/features/calendar/presentation/services/delete_task_service.dart';
 import 'package:flutter_app/features/calendar/presentation/services/save_task_service.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// Import necessary widgets and data structures
+// --- LOCAL WIDGETS ---
 import 'color_selector.dart';
 import 'add_task_sheet.dart'; 
 import 'add_event_sheet.dart';
 import 'add_birthday_sheet.dart'; 
 
-// Define a common interface for the header's state data
 class HeaderData {
   final String selectedType;
   final CalendarColor selectedColor;
@@ -37,7 +42,6 @@ class HeaderData {
   });
 }
 
-
 class AddSheetHeader extends ConsumerWidget {
   final HeaderData data;
 
@@ -52,28 +56,28 @@ class AddSheetHeader extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // --- HEADER (Close/Delete & Save Buttons) ---
+        // --- HEADER ACTIONS ---
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // If the task has an ID, show Trash Bin. If not, show the standard X.
+            // DELETE BUTTON
             IconButton(
-              icon: Icon(
-                // Switches icon based on whether data exists
-                Icons.delete_outline,
-                size: 28, 
-                // Always uses your theme's onSurface color (Black in Light, White in Dark)
-                color: colorScheme.onSurface,
-              ),
+              icon: Icon(Icons.delete_outline, size: 28, color: colorScheme.onSurface),
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
-              onPressed: () async {
-                final task = data.saveTemplate();
-                await deleteTask(ref, task.id);
-                // Close the sheet
-                Navigator.pop(context);
-              },
+              onPressed: () => AppDialogs.showConfirmation(
+                context,
+                title: "Delete ${data.selectedType}",
+                message: "Are you sure you want to delete this ${data.selectedType.toLowerCase()}? This cannot be undone.",
+                confirmLabel: "Delete",
+                isDestructive: true,
+                onConfirm: () async {
+                  final task = data.saveTemplate();
+                  await deleteTask(ref, task.id);
+                  ref.invalidate(calendarControllerProvider);
+                  if (context.mounted) Navigator.pop(context); // Close the sheet
+                },
+              ),
             ),
 
             // SAVE BUTTON
@@ -83,42 +87,42 @@ class AddSheetHeader extends ConsumerWidget {
                 try {
                   await saveTask(ref, task);
                   ref.invalidate(calendarControllerProvider);
-                  Navigator.pop(context);
+                  if (context.mounted) Navigator.pop(context);
                 } on TaskConflictException {
-                  _showErrorWarning(
+                  AppDialogs.showWarning(
                     context, 
-                    "Schedule Conflict", 
-                    "This task overlaps with an existing schedule. Please adjust the time."
+                    title: "Schedule Conflict", 
+                    message: "This task overlaps with an existing schedule. Please adjust the time."
                   );
                 } on TaskInvalidTimeException {
-                  _showErrorWarning(
+                  AppDialogs.showWarning(
                     context, 
-                    "Invalid Time", 
-                    "The end time must be after the start time. Please correct the duration."
+                    title: "Invalid Time", 
+                    message: "The end time must be after the start time. Please correct the duration."
                   );
                 } catch (e) {
-                  _showErrorWarning(context, "Error", "An unexpected error occurred: $e");
+                  AppDialogs.showWarning(
+                    context, 
+                    title: "Error", 
+                    message: "An unexpected error occurred: $e"
+                  );
                 }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: colorScheme.primary,
                 foregroundColor: colorScheme.onSurface,
                 elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
-              child: const Text(
-                "Save",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
+              child: const Text("Save", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             ),
           ],
         ),
+        
         const SizedBox(height: 20),
 
-        // --- TITLE ---
+        // --- TITLE INPUT ---
         TextField(
           controller: data.titleController,
           cursorColor: colorScheme.onSurface,
@@ -131,7 +135,7 @@ class AddSheetHeader extends ConsumerWidget {
           ),
         ),
 
-        // --- DESCRIPTION ---
+        // --- DESCRIPTION INPUT ---
         TextField(
           controller: data.descController,
           cursorColor: colorScheme.onSurface,
@@ -146,7 +150,7 @@ class AddSheetHeader extends ConsumerWidget {
 
         const SizedBox(height: 25),
 
-        // --- TYPE BUTTONS ---
+        // --- TYPE SELECTOR ---
         Row(
           children: [
             _buildTypeButton("Task", colorScheme, context),
@@ -159,7 +163,7 @@ class AddSheetHeader extends ConsumerWidget {
 
         const SizedBox(height: 20),
 
-        // --- COLOR PICKER ---
+        // --- COLOR SELECTOR ---
         GestureDetector(
           onTap: () {
             showModalBottomSheet(
@@ -168,7 +172,6 @@ class AddSheetHeader extends ConsumerWidget {
               builder: (context) => ColorSelector(
                 selectedColor: data.selectedColor,
                 onColorSelected: (newColor) {
-                  // Notify the parent sheet to update its state
                   data.onColorSelected(newColor);
                   Navigator.pop(context);
                 },
@@ -179,10 +182,7 @@ class AddSheetHeader extends ConsumerWidget {
             children: [
               Container(
                 width: 28, height: 28,
-                decoration: BoxDecoration(
-                  color: displayColor,
-                  shape: BoxShape.circle,
-                ),
+                decoration: BoxDecoration(color: displayColor, shape: BoxShape.circle),
               ),
               const SizedBox(width: 10),
               Text(
@@ -200,112 +200,43 @@ class AddSheetHeader extends ConsumerWidget {
     );
   }
 
-  // --- WIDGET HELPER: Type Button (Handles switching between sheets) ---
-  Widget _buildTypeButton(String label, ColorScheme colors, BuildContext context) {
-      bool isSelected = data.selectedType == label;
+  // --- HELPERS ---
 
-      return GestureDetector(
-        onTap: () {
+  Widget _buildTypeButton(String label, ColorScheme colors, BuildContext context) {
+    final bool isSelected = data.selectedType == label;
+
+    return GestureDetector(
+      onTap: () {
         if (isSelected) return;
 
-        // 1. Capture the current data
         final currentDraft = data.saveTemplate();
+        TaskType newType = label == 'Event' ? TaskType.event : (label == 'Birthday' ? TaskType.birthday : TaskType.task);
+        final updatedDraft = currentDraft.copyWith(type: newType);
 
-        // 2. Determine new type
-        TaskType newType;
-        if (label == 'Event') {
-          newType = TaskType.event;
-        } else if (label == 'Birthday') newType = TaskType.birthday;
-        else newType = TaskType.task;
-
-        // 3. Create the update. 
-        // IMPORTANT: Ensure you pass the tags and color here too!
-        final updatedDraft = currentDraft.copyWith(
-          type: newType,
-          // This ensures tags and basic info move to the next sheet's constructor
+        Navigator.pop(context); 
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (context) {
+            if (label == 'Task') return AddTaskSheet(task: updatedDraft);
+            if (label == 'Event') return AddEventSheet(task: updatedDraft);
+            return AddBirthdaySheet(task: updatedDraft);
+          },
         );
-
-        if (label == 'Task') {
-          _switchSheet(context, AddTaskSheet(task: updatedDraft));
-        } else if (label == 'Event') {
-          _switchSheet(context, AddEventSheet(task: updatedDraft));
-        } else if (label == 'Birthday') {
-          _switchSheet(context, AddBirthdaySheet(task: updatedDraft));
-        }
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected ? colors.primary : Colors.transparent,
-          border: Border.all(
-            color: colors.onSurface,
-            width: 1.2
-          ),
+          border: Border.all(color: colors.onSurface, width: 1.2),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text(
           label,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: colors.onSurface,
-            fontSize: 14,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, color: colors.onSurface, fontSize: 14),
         ),
       ),
     );
   }
-
-  void _switchSheet(BuildContext context, Widget newSheet) {
-    // Pop the current sheet
-    Navigator.pop(context); 
-    
-    // Re-open with the new sheet (which now contains the draft data)
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => newSheet,
-    );
-  }
-
-// -- ERROR METHOD EWAN --
-void _showErrorWarning(BuildContext context, String title, String message) {
-  // Extract colorScheme from the current context
-  final colorScheme = Theme.of(context).colorScheme;
-
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      backgroundColor: colorScheme.surface, // Set dialog background to match theme
-      title: Row(
-        children: [
-          const Icon(Icons.warning_rounded, color: Colors.orange, size: 28),
-          const SizedBox(width: 10),
-          Text(
-            title, 
-            style: TextStyle(color: colorScheme.onSurface), // Title color
-          ),
-        ],
-      ),
-      content: Text(
-        message,
-        style: TextStyle(color: colorScheme.onSurface.withOpacity(0.8)), // Content color
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          style: TextButton.styleFrom(
-            // --- THIS CHANGES THE TEXT COLOR ---
-            foregroundColor: colorScheme.onSurface, 
-          ),
-          child: const Text(
-            "OK", 
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-        ),
-      ],
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-    ),
-  );
-}
 }

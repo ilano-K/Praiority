@@ -10,6 +10,8 @@ import 'package:flutter_app/features/calendar/presentation/widgets/add_birthday_
 import 'package:flutter_app/features/calendar/presentation/widgets/add_event_sheet.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/color_selector.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/date_picker.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/dialogs/app_confirmation_dialog.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/dialogs/app_warning_dialog.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'dart:math' as math; 
@@ -95,11 +97,23 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
               _openTaskSheet(task);   
             },
 
-            onDelete: () async {
-              await deleteTask(ref, task.id);
-              ref.invalidate(calendarControllerProvider);
-              Navigator.pop(context); 
-            },
+            onDelete: () {
+            // Show confirmation before deleting
+            showDialog(
+              context: context,
+              builder: (context) => AppConfirmationDialog(
+                title: "Delete Task",
+                message: "Are you sure you want to delete '${task.title}'? This action cannot be undone.",
+                confirmLabel: "Delete",
+                isDestructive: true, // This makes the button red
+                onConfirm: () async {
+                  await deleteTask(ref, task.id);
+                  ref.invalidate(calendarControllerProvider);
+                  if (mounted) Navigator.pop(context); // Close the AI Tip widget
+                },
+              ),
+            );
+          },
 
             onComplete: () async {
               final newStatus = task.status == TaskStatus.completed 
@@ -108,11 +122,10 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
               
               final updatedTask = task.copyWith(status: newStatus);
 
-              // --- CONFLICT CHECK: Only trigger if reactivating. Ignores completed tasks ---
               if (newStatus == TaskStatus.scheduled) {
                 final bool hasOverlap = currentTasks.any((t) => 
                     t.id != updatedTask.id && 
-                    t.status == TaskStatus.scheduled && // Only count active tasks as obstacles
+                    t.status == TaskStatus.scheduled && 
                     !t.isAllDay && !updatedTask.isAllDay && 
                     updatedTask.startTime!.isBefore(t.endTime!) &&
                     t.startTime!.isBefore(updatedTask.endTime!)
@@ -124,8 +137,31 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
                     "Schedule Conflict", 
                     "This time slot is taken by another active task. Adjust your time before reactivating."
                   );
-                  return; // Stop execution
+                  return; 
                 }
+              }
+
+              try {
+                // 1. Perform the async save
+                await saveTask(ref, updatedTask);
+                
+                // 2. Refresh the UI
+                ref.invalidate(calendarControllerProvider);
+                
+                // 3. Close the dialog ONLY if the operation was successful 
+                // and the user hasn't already navigated away.
+                if (context.mounted) {
+                  Navigator.pop(context);
+                }
+                
+              } on TaskConflictException {
+                _showErrorWarning(
+                  context, 
+                  "Schedule Conflict", 
+                  "This task overlaps with an existing active schedule."
+                );
+              } catch (e) {
+                _showErrorWarning(context, "Error", "An unexpected error occurred: $e");
               }
 
               try {
@@ -313,30 +349,15 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
 
   // --- UI Helpers ---
 
-  void _showErrorWarning(BuildContext context, String title, String message) {
-    final colorScheme = Theme.of(context).colorScheme;
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: colorScheme.surface,
-        title: Row(
-          children: [
-            const Icon(Icons.warning_amber_rounded, color: Colors.orange),
-            const SizedBox(width: 8),
-            Text(title, style: TextStyle(color: colorScheme.onSurface)),
-          ],
+    void _showErrorWarning(BuildContext context, String title, String message) {
+      showDialog(
+        context: context,
+        builder: (context) => AppWarningDialog(
+          title: title,
+          message: message,
         ),
-        content: Text(message, style: TextStyle(color: colorScheme.onSurface.withOpacity(0.7))),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text("OK", style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold)),
-          ),
-        ],
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      ),
-    );
-  }
+      );
+    }
 
   Widget _buildAppBar(BuildContext context, ColorScheme colorScheme) {
     return Padding(
