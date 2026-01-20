@@ -1,9 +1,10 @@
 // File: lib/features/calendar/presentation/pages/main_calendar.dart
-// Purpose: Main calendar page UI with side-by-side layout, scrollable header, and custom theme integration.
 import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/domain/entities/date_range.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/presentation/controllers/calendar_controller_providers.dart';
+import 'package:flutter_app/features/calendar/presentation/services/delete_task_service.dart';
+import 'package:flutter_app/features/calendar/presentation/services/save_task_service.dart';
 import 'package:flutter_app/features/calendar/presentation/utils/time_utils.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/add_birthday_sheet.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/add_event_sheet.dart';
@@ -20,7 +21,11 @@ import '../widgets/add_task_sheet.dart';
 import '../widgets/appointment_card.dart'; 
 import '../../../../core/services/theme/theme_notifier.dart'; 
 import '../../domain/entities/task.dart';
+// --- IMPORT AI TIP WIDGET ---
+import '../widgets/ai_tip_widget.dart'; 
 import 'task_view.dart';
+// --- IMPORT CONFLICT EXCEPTIONS ---
+import 'package:flutter_app/core/errors/task_conflict_exception.dart';
 
 class MainCalendar extends ConsumerStatefulWidget {
   const MainCalendar({super.key});
@@ -69,6 +74,81 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
     _fabController.isDismissed ? _fabController.forward() : _fabController.reverse();
   }
 
+  void _showAiTipBeforeEdit(Task task) {
+    // 1. Get the current list of tasks to validate overlaps locally
+    final List<Task> currentTasks = ref.read(calendarControllerProvider).value ?? [];
+
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.3),
+      builder: (context) => Center(
+        child: Material(
+          color: Colors.transparent,
+          child: AiTipWidget(
+            title: task.title.isEmpty ? "New Task" : task.title,
+            description: task.description ?? "No description provided.",
+            generatedTip: "Focus on completing this during your peak energy hours today.", 
+            isCompleted: task.status == TaskStatus.completed,
+            
+            onEdit: () {
+              Navigator.pop(context); 
+              _openTaskSheet(task);   
+            },
+
+            onDelete: () async {
+              await deleteTask(ref, task.id);
+              ref.invalidate(calendarControllerProvider);
+              Navigator.pop(context); 
+            },
+
+            onComplete: () async {
+              final newStatus = task.status == TaskStatus.completed 
+                  ? TaskStatus.scheduled 
+                  : TaskStatus.completed;
+              
+              final updatedTask = task.copyWith(status: newStatus);
+
+              // --- CONFLICT CHECK: Only trigger if reactivating. Ignores completed tasks ---
+              if (newStatus == TaskStatus.scheduled) {
+                final bool hasOverlap = currentTasks.any((t) => 
+                    t.id != updatedTask.id && 
+                    t.status == TaskStatus.scheduled && // Only count active tasks as obstacles
+                    !t.isAllDay && !updatedTask.isAllDay && 
+                    updatedTask.startTime!.isBefore(t.endTime!) &&
+                    t.startTime!.isBefore(updatedTask.endTime!)
+                );
+
+                if (hasOverlap) {
+                  _showErrorWarning(
+                    context, 
+                    "Schedule Conflict", 
+                    "This time slot is taken by another active task. Adjust your time before reactivating."
+                  );
+                  return; // Stop execution
+                }
+              }
+
+              try {
+                await saveTask(ref, updatedTask);
+                ref.invalidate(calendarControllerProvider);
+                Navigator.pop(context);
+              } on TaskConflictException {
+                // This will only show if the repository validation also finds a conflict
+                _showErrorWarning(
+                  context, 
+                  "Schedule Conflict", 
+                  "This task overlaps with an existing active schedule."
+                );
+              } catch (e) {
+                _showErrorWarning(context, "Error", "An unexpected error occurred: $e");
+              }
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
   void _openTaskSheet(Task task) {
     showModalBottomSheet(
       context: context,
@@ -98,10 +178,8 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
       body: SafeArea(
         child: Column(
           children: [
-            // --- 1. Top Navigation Menu ---
             _buildAppBar(context, colorScheme),
 
-            // --- 2. Main Content (Sidebar + Calendar) ---
             Expanded(
               child: tasksAsync.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
@@ -112,7 +190,6 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
 
                   return Column(
                     children: [
-                      // --- HEADER ROW (RESTORED TO GREEN) ---
                       Container(
                       color: colorScheme.surface, 
                       width: double.infinity,
@@ -124,14 +201,11 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
                         Expanded(
                         child: Padding(
                           padding: const EdgeInsets.only(top: 12, right: 12, bottom: 8),
-                          // 1. DYNAMIC HEIGHT: We use ConstrainedBox so it grows with tasks 
-                          // but caps out at roughly 2.5 tasks (115px) to trigger scrolling.
                           child: ConstrainedBox(
                             constraints: BoxConstraints(
                               maxHeight: allDayTasks.length >= 3 ? 115 : (allDayTasks.length * 55.0),
                             ),
                             child: SingleChildScrollView(
-                              // Only allow scrolling if there are 3 or more tasks
                               physics: allDayTasks.length >= 3 
                                   ? const BouncingScrollPhysics() 
                                   : const NeverScrollableScrollPhysics(),
@@ -144,20 +218,24 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
                                   
                                   final Color taskColor = isDark ? paletteMatch.dark : paletteMatch.light;
 
-                                  // 2. TEXT FORMATTING: Handle empty titles and force Title Case
                                   String rawTitle = task.title.trim().isEmpty ? "Birthday" : task.title;
                                   String displayTitle = rawTitle.isNotEmpty 
                                       ? "${rawTitle[0].toUpperCase()}${rawTitle.substring(1).toLowerCase()}"
                                       : "";
+                                  
+                                  // --- UPDATED Logic: Apply finished styling to top cards ---
+                                  final bool isCompleted = task.status == TaskStatus.completed;
+                                  final Color baseTextColor = ThemeData.estimateBrightnessForColor(taskColor) == Brightness.light 
+                                              ? Colors.black87 : Colors.white;
 
                                   return GestureDetector(
-                                    onTap: () => _openTaskSheet(task),
+                                    onTap: () => _showAiTipBeforeEdit(task),
                                     child: Container(
                                       width: double.infinity, 
                                       margin: const EdgeInsets.only(bottom: 6), 
                                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12), 
                                       decoration: BoxDecoration(
-                                        color: taskColor,
+                                        color: isCompleted ? taskColor.withOpacity(0.6) : taskColor,
                                         borderRadius: BorderRadius.circular(8), 
                                         boxShadow: [
                                           BoxShadow(
@@ -172,8 +250,9 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
                                         style: TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w900, 
-                                          color: ThemeData.estimateBrightnessForColor(taskColor) == Brightness.light 
-                                              ? Colors.black87 : Colors.white,
+                                          decoration: isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
+                                          fontStyle: isCompleted ? FontStyle.italic : FontStyle.normal,
+                                          color: isCompleted ? baseTextColor.withOpacity(0.4) : baseTextColor,
                                         ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
@@ -189,7 +268,6 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
                         ],
                       ),
                     ),
-                      // --- CALENDAR GRID ---
                       Expanded(
                         child: SfCalendar(
                           view: CalendarView.day,
@@ -202,14 +280,13 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
                           appointmentBuilder: (context, details) {
                             return AppointmentCard(appointment: details.appointments.first);
                           },
-                          // Reverted hourly slots back to your Theme's Secondary (DFDFDF or 3A3A3A)
                           specialRegions: _getGreyBlocks(colorScheme.secondary), 
                           onViewChanged: _handleViewChanged,
                           onTap: (CalendarTapDetails details) {
                             if (details.targetElement == CalendarElement.appointment && details.appointments != null) {
                               final Appointment selectedAppt = details.appointments!.first;
                               final Task tappedTask = tasks.firstWhere((t) => t.id == selectedAppt.id);
-                              _openTaskSheet(tappedTask); 
+                              _showAiTipBeforeEdit(tappedTask); 
                             }
                           },
                           timeSlotViewSettings: TimeSlotViewSettings(
@@ -234,7 +311,32 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
     );
   }
 
-  // --- UI Component Builders ---
+  // --- UI Helpers ---
+
+  void _showErrorWarning(BuildContext context, String title, String message) {
+    final colorScheme = Theme.of(context).colorScheme;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: colorScheme.surface,
+        title: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: Colors.orange),
+            const SizedBox(width: 8),
+            Text(title, style: TextStyle(color: colorScheme.onSurface)),
+          ],
+        ),
+        content: Text(message, style: TextStyle(color: colorScheme.onSurface.withOpacity(0.7))),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text("OK", style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold)),
+          ),
+        ],
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      ),
+    );
+  }
 
   Widget _buildAppBar(BuildContext context, ColorScheme colorScheme) {
     return Padding(
@@ -292,8 +394,6 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
       ),
     );
   }
-
-  // --- Logic & Helpers ---
 
   void _handleViewChanged(ViewChangedDetails details) {
     if (details.visibleDates.isEmpty) return;
@@ -394,14 +494,11 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
   }
 }
 
-// At the bottom of main_calendar.dart
 class _TaskDataSource extends CalendarDataSource {
   _TaskDataSource(List<Task> tasks, BuildContext context) {
-    // Detect the current theme mode
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     appointments = tasks.map((task) {
-      // 1. Resolve the color by looking it up in your appEventColors list
       final Color displayColor = _resolveColor(task.colorValue, isDark);
 
       return Appointment(
@@ -409,8 +506,9 @@ class _TaskDataSource extends CalendarDataSource {
         subject: task.title,
         startTime: task.startTime!,
         endTime: task.endTime!,
-        notes: task.description,
-        // 2. Pass the resolved color (swaps automatically when theme changes)
+        notes: task.status == TaskStatus.completed 
+            ? "[COMPLETED]${task.description ?? ''}" 
+            : task.description,
         color: displayColor, 
         isAllDay: task.isAllDay,
         recurrenceRule: task.recurrenceRule,
@@ -418,22 +516,17 @@ class _TaskDataSource extends CalendarDataSource {
     }).toList();
   }
 
-  // Helper logic to find the palette pair
   Color _resolveColor(int? savedHex, bool isDark) {
     if (savedHex == null) {
       return isDark ? appEventColors[0].dark : appEventColors[0].light;
     }
 
     try {
-      // Find which pair in your list matches the saved hex code
       final paletteMatch = appEventColors.firstWhere(
         (c) => c.light.value == savedHex || c.dark.value == savedHex,
       );
-      
-      // Return the variant for the current system theme
       return isDark ? paletteMatch.dark : paletteMatch.light;
     } catch (e) {
-      // Fallback if the color isn't in your appEventColors list
       return Color(savedHex);
     }
   }

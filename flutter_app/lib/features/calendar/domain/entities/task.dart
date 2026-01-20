@@ -1,5 +1,4 @@
 import 'package:equatable/equatable.dart';
-import 'package:flutter_app/features/calendar/domain/entities/task_tag.dart';
 import 'package:uuid/uuid.dart';
 import 'enums.dart';
 

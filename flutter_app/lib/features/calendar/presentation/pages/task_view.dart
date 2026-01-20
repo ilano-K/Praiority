@@ -4,7 +4,6 @@ import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'package:flutter_app/features/calendar/presentation/controllers/calendar_controller_providers.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/date_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../widgets/tag_selector.dart';
 import '../widgets/category_selector.dart';
 
 class TaskView extends ConsumerStatefulWidget {
@@ -19,7 +18,7 @@ class _TaskViewState extends ConsumerState<TaskView> {
   bool _isScheduledExpanded = false;
   bool _isPendingExpanded = false;
   bool _isCompletedExpanded = false;
-  bool _isPastDeadlineExpanded = false;
+  final bool _isPastDeadlineExpanded = false;
   // --- DUMMY DATA ---
   // NOTE: This is dummy data for demonstration purposes.
 
