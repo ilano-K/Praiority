@@ -2,9 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'package:flutter_app/features/calendar/presentation/controllers/calendar_controller_providers.dart';
+import 'package:flutter_app/features/calendar/presentation/services/delete_task_service.dart';
+import 'package:flutter_app/features/calendar/presentation/services/save_task_service.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/date_picker.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/dialogs/app_dialog.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../widgets/category_selector.dart';
+
+// --- IMPORT EDIT SHEETS ---
+import '../widgets/add_task_sheet.dart'; 
+import '../widgets/add_event_sheet.dart';
+import '../widgets/add_birthday_sheet.dart';
 
 class TaskView extends ConsumerStatefulWidget {
   const TaskView({super.key});
@@ -14,22 +22,32 @@ class TaskView extends ConsumerStatefulWidget {
 }
 
 class _TaskViewState extends ConsumerState<TaskView> {
-  // --- STATE FOR EXPANSION ---
-  bool _isScheduledExpanded = false;
+  bool _isScheduledExpanded = true;
   bool _isPendingExpanded = false;
   bool _isCompletedExpanded = false;
-  final bool _isPastDeadlineExpanded = false;
-  // --- DUMMY DATA ---
-  // NOTE: This is dummy data for demonstration purposes.
+
+  void _openTaskSheet(Task task) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        if (task.type == TaskType.event) {
+          return AddEventSheet(task: task);
+        } else if (task.type == TaskType.birthday) {
+          return AddBirthdaySheet(task: task);
+        } else {
+          return AddTaskSheet(task: task);
+        }
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final tasksAsync = ref.watch(calendarControllerProvider);
-    
-    // final scheduleTasks = tasks.whenData((data) => data.where((t)=> t.status == TaskStatus.scheduled).toList());
-    // final pending = tasks.whenData((data) => data.where((t)=> t.status == TaskStatus.unscheduled).toList());
-    // final completed = tasks.whenData((data) => data.where((t)=> t.status == TaskStatus.completed).toList());
+
     return Scaffold(
       backgroundColor: colorScheme.surface,
       appBar: AppBar(
@@ -65,43 +83,19 @@ class _TaskViewState extends ConsumerState<TaskView> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text(e.toString())),
         data: (tasks) {
-          final scheduled = tasks
-              .where((t) => t.status == TaskStatus.scheduled)
-              .toList();
-
-          final pending = tasks
-              .where((t) => t.status == TaskStatus.unscheduled)
-              .toList();
-
-          final completed = tasks
-              .where((t) => t.status == TaskStatus.completed)
-              .toList();
+          final scheduled = tasks.where((t) => t.status == TaskStatus.scheduled).toList();
+          final pending = tasks.where((t) => t.status == TaskStatus.unscheduled).toList();
+          final completed = tasks.where((t) => t.status == TaskStatus.completed).toList();
 
           return ListView(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
             children: [
-              _buildExpandableCategory(
-                context,
-                scheduled, 
-                "My Scheduled Tasks",
-                _isScheduledExpanded,
-                () => setState(() => _isScheduledExpanded = !_isScheduledExpanded),
-              ),
-              _buildExpandableCategory(
-                context,
-                pending, 
-                "My Pending Tasks",
-                _isPendingExpanded,
-                () => setState(() => _isPendingExpanded = !_isPendingExpanded),
-              ),
-              _buildExpandableCategory(
-                context,
-                completed, 
-                "My Completed Tasks",
-                _isCompletedExpanded,
-                () => setState(() => _isCompletedExpanded = !_isCompletedExpanded),
-              ),
-
+              _buildExpandableCategory(context, scheduled, "My Scheduled Tasks", _isScheduledExpanded, 
+                  () => setState(() => _isScheduledExpanded = !_isScheduledExpanded), showActions: true),
+              _buildExpandableCategory(context, pending, "My Pending Tasks", _isPendingExpanded, 
+                  () => setState(() => _isPendingExpanded = !_isPendingExpanded), showActions: false),
+              _buildExpandableCategory(context, completed, "My Completed Tasks", _isCompletedExpanded, 
+                  () => setState(() => _isCompletedExpanded = !_isCompletedExpanded), showActions: true),
             ],
           );
         },
@@ -109,10 +103,9 @@ class _TaskViewState extends ConsumerState<TaskView> {
     );
   }
 
-  // --- WIDGET HELPER: Animated Expandable Category ---
-  Widget _buildExpandableCategory(BuildContext context, List<Task>tasks, String title,  bool isExpanded, VoidCallback onTap) {
+  Widget _buildExpandableCategory(BuildContext context, List<Task> tasks, String title, bool isExpanded, VoidCallback onTap, {required bool showActions}) {
     final colorScheme = Theme.of(context).colorScheme;
-    final tasksCount = tasks.length;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -128,46 +121,101 @@ class _TaskViewState extends ConsumerState<TaskView> {
               padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
               child: Row(
                 children: [
-                  const Spacer(flex: 3),
-                  Text(
-                    "$title ($tasksCount)",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: colorScheme.onSurface,
+                  Expanded(
+                    child: Text(
+                      "$title (${tasks.length})",
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: colorScheme.onSurface),
                     ),
                   ),
-                  const Spacer(flex: 2),
-                  // ANIMATION: Rotates the arrow smoothly
-                  AnimatedRotation(
-                    turns: isExpanded ? 0.5 : 0, 
-                    duration: const Duration(milliseconds: 300),
-                    child: Icon(Icons.keyboard_arrow_down, color: colorScheme.onSurface),
+                  SizedBox(
+                    width: 54,
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: SizedBox(
+                        width: 32,
+                        child: AnimatedRotation(
+                          turns: isExpanded ? 0.5 : 0,
+                          duration: const Duration(milliseconds: 300),
+                          child: Icon(Icons.keyboard_arrow_down, color: colorScheme.onSurface),
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
           ),
-          // ANIMATION: Smoothly slides the list open/closed
           AnimatedSize(
-            duration: const Duration(milliseconds: 300),
+            duration: const Duration(milliseconds: 400), // Slightly slower for smoother feel
             curve: Curves.easeInOut,
             child: isExpanded
-                ? Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: Column(
-                      children: tasks.map((task) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        child: Text(
-                          task.title,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.onSurface,
-                          ),
+                ? Column(
+                    children: tasks.map((task) {
+                      final bool isDone = task.status == TaskStatus.completed;
+
+                      return Padding(
+                        key: ValueKey(task.id), // Added ValueKey to prevent layout flickering
+                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () => _openTaskSheet(task),
+                                child: Text(
+                                  task.title,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    fontStyle: isDone ? FontStyle.italic : FontStyle.normal,
+                                    color: isDone ? colorScheme.onSurface.withOpacity(0.4) : colorScheme.onSurface,
+                                    decoration: isDone ? TextDecoration.lineThrough : TextDecoration.none,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            
+                            if (showActions) 
+                              SizedBox(
+                                width: 54,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    GestureDetector(
+                                      onTap: () => _updateTaskStatus(task, isDone ? TaskStatus.scheduled : TaskStatus.completed),
+                                      child: Container(
+                                        width: 18, 
+                                        height: 18,
+                                        decoration: BoxDecoration(
+                                          color: isDone ? colorScheme.primary : Colors.transparent,
+                                          shape: BoxShape.circle,
+                                          border: Border.all(color: colorScheme.onSurface, width: 1.2),
+                                        ),
+                                        child: isDone ? Icon(Icons.check, size: 12, color: colorScheme.onSurface) : null,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    SizedBox(
+                                      width: 32, height: 32,
+                                      child: IconButton(
+                                        icon: Icon(Icons.delete_outline, size: 22, color: colorScheme.onSurface),
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(),
+                                        onPressed: () => AppDialogs.showConfirmation(
+                                          context, title: "Delete Task", message: "Remove '${task.title}' permanently?", confirmLabel: "Delete", isDestructive: true,
+                                          onConfirm: () async {
+                                            await deleteTask(ref, task.id);
+                                            ref.invalidate(calendarControllerProvider);
+                                          },
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
                         ),
-                      )).toList(),
-                    ),
+                      );
+                    }).toList(),
                   )
                 : const SizedBox(width: double.infinity, height: 0),
           ),
@@ -176,143 +224,62 @@ class _TaskViewState extends ConsumerState<TaskView> {
     );
   }
 
-  Widget _buildTaskCategory(BuildContext context, String title, int count) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: colorScheme.secondary,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-      child: Row(
-        children: [
-          const Spacer(flex: 3),
-          Text(
-            "$title ($count)",
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: colorScheme.onSurface),
-          ),
-          const Spacer(flex: 2),
-          Icon(Icons.keyboard_arrow_down, color: colorScheme.onSurface),
-        ],
-      ),
-    );
+  // --- LOGIC: SMOOTH TRANSITION HELPER ---
+  Future<void> _updateTaskStatus(Task task, TaskStatus newStatus) async {
+    final updatedTask = task.copyWith(status: newStatus);
+    
+    // 1. First, save the status change to the DB
+    await saveTask(ref, updatedTask);
+    
+    // 2. Add a tiny delay (300ms) so the user sees the italic/faded style
+    // before the item physically moves to the next section.
+    await Future.delayed(const Duration(milliseconds: 300));
+    
+    // 3. Now refresh the UI state
+    if (mounted) {
+      ref.invalidate(calendarControllerProvider);
+    }
   }
+
   void _showSortSheet(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-
     showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    "Sort By",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  ElevatedButton(
-                    onPressed: () => debugPrint("SORT HERE"),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: colorScheme.primary,
-                      foregroundColor: colorScheme.onSurface,
-                      elevation: 0,
-                      fixedSize: const Size(90, 30),
-                      padding: EdgeInsets.zero,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text(
-                      "Sort",
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                    ),
-                  )
-                ],
-              ),
-              const SizedBox(height: 15),
-
-              // --- TRIGGER: DATE ---
-              _buildSortOption(context, "Date", "None", () {
-                pickDate(context);
-              }),
-
-              // --- TRIGGER: CATEGORY ---
-              _buildSortOption(context, "Category", "None", () {
-                showModalBottomSheet(
-                  context: context,
-                  backgroundColor: Colors.transparent,
-                  builder: (context) => CategorySelector(
-                    currentCategory: "None",
-                    onCategorySelected: (val) {},
-                  ),
-                );
-              }),
-
-              // // --- TRIGGER: TAGS ---
-              // _buildSortOption(context, "Tags", "None", () {
-              //   showModalBottomSheet(
-              //     context: context,
-              //     backgroundColor: Colors.transparent,
-              //     isScrollControlled: true,
-              //     builder: (context) => TagSelector(
-              //       currentTag: "None",
-              //       availableTags: const [], // Empty for now
-              //       onTagSelected: (val) {},
-              //       onTagAdded: (val) {},
-              //       onTagRemoved: (val) {},
-              //     ),
-              //   );
-              // }),
-
-              SizedBox(height: MediaQuery.of(context).padding.bottom),
-            ],
-          ),
-        );
-      },
+      context: context, backgroundColor: Colors.transparent, isScrollControlled: true,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(color: colorScheme.surface, borderRadius: const BorderRadius.vertical(top: Radius.circular(20))),
+        child: Column(
+          mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text("Sort By", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(backgroundColor: colorScheme.primary, foregroundColor: colorScheme.onSurface, elevation: 0, fixedSize: const Size(90, 30), padding: EdgeInsets.zero, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                  child: const Text("Sort", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                )
+              ],
+            ),
+            const SizedBox(height: 15),
+            _buildSortOption(context, "Date", "None", () => pickDate(context)),
+            _buildSortOption(context, "Category", "None", () {
+              showModalBottomSheet(context: context, backgroundColor: Colors.transparent, builder: (context) => CategorySelector(currentCategory: "None", onCategorySelected: (val) {}));
+            }),
+            SizedBox(height: MediaQuery.of(context).padding.bottom),
+          ],
+        ),
+      ),
     );
   }
 
   Widget _buildSortOption(BuildContext context, String title, String value, VoidCallback onTap) {
     final colorScheme = Theme.of(context).colorScheme;
-
     return ListTile(
-      contentPadding: EdgeInsets.zero,
-      onTap: onTap,
-      title: Text(
-        title,
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: colorScheme.onSurface,
-        ),
-      ),
-      subtitle: Text(
-        value,
-        style: TextStyle(
-          fontSize: 14,
-          color: colorScheme.onSurface.withOpacity(0.5),
-        ),
-      ),
-      trailing: null,
+      contentPadding: EdgeInsets.zero, onTap: onTap,
+      title: Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
+      subtitle: Text(value, style: TextStyle(fontSize: 14, color: colorScheme.onSurface.withOpacity(0.5))),
     );
   }
-
-
 }
