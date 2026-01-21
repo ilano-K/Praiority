@@ -23,10 +23,8 @@ class CalendarStateController extends AsyncNotifier<List<Task>>{
   Future<void>setRange(DateRange range) async {
     _currentRange = range;
     final repository = ref.read(calendarRepositoryProvider);
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
-      return repository.getTasksByRange(_currentRange!.start, _currentRange!.end);
-    });
+    final updatedList = await repository.getTasksByRange(_currentRange!.start, _currentRange!.end);
+    state = AsyncData(updatedList);
   }
   Future<void>addTask(Task task) async {
     final repository = ref.read(calendarRepositoryProvider);
@@ -123,11 +121,7 @@ class CalendarStateController extends AsyncNotifier<List<Task>>{
 
   Future<void>deleteTag(String tag) async {
     final repository = ref.read(calendarRepositoryProvider); 
-    state = await AsyncValue.guard(() async {
-      await repository.deleteTag(tag);
-      ref.invalidate(calendarRepositoryProvider);
-      return repository.getTasksByRange(_currentRange!.start, _currentRange!.end);
-    });
+    await repository.deleteTag(tag);
   }
 
   Future<void>getTasksByCondition({DateTime? start, DateTime? end, TaskCategory? category,

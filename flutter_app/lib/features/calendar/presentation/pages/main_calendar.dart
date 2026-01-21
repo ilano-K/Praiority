@@ -77,9 +77,6 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
   }
 
   void _showAiTipBeforeEdit(Task task) {
-    // 1. Get the current list of tasks to validate overlaps locally
-    final List<Task> currentTasks = ref.read(calendarControllerProvider).value ?? [];
-
     showDialog(
       context: context,
       barrierColor: Colors.black.withOpacity(0.3),
@@ -108,7 +105,6 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
                 isDestructive: true, // This makes the button red
                 onConfirm: () async {
                   await deleteTask(ref, task.id);
-                  ref.invalidate(calendarControllerProvider);
                   if (mounted) Navigator.pop(context); // Close the AI Tip widget
                 },
               ),
@@ -158,11 +154,17 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
     );
   }
   
-  @override
+@override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final tasksAsync = ref.watch(calendarControllerProvider);
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // --- SEAMLESS DATA HANDLING ---
+    // We grab whatever tasks are available, even if currently loading
+    final tasks = tasksAsync.valueOrNull ?? [];
+    final isLoading = tasksAsync.isLoading;
+    final hasError = tasksAsync.hasError;
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -172,132 +174,129 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
           children: [
             _buildAppBar(context, colorScheme),
 
+            // Subtle loading indicator at the top so the user knows a fetch is happening
+            if (isLoading)
+              const LinearProgressIndicator(minHeight: 2)
+            else
+              const SizedBox(height: 2),
+
             Expanded(
-              child: tasksAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (err, stack) => Center(child: Text("Error: $err")),
-                data: (tasks) {
-                  final allDayTasks = tasks.where((t) => t.isAllDay || t.type == TaskType.birthday).toList();
-                  final scheduledTasks = tasks.where((t) => !t.isAllDay && t.type != TaskType.birthday && t.startTime != null).toList();
-
-                  return Column(
-                    children: [
-                      Container(
-                      color: colorScheme.surface, 
-                      width: double.infinity,
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildDateSidebar(colorScheme),
-
-                        Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.only(top: 12, right: 12, bottom: 8),
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(
-                              maxHeight: allDayTasks.length >= 3 ? 115 : (allDayTasks.length * 55.0),
-                            ),
-                            child: SingleChildScrollView(
-                              physics: allDayTasks.length >= 3 
-                                  ? const BouncingScrollPhysics() 
-                                  : const NeverScrollableScrollPhysics(),
-                              child: Column(
-                                children: allDayTasks.map((task) {
-                                  final paletteMatch = appEventColors.firstWhere(
-                                    (c) => c.light.value == task.colorValue || c.dark.value == task.colorValue,
-                                    orElse: () => appEventColors[0],
-                                  );
-                                  
-                                  final Color taskColor = isDark ? paletteMatch.dark : paletteMatch.light;
-
-                                  String rawTitle = task.title.trim().isEmpty ? "Birthday" : task.title;
-                                  String displayTitle = rawTitle.isNotEmpty 
-                                      ? "${rawTitle[0].toUpperCase()}${rawTitle.substring(1).toLowerCase()}"
-                                      : "";
-                                  
-                                  // --- UPDATED Logic: Apply finished styling to top cards ---
-                                  final bool isCompleted = task.status == TaskStatus.completed;
-                                  final Color baseTextColor = ThemeData.estimateBrightnessForColor(taskColor) == Brightness.light 
-                                              ? Colors.black87 : Colors.white;
-
-                                  return GestureDetector(
-                                    onTap: () => _showAiTipBeforeEdit(task),
-                                    child: Container(
-                                      width: double.infinity, 
-                                      margin: const EdgeInsets.only(bottom: 6), 
-                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12), 
-                                      decoration: BoxDecoration(
-                                        color: isCompleted ? taskColor.withOpacity(0.6) : taskColor,
-                                        borderRadius: BorderRadius.circular(8), 
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withOpacity(0.05),
-                                            blurRadius: 2,
-                                            offset: const Offset(0, 1),
-                                          ),
-                                        ],
-                                      ),
-                                      child: Text(
-                                        displayTitle, 
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w900, 
-                                          decoration: isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
-                                          fontStyle: isCompleted ? FontStyle.italic : FontStyle.normal,
-                                          color: isCompleted ? baseTextColor.withOpacity(0.4) : baseTextColor,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  );
-                                }).toList(),
+              child: hasError && tasks.isEmpty
+                  ? Center(child: Text("Error: ${tasksAsync.error}"))
+                  : Column(
+                      children: [
+                        // --- ALL DAY & SIDEBAR SECTION ---
+                        Container(
+                          color: colorScheme.surface,
+                          width: double.infinity,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildDateSidebar(colorScheme),
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(top: 12, right: 12, bottom: 8),
+                                  child: _buildAllDayList(tasks, isDark),
+                                ),
                               ),
+                            ],
+                          ),
+                        ),
+
+                        // --- MAIN CALENDAR SECTION ---
+                        Expanded(
+                          child: SfCalendar(
+                            view: CalendarView.day,
+                            controller: _calendarController,
+                            headerHeight: 0,
+                            viewHeaderHeight: 0,
+                            backgroundColor: colorScheme.surface,
+                            cellBorderColor: Colors.transparent,
+                            // The dataSource updates seamlessly without rebuilding the widget
+                            dataSource: _TaskDataSource(
+                              tasks.where((t) => !t.isAllDay && t.type != TaskType.birthday && t.startTime != null).toList(), 
+                              context
+                            ),
+                            appointmentBuilder: (context, details) {
+                              return AppointmentCard(appointment: details.appointments.first);
+                            },
+                            specialRegions: _getGreyBlocks(colorScheme.secondary),
+                            onViewChanged: _handleViewChanged,
+                            onTap: (CalendarTapDetails details) {
+                              if (details.targetElement == CalendarElement.appointment && details.appointments != null) {
+                                final Appointment selectedAppt = details.appointments!.first;
+                                final tappedTask = tasks.firstWhere((t) => t.id == selectedAppt.id);
+                                _showAiTipBeforeEdit(tappedTask);
+                              }
+                            },
+                            timeSlotViewSettings: TimeSlotViewSettings(
+                              timeRulerSize: 60,
+                              timeTextStyle: TextStyle(
+                                color: colorScheme.onSurface,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 11,
+                              ),
+                              timeIntervalHeight: 80,
                             ),
                           ),
                         ),
-                      ),
-                        ],
-                      ),
+                      ],
                     ),
-                      Expanded(
-                        child: SfCalendar(
-                          view: CalendarView.day,
-                          controller: _calendarController,
-                          headerHeight: 0,
-                          viewHeaderHeight: 0,
-                          backgroundColor: colorScheme.surface,
-                          cellBorderColor: Colors.transparent,
-                          dataSource: _TaskDataSource(scheduledTasks, context),
-                          appointmentBuilder: (context, details) {
-                            return AppointmentCard(appointment: details.appointments.first);
-                          },
-                          specialRegions: _getGreyBlocks(colorScheme.secondary), 
-                          onViewChanged: _handleViewChanged,
-                          onTap: (CalendarTapDetails details) {
-                            if (details.targetElement == CalendarElement.appointment && details.appointments != null) {
-                              final Appointment selectedAppt = details.appointments!.first;
-                              final Task tappedTask = tasks.firstWhere((t) => t.id == selectedAppt.id);
-                              _showAiTipBeforeEdit(tappedTask); 
-                            }
-                          },
-                          timeSlotViewSettings: TimeSlotViewSettings(
-                            timeRulerSize: 60,
-                            timeTextStyle: TextStyle(
-                              color: colorScheme.onSurface, 
-                              fontWeight: FontWeight.w600, 
-                              fontSize: 11
-                            ),
-                            timeIntervalHeight: 80,
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  // Extracted Helper for the All-Day list to keep build method clean
+  Widget _buildAllDayList(List<Task> tasks, bool isDark) {
+    final allDayTasks = tasks.where((t) => t.isAllDay || t.type == TaskType.birthday).toList();
+    
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: allDayTasks.length >= 3 ? 115 : (allDayTasks.length * 55.0),
+      ),
+      child: SingleChildScrollView(
+        physics: allDayTasks.length >= 3 
+            ? const BouncingScrollPhysics() 
+            : const NeverScrollableScrollPhysics(),
+        child: Column(
+          children: allDayTasks.map((task) {
+            final paletteMatch = appEventColors.firstWhere(
+              (c) => c.light.value == task.colorValue || c.dark.value == task.colorValue,
+              orElse: () => appEventColors[0],
+            );
+            final Color taskColor = isDark ? paletteMatch.dark : paletteMatch.light;
+            final bool isCompleted = task.status == TaskStatus.completed;
+            final Color baseTextColor = ThemeData.estimateBrightnessForColor(taskColor) == Brightness.light 
+                ? Colors.black87 : Colors.white;
+
+            return GestureDetector(
+              key: ValueKey(task.id), // Important for smooth list transitions
+              onTap: () => _showAiTipBeforeEdit(task),
+              child: Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                decoration: BoxDecoration(
+                  color: isCompleted ? taskColor.withOpacity(0.6) : taskColor,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  task.title.isEmpty ? "Untitled" : task.title,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                    decoration: isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
+                    color: isCompleted ? baseTextColor.withOpacity(0.4) : baseTextColor,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            );
+          }).toList(),
         ),
       ),
     );
@@ -374,17 +373,23 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
 
   void _handleViewChanged(ViewChangedDetails details) {
     if (details.visibleDates.isEmpty) return;
+    
     final newDate = dateOnly(details.visibleDates.first);
     if (_lastRangeDate == newDate) return;
 
     _debounceTimer?.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 150), () {
+    _debounceTimer = Timer(const Duration(milliseconds: 100), () { // Slightly faster debounce
       if (!mounted) return;
-      setState(() => _selectedDate = newDate);
+      
       _lastRangeDate = newDate;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ref.read(calendarControllerProvider.notifier).setRange(DateRange(scope: CalendarScope.day, startTime: newDate));
-      });
+
+      // 1. Update date
+      setState(() => _selectedDate = newDate);
+
+      // 2. Update Data Provider 
+      ref.read(calendarControllerProvider.notifier).setRange(
+        DateRange(scope: CalendarScope.day, startTime: newDate),
+      );
     });
   }
 
