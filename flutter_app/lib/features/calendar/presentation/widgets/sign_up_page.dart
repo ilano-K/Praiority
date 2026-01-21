@@ -59,7 +59,7 @@ class SignUpPage extends StatelessWidget {
 
                       // --- BOTTOM NAVIGATION LINKS (Pinned 8px from end) ---
                       Padding(
-                        padding: const EdgeInsets.only(bottom: 8.0),
+                        padding: const EdgeInsets.only(bottom: 32),
                         child: GestureDetector(
                           onTap: onSwitch,
                           child: RichText(

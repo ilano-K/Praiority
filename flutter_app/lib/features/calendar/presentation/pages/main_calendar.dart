@@ -8,6 +8,7 @@ import 'package:flutter_app/features/calendar/presentation/services/save_task_se
 import 'package:flutter_app/features/calendar/presentation/utils/time_utils.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/add_birthday_sheet.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/add_event_sheet.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/app_sidebar.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/color_selector.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/date_picker.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/dialogs/app_confirmation_dialog.dart';
@@ -167,6 +168,7 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
+      drawer: const AppSidebar(),
       floatingActionButton: _buildMainFab(colorScheme),
       body: SafeArea(
         child: Column(
@@ -318,10 +320,13 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10),
       child: Row(
         children: [
-          GestureDetector(
-            onTap: () => ref.read(themeProvider.notifier).toggleTheme(),
+          Builder( // Builder is required to provide the correct context for Scaffold.of
+          builder: (context) => GestureDetector(
+            // --- UPDATED TAP LOGIC ---
+            onTap: () => Scaffold.of(context).openDrawer(), 
             child: Icon(Icons.menu, size: 30, color: colorScheme.onSurface),
           ),
+        ),
           const SizedBox(width: 15),
           GestureDetector(
             onTap: () => _pickDate(context),

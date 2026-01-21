@@ -57,7 +57,7 @@ class SignInPage extends StatelessWidget {
 
                       // --- BOTTOM CONTENT: NAVIGATION LINKS ---
                       Padding(
-                        padding: const EdgeInsets.only(bottom: 8.0), // Precisely 8px from end
+                        padding: const EdgeInsets.only(bottom: 32), // Precisely 8px from end
                         child: Column(
                           children: [
                             TextButton(
