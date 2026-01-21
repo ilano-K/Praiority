@@ -349,24 +349,29 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
       ),
     );
   }
-
   Widget _buildDateSidebar(ColorScheme colorScheme) {
-    return Container(
-      width: 60,
-      padding: const EdgeInsets.only(top: 10),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            DateFormat('E').format(_selectedDate), 
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: colorScheme.onSurface)
-          ),
-          Text(
-            DateFormat('d').format(_selectedDate), 
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: colorScheme.onSurface)
-          ),
-          Icon(Icons.arrow_drop_down, size: 18, color: colorScheme.onSurface),
-        ],
+    return GestureDetector(
+      // Trigger the date picker you already defined
+      onTap: () => _pickDate(context),
+      // Ensures the entire 60px width is tappable, even the empty space
+      behavior: HitTestBehavior.opaque, 
+      child: Container(
+        width: 60,
+        padding: const EdgeInsets.only(top: 10),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              DateFormat('E').format(_selectedDate), 
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: colorScheme.onSurface)
+            ),
+            Text(
+              DateFormat('d').format(_selectedDate), 
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: colorScheme.onSurface)
+            ),
+            Icon(Icons.arrow_drop_down, size: 18, color: colorScheme.onSurface),
+          ],
+        ),
       ),
     );
   }
