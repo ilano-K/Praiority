@@ -67,6 +67,9 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
       _endTime = TimeOfDay.fromDateTime(e.endTime ?? DateTime.now());
       _selectedTags = e.tags;
       _location = e.location ?? "None";
+      setState(() {
+      _repeat = rruleToRepeat(e.recurrenceRule);
+      });
       // _repeat would need rrule parsing logic here
 
       if (e.colorValue != null) {
@@ -134,7 +137,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
           // CREATE MODE: Generates a new ID
           return Task.create(
             type: TaskType.event,
-            title: _titleController.text.trim().isEmpty ? "New Event" : _titleController.text.trim(),
+            title: _titleController.text.trim().isEmpty ? "Untitled Event" : _titleController.text.trim(),
             description: _descController.text.trim(),
             startTime: startTime,
             endTime: endTime,

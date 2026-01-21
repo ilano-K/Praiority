@@ -121,60 +121,16 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
                   : TaskStatus.completed;
               
               final updatedTask = task.copyWith(status: newStatus);
-
-              if (newStatus == TaskStatus.scheduled) {
-                final bool hasOverlap = currentTasks.any((t) => 
-                    t.id != updatedTask.id && 
-                    t.status == TaskStatus.scheduled && 
-                    !t.isAllDay && !updatedTask.isAllDay && 
-                    updatedTask.startTime!.isBefore(t.endTime!) &&
-                    t.startTime!.isBefore(updatedTask.endTime!)
-                );
-
-                if (hasOverlap) {
-                  _showErrorWarning(
-                    context, 
-                    "Schedule Conflict", 
-                    "This time slot is taken by another active task. Adjust your time before reactivating."
-                  );
-                  return; 
-                }
-              }
-
               try {
                 // 1. Perform the async save
                 await saveTask(ref, updatedTask);
                 
-                // 2. Refresh the UI
-                ref.invalidate(calendarControllerProvider);
-                
-                // 3. Close the dialog ONLY if the operation was successful 
+                // 2. Close the dialog ONLY if the operation was successful 
                 // and the user hasn't already navigated away.
                 if (context.mounted) {
                   Navigator.pop(context);
                 }
                 
-              } on TaskConflictException {
-                _showErrorWarning(
-                  context, 
-                  "Schedule Conflict", 
-                  "This task overlaps with an existing active schedule."
-                );
-              } catch (e) {
-                _showErrorWarning(context, "Error", "An unexpected error occurred: $e");
-              }
-
-              try {
-                await saveTask(ref, updatedTask);
-                ref.invalidate(calendarControllerProvider);
-                Navigator.pop(context);
-              } on TaskConflictException {
-                // This will only show if the repository validation also finds a conflict
-                _showErrorWarning(
-                  context, 
-                  "Schedule Conflict", 
-                  "This task overlaps with an existing active schedule."
-                );
               } catch (e) {
                 _showErrorWarning(context, "Error", "An unexpected error occurred: $e");
               }

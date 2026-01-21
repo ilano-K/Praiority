@@ -86,7 +86,6 @@ class AddSheetHeader extends ConsumerWidget {
                 final task = data.saveTemplate();
                 try {
                   await saveTask(ref, task);
-                  ref.invalidate(calendarControllerProvider);
                   if (context.mounted) Navigator.pop(context);
                 } on TaskConflictException {
                   AppDialogs.showWarning(

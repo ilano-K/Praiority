@@ -20,3 +20,15 @@ String? repeatToRRule(String repeat, {DateTime? start}) {
 
   return base;
 }
+
+String rruleToRepeat(String? rrule) {
+  if (rrule == null || rrule.isEmpty) return "None";
+
+  // Check for the Frequency keywords defined in your _baseMap
+  if (rrule.contains("FREQ=DAILY")) return "Daily";
+  if (rrule.contains("FREQ=WEEKLY")) return "Weekly";
+  if (rrule.contains("FREQ=MONTHLY")) return "Monthly";
+  if (rrule.contains("FREQ=YEARLY")) return "Yearly";
+
+  return "None";
+}

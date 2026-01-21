@@ -29,8 +29,6 @@ class CalendarStateController extends AsyncNotifier<List<Task>>{
     });
   }
   Future<void>addTask(Task task) async {
-    final previous = state;
-    state = const AsyncValue.loading();
     final repository = ref.read(calendarRepositoryProvider);
     // Determine the span to check for conflicts.
     // Non-recurring: check only the task's day. Recurring: try to parse UNTIL, else fallback to 1 year horizon.
@@ -82,35 +80,45 @@ class CalendarStateController extends AsyncNotifier<List<Task>>{
     if(task.type != TaskType.birthday){
       for (var d = checkStart; !d.isAfter(checkEnd); d = d.add(const Duration(days: 1))) {
         if (TaskUtils.checkTaskConflict(tasksInRange, dateOnly(d), task)) {
-          state = previous;
           throw TaskConflictException();
         }
       }
     }
+    await repository.saveAndUpdateTask(task);
 
-    state = await AsyncValue.guard(() async {
-      await repository.saveAndUpdateTask(task);
-      ref.invalidate(calendarRepositoryProvider);
-      return repository.getTasksByRange(_currentRange!.start, _currentRange!.end);
-    });
+    final currentTasks = state.value ?? [];
+    final isEdit = currentTasks.any((t) => t.id == task.id);
+
+    List<Task> updatedList;
+    if (isEdit) {
+      updatedList = currentTasks.map((t) => t.id == task.id ? task : t).toList();
+    } else {
+      // If it's a new task, we add it. 
+      // Note: You might want to sort it by time here so it appears in the right spot!
+      updatedList = [...currentTasks, task];
+      updatedList.sort((a, b) => (a.startTime ?? DateTime.now()).compareTo(b.startTime ?? DateTime.now()));
+    }
+
+    // 3. Directly set the state to AsyncData
+    // This causes Flutter to update the UI tiles smoothly without "blinking"
+    state = AsyncData(updatedList);
   }
 
   Future<void>deleteTask(String taskId) async {
     final repository = ref.read(calendarRepositoryProvider);
-    state = await AsyncValue.guard(() async {
-      await repository.deleteTask(taskId);
-      ref.invalidate(calendarRepositoryProvider);
-      return repository.getTasksByRange(_currentRange!.start, _currentRange!.end);
-    });
+    await repository.deleteTask(taskId);
+    final currentTasks = state.value ?? [];
+    final updatedList = currentTasks.where((t) => t.id != taskId).toList();
+    state = AsyncData(updatedList);
   }
 
   Future<void>addTag(String tag) async {
     final repository = ref.read(calendarRepositoryProvider); 
-    state = await AsyncValue.guard(() async {
-      await repository.saveTag(tag);
-      ref.invalidate(calendarRepositoryProvider);
-      return repository.getTasksByRange(_currentRange!.start, _currentRange!.end);
-    });
+    await repository.saveTag(tag);
+
+    //to ensure no blinking
+    final currentTasks = state.value ?? [];
+    state = AsyncData(currentTasks);
   }
 
   Future<void>deleteTag(String tag) async {

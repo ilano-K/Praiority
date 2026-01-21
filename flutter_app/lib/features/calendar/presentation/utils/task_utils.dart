@@ -12,7 +12,7 @@ class TaskUtils{
   static bool checkTaskConflict(List<Task> tasks, DateTime date, Task taskToSchedule){
     for (final task in tasks) {
       if (task.id == taskToSchedule.id) continue;
-      if(task.type == TaskType.birthday) return false;
+      if(task.type == TaskType.birthday || task.status ==  TaskStatus.completed) return false;
       if (timeConflict(task, taskToSchedule)) return true;
     }
     return false;

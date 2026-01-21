@@ -147,8 +147,6 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
       final int colorValue = isDark ? _selectedColor.dark.value : _selectedColor.light.value;
 
           if (widget.task != null) {
-            debugPrint("This is the tags of the task: ${widget.task!.tags}");
-            debugPrint("This is the tags of the task: ${widget.task!.title}");
             return widget.task!.copyWith(
               title: _titleController.text.trim(),
               description: _descController.text.trim(),
@@ -158,6 +156,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
               priority: priorityMap[_priority]!,
               category: categoryMap[_category]!,
               tags: _selectedTags, // Ensure tags are captured
+              status: TaskStatus.scheduled,
               colorValue: colorValue,
               isAllDay: false
             );
