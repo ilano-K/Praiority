@@ -27,7 +27,6 @@ import '../../domain/entities/task.dart';
 import '../widgets/ai_tip_widget.dart'; 
 import 'task_view.dart';
 // --- IMPORT CONFLICT EXCEPTIONS ---
-import 'package:flutter_app/core/errors/task_conflict_exception.dart';
 
 class MainCalendar extends ConsumerStatefulWidget {
   const MainCalendar({super.key});
