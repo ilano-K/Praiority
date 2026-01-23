@@ -203,7 +203,8 @@ class _TaskViewState extends ConsumerState<TaskView> {
                                         onPressed: () => AppDialogs.showConfirmation(
                                           context, title: "Delete Task", message: "Remove '${task.title}' permanently?", confirmLabel: "Delete", isDestructive: true,
                                           onConfirm: () async {
-                                            await deleteTask(ref, task.id);
+                                            final controller = ref.read(calendarControllerProvider.notifier);
+                                            await controller.deleteTask(task);
                                             ref.invalidate(calendarControllerProvider);
                                           },
                                         ),
@@ -226,10 +227,11 @@ class _TaskViewState extends ConsumerState<TaskView> {
 
   // --- LOGIC: SMOOTH TRANSITION HELPER ---
   Future<void> _updateTaskStatus(Task task, TaskStatus newStatus) async {
+    final controller = ref.read(calendarControllerProvider.notifier);
     final updatedTask = task.copyWith(status: newStatus);
     
     // 1. First, save the status change to the DB
-    await saveTask(ref, updatedTask);
+    await controller.addTask(updatedTask);
     
     // 2. Add a tiny delay (300ms) so the user sees the italic/faded style
     // before the item physically moves to the next section.

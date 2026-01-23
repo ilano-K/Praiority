@@ -21,6 +21,29 @@ class NotificationService {
     await _plugin.initialize(settings);
   }
 
+  Future<bool> requestPermissions() async {
+    // 1. Request General Notification Permissions (iOS & Android 13+)
+    // This is for the "App would like to send you notifications" popup
+    final bool? granted = await _plugin
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestNotificationsPermission();
+
+    // 2. Request Exact Alarm Permissions (Android 12+)
+    // CRITICAL for Calendar apps. Without this, Android might delay your 
+    // notification to save battery.
+    final bool? exactAlarmGranted = await _plugin
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestExactAlarmsPermission();
+
+    // 3. iOS Specific permissions are usually handled during .initialize(),
+    // but you can also request them explicitly if needed.
+    final bool? iosGranted = await _plugin
+        .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
+        ?.requestPermissions(alert: true, badge: true, sound: true);
+
+    return (granted ?? false) || (iosGranted ?? false);
+  }
+
   // Purely technical method: schedules a raw time and body
   Future<void> schedule(int id, String title, String body, DateTime date) async {
     await _plugin.zonedSchedule(

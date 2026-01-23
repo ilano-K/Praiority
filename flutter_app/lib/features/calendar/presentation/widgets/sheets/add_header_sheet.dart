@@ -12,9 +12,6 @@ import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_notifier.dart';
 
-// --- SERVICES ---
-import 'package:flutter_app/features/calendar/domain/usecases/delete_task_usecase.dart';
-import 'package:flutter_app/features/calendar/domain/usecases/save_task_usecase.dart';
 
 // --- LOCAL WIDGETS ---
 import '../selectors/color_selector.dart';
@@ -63,50 +60,55 @@ class AddSheetHeader extends ConsumerWidget {
             // DELETE BUTTON
             IconButton(
               icon: Icon(Icons.delete_outline, size: 28, color: colorScheme.onSurface),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
               onPressed: () => AppDialogs.showConfirmation(
                 context,
                 title: "Delete ${data.selectedType}",
-                message: "Are you sure you want to delete this ${data.selectedType.toLowerCase()}? This cannot be undone.",
-                confirmLabel: "Delete",
-                isDestructive: true,
+                message: "Are you sure? This cannot be undone.",
                 onConfirm: () async {
                   final task = data.saveTemplate();
-                  await deleteTask(ref, task.id);
-                  ref.invalidate(calendarControllerProvider);
-                  if (context.mounted) Navigator.pop(context); // Close the sheet
+                  final controller = ref.read(calendarControllerProvider.notifier);
+                  // Call the controller's delete method
+                  await controller.deleteTask(task);
+                  
+                  if (context.mounted) Navigator.pop(context); 
                 },
               ),
             ),
 
             // SAVE BUTTON
             ElevatedButton(
-              onPressed: () async {
-                final task = data.saveTemplate();
-                try {
-                  await saveTask(ref, task);
-                  if (context.mounted) Navigator.pop(context);
-                } on TaskConflictException {
-                  AppDialogs.showWarning(
-                    context, 
-                    title: "Schedule Conflict", 
-                    message: "This task overlaps with an existing schedule. Please adjust the time."
-                  );
-                } on TaskInvalidTimeException {
-                  AppDialogs.showWarning(
-                    context, 
-                    title: "Invalid Time", 
-                    message: "The end time must be after the start time. Please correct the duration."
-                  );
-                } catch (e) {
-                  AppDialogs.showWarning(
-                    context, 
-                    title: "Error", 
-                    message: "An unexpected error occurred: $e"
-                  );
-                }
-              },
+             onPressed: () async {
+              final task = data.saveTemplate();
+              
+              // 1. Get the controller
+              final controller = ref.read(calendarControllerProvider.notifier);
+
+              try {
+                // 2. Call the controller (which calls the Use Case + Notification Logic)
+                await controller.addTask(task);
+                debugPrint("IS IT WORKING PLEASE");
+                
+                if (context.mounted) Navigator.pop(context);
+              } on TaskConflictException {
+                AppDialogs.showWarning(
+                  context, 
+                  title: "Schedule Conflict", 
+                  message: "This task overlaps with an existing schedule. Please adjust the time."
+                );
+              } on TaskInvalidTimeException {
+                AppDialogs.showWarning(
+                  context, 
+                  title: "Invalid Time", 
+                  message: "The end time must be after the start time."
+                );
+              } catch (e) {
+                AppDialogs.showWarning(
+                  context, 
+                  title: "Error", 
+                  message: "An unexpected error occurred: $e"
+                );
+              }
+            },
               style: ElevatedButton.styleFrom(
                 backgroundColor: colorScheme.primary,
                 foregroundColor: colorScheme.onSurface,

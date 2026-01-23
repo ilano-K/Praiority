@@ -1,5 +1,4 @@
 import 'package:flutter_app/features/calendar/data/datasources/calendar_local_data_source_impl.dart';
-import 'package:flutter_app/features/calendar/domain/usecases/notification_service.dart';
 import 'package:flutter_app/features/calendar/data/repositories/calendar_repository_impl.dart';
 import 'package:flutter_app/core/services/local_database_service.dart';
 import 'package:flutter_app/features/calendar/data/datasources/calendar_local_data_source.dart';
@@ -20,4 +19,3 @@ final calendarRepositoryProvider = Provider<CalendarRepository>((ref) {
   return CalendarRepositoryImpl(dataSource);
 });
 
-final notificationServiceProvider = Provider((ref) => NotificationService());

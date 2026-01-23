@@ -1,33 +1,52 @@
 import 'package:flutter_app/core/errors/task_invalid_time_exception.dart';
-import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
-import 'package:flutter_app/features/calendar/domain/entities/task.dart';
-import 'package:flutter_app/features/calendar/presentation/managers/calendar_notifier.dart';
+import 'package:flutter_app/features/calendar/domain/usecases/schedule_task_notification.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_provider.dart';
+import 'package:flutter_app/features/calendar/presentation/utils/rrule_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_app/features/calendar/presentation/utils/time_utils.dart';
+import '../../../../core/errors/task_conflict_exception.dart';
+import '../entities/enums.dart';
+import '../entities/task.dart';
+import '../repositories/calendar_repository.dart';
+import '../../presentation/utils/task_utils.dart';
+import '../../presentation/utils/time_utils.dart';
 
-Future <void> saveTask(WidgetRef ref, Task taskTemplate)async{
-  // if invalid time slot. ex: jan 1, 10pm - jan 1, 5am
-  if(taskTemplate.type == TaskType.task){
-    if(!validDateTime(taskTemplate.startTime!, taskTemplate.endTime!, 
-    taskTemplate.deadline!)){throw TaskInvalidTimeException();}
-  }
-  
-  // controller and notif service
-  final controller = ref.read(calendarControllerProvider.notifier); 
-  final notificationService = ref.read(notificationServiceProvider);
+final saveTaskUseCaseProvider = Provider((ref) {
+  return SaveTaskUseCase(ref.watch(calendarRepositoryProvider),
+                         ref.watch(scheduleTaskNotificationProvider));
+});
 
-  if(taskTemplate.startTime != null){
-    final DateTime scheduledTime = taskTemplate.startTime!;
+class SaveTaskUseCase {
+  final CalendarRepository repository;
+  final ScheduleTaskNotification scheduleTaskNotification;
 
-    if(scheduledTime.isAfter(DateTime.now())){
-      await notificationService.scheduleCalendarEvent(
-        id: taskTemplate.id, 
-        title: taskTemplate.title, 
-        body: taskTemplate.description ?? "", 
-        scheduledDate: scheduledTime
-        );
+  SaveTaskUseCase(this.repository, this.scheduleTaskNotification);
+
+  Future<void> execute(Task task) async {
+    final checkStart = startOfDay(task.startTime!);
+    final checkEnd = RRuleUtils.getCheckEnd(task);
+
+    // 1. Fetch existing tasks for conflict checking
+    final tasksInRange = await repository.getTasksByRange(checkStart, checkEnd);
+
+    // 2. Conflict Validation
+    if (task.type != TaskType.birthday) {
+      for (var d = checkStart; !d.isAfter(checkEnd); d = d.add(const Duration(days: 1))) {
+        if (TaskUtils.checkTaskConflict(tasksInRange, dateOnly(d), task)) {
+          throw TaskConflictException();
+        }
+      }
     }
+
+    if(!validDateTime(task.startTime!, task.endTime!, task.deadline)){
+      throw TaskInvalidTimeException();
+    }
+
+
+
+    // 3. Database Transaction
+    await repository.saveAndUpdateTask(task);
+
+    await scheduleTaskNotification.execute(task);
+
   }
-  await controller.addTask(taskTemplate);
 }

@@ -1,11 +1,23 @@
-import 'package:flutter_app/features/calendar/presentation/managers/calendar_notifier.dart';
+
+import 'package:flutter_app/features/calendar/domain/entities/task.dart';
+import 'package:flutter_app/features/calendar/domain/repositories/calendar_repository.dart';
+import 'package:flutter_app/features/calendar/domain/usecases/schedule_task_notification.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-Future <void> deleteTask(WidgetRef ref, String taskId) async {
-  final controller = ref.read(calendarControllerProvider.notifier);
-  await controller.deleteTask(taskId);
+final deleteTaskUseCaseProvider = Provider((ref) {
+  return DeleteTaskUseCase(ref.watch(calendarRepositoryProvider),
+                           ref.watch(scheduleTaskNotificationProvider));
+});
 
-  final notificationService = ref.read(notificationServiceProvider);
-  notificationService.cancelNotification(taskId);
+class DeleteTaskUseCase {
+  final CalendarRepository repository;
+  final ScheduleTaskNotification scheduleTaskNotification;
+
+  DeleteTaskUseCase(this.repository, this.scheduleTaskNotification);
+
+  Future<void> execute(Task task) async {
+    await scheduleTaskNotification.cancel(task.id);
+    await repository.deleteTask(task.id);
+  }
 }

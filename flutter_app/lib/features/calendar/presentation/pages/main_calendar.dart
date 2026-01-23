@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/domain/entities/date_range.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_notifier.dart';
-import 'package:flutter_app/features/calendar/domain/usecases/delete_task_usecase.dart';
-import 'package:flutter_app/features/calendar/domain/usecases/save_task_usecase.dart';
 import 'package:flutter_app/features/calendar/presentation/utils/time_utils.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/sheets/add_birthday_sheet.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/sheets/add_event_sheet.dart';
@@ -93,7 +91,8 @@ void _showAiTipBeforeEdit(Task task) {
                   confirmLabel: "Delete",
                   isDestructive: true,
                   onConfirm: () async {
-                    await deleteTask(ref, task.id);
+                    final controller = ref.read(calendarControllerProvider.notifier);
+                    await controller.deleteTask(task);
                     if (mounted) Navigator.pop(context);
                   },
                 ),
@@ -101,13 +100,14 @@ void _showAiTipBeforeEdit(Task task) {
             },
 
             onComplete: () async {
+              final controller = ref.read(calendarControllerProvider.notifier);
               final newStatus = task.status == TaskStatus.completed 
                   ? TaskStatus.scheduled 
                   : TaskStatus.completed;
               
               final updatedTask = task.copyWith(status: newStatus);
               try {
-                await saveTask(ref, updatedTask);
+                await controller.addTask(updatedTask);
                 if (mounted) {
                   Navigator.pop(context);
                 }

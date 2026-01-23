@@ -33,4 +33,11 @@ class ScheduleTaskNotification {
       reminderTime,
     );
   }
+  // NEW: Add a cancel method
+  Future<void> cancel(String taskId) async {
+    await notificationService.cancel(_generateId(taskId));
+  }
+
+  // Helper to ensure the hashCode logic is the same for schedule and cancel
+  int _generateId(String taskId) => taskId.hashCode.abs();
 }
