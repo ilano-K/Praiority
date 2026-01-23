@@ -22,7 +22,6 @@ import 'package:syncfusion_flutter_calendar/calendar.dart';
 
 import '../widgets/add_task_sheet.dart'; 
 import '../widgets/appointment_card.dart'; 
-import '../../../../core/services/theme/theme_notifier.dart'; 
 import '../../domain/entities/task.dart';
 // --- IMPORT AI TIP WIDGET ---
 import '../widgets/ai_tip_widget.dart'; 
