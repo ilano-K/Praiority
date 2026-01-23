@@ -1,7 +1,7 @@
 // File: lib/features/calendar/presentation/widgets/appointment_card.dart
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
-import 'color_selector.dart'; 
+import '../selectors/color_selector.dart'; 
 
 class AppointmentCard extends StatelessWidget {
   final Appointment appointment;

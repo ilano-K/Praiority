@@ -1,5 +1,5 @@
-import 'package:flutter_app/features/calendar/presentation/controllers/calendar_controller_providers.dart';
-import 'package:flutter_app/features/calendar/presentation/providers/calendar_providers.dart';
+import 'package:flutter_app/features/calendar/presentation/managers/calendar_notifier.dart';
+import 'package:flutter_app/features/calendar/presentation/managers/calendar_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 Future <void> deleteTask(WidgetRef ref, String taskId) async {

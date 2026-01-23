@@ -1,9 +1,9 @@
-import 'package:flutter_app/features/calendar/datasources/calendar_local_data_source_impl.dart';
-import 'package:flutter_app/features/calendar/presentation/services/notification_service.dart';
-import 'package:flutter_app/features/calendar/repository/calendar_repository_impl.dart';
+import 'package:flutter_app/features/calendar/data/datasources/calendar_local_data_source_impl.dart';
+import 'package:flutter_app/features/calendar/domain/usecases/notification_service.dart';
+import 'package:flutter_app/features/calendar/data/repositories/calendar_repository_impl.dart';
 import 'package:flutter_app/core/services/local_database_service.dart';
-import 'package:flutter_app/features/calendar/datasources/calendar_local_data_source.dart';
-import 'package:flutter_app/features/calendar/repository/calendar_repository.dart';
+import 'package:flutter_app/features/calendar/data/datasources/calendar_local_data_source.dart';
+import 'package:flutter_app/features/calendar/domain/repositories/calendar_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final localStorageServiceProvider = Provider<LocalDatabaseService>((ref) {

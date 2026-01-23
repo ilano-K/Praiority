@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
-import 'package:flutter_app/features/calendar/presentation/providers/calendar_providers.dart';
+import 'package:flutter_app/features/calendar/presentation/managers/calendar_provider.dart';
 import 'package:flutter_app/features/calendar/presentation/utils/repeat_to_rrule.dart';
 import 'package:flutter_app/features/calendar/presentation/utils/time_adjust.dart';
 import 'package:flutter_app/features/calendar/presentation/utils/time_utils.dart';
@@ -11,9 +11,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 // Import your separate widgets
-import 'tag_selector.dart';
-import 'repeat_selector.dart'; 
-import 'color_selector.dart'; // <--- Required for CalendarColor
+import '../selectors/tag_selector.dart';
+import '../selectors/repeat_selector.dart'; 
+import '../selectors/color_selector.dart'; // <--- Required for CalendarColor
 
 // IMPORTANT: Import the new Reusable Header
 import 'add_header_sheet.dart'; // <--- NEW IMPORT

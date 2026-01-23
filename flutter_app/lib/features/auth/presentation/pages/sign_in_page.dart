@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_app/features/calendar/presentation/widgets/auth_components.dart';
+import 'package:flutter_app/features/auth/presentation/widgets/auth_components.dart';
 
 class SignInPage extends StatelessWidget {
   final VoidCallback onSwitch;

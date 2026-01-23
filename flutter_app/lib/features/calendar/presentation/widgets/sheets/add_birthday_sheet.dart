@@ -8,7 +8,7 @@ import 'package:intl/intl.dart';
 // Import switching sheets
 
 // Required Imports for Header
-import 'color_selector.dart';
+import '../selectors/color_selector.dart';
 import 'add_header_sheet.dart'; // <--- NEW IMPORT
 
 class AddBirthdaySheet extends StatefulWidget {

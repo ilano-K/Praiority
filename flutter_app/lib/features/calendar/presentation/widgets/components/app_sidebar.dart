@@ -1,9 +1,9 @@
 // File: lib/features/calendar/presentation/widgets/app_sidebar.dart
 import 'package:flutter/material.dart';
-import 'package:flutter_app/features/calendar/presentation/pages/auth_page.dart';
+import 'package:flutter_app/features/auth/presentation/pages/auth_page.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart'; // Required for the Enum
-import '../../../../core/services/theme/theme_notifier.dart';
+import '../../../../../core/theme/theme_notifier.dart';
 
 class AppSidebar extends ConsumerWidget {
   final Function(CalendarView) onViewSelected; // Callback for view switching

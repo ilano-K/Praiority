@@ -1,9 +1,9 @@
 // File: lib/main.dart
 import 'package:flutter/material.dart';
-import 'package:flutter_app/core/services/theme/theme_notifier.dart';
-import 'package:flutter_app/features/calendar/presentation/pages/auth_page.dart';
-import 'package:flutter_app/features/calendar/presentation/providers/calendar_providers.dart';
-import 'package:flutter_app/features/calendar/presentation/services/notification_service.dart';
+import 'package:flutter_app/core/theme/theme_notifier.dart';
+import 'package:flutter_app/features/auth/presentation/pages/auth_page.dart';
+import 'package:flutter_app/features/calendar/presentation/managers/calendar_provider.dart';
+import 'package:flutter_app/features/calendar/domain/usecases/notification_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_app/core/services/local_database_service.dart';
 

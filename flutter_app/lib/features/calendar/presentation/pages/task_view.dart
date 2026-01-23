@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
-import 'package:flutter_app/features/calendar/presentation/controllers/calendar_controller_providers.dart';
-import 'package:flutter_app/features/calendar/presentation/services/delete_task_service.dart';
-import 'package:flutter_app/features/calendar/presentation/services/save_task_service.dart';
-import 'package:flutter_app/features/calendar/presentation/widgets/date_picker.dart';
+import 'package:flutter_app/features/calendar/presentation/managers/calendar_notifier.dart';
+import 'package:flutter_app/features/calendar/domain/usecases/delete_task_usecase.dart';
+import 'package:flutter_app/features/calendar/domain/usecases/save_task_usecase.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/selectors/date_picker.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/dialogs/app_dialog.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../widgets/category_selector.dart';
+import '../widgets/selectors/category_selector.dart';
 
 // --- IMPORT EDIT SHEETS ---
-import '../widgets/add_task_sheet.dart'; 
-import '../widgets/add_event_sheet.dart';
-import '../widgets/add_birthday_sheet.dart';
+import '../widgets/sheets/add_task_sheet.dart'; 
+import '../widgets/sheets/add_event_sheet.dart';
+import '../widgets/sheets/add_birthday_sheet.dart';
 
 class TaskView extends ConsumerStatefulWidget {
   const TaskView({super.key});

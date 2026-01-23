@@ -2,24 +2,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/domain/entities/date_range.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
-import 'package:flutter_app/features/calendar/presentation/controllers/calendar_controller_providers.dart';
-import 'package:flutter_app/features/calendar/presentation/services/delete_task_service.dart';
-import 'package:flutter_app/features/calendar/presentation/services/save_task_service.dart';
+import 'package:flutter_app/features/calendar/presentation/managers/calendar_notifier.dart';
+import 'package:flutter_app/features/calendar/domain/usecases/delete_task_usecase.dart';
+import 'package:flutter_app/features/calendar/domain/usecases/save_task_usecase.dart';
 import 'package:flutter_app/features/calendar/presentation/utils/time_utils.dart';
-import 'package:flutter_app/features/calendar/presentation/widgets/add_birthday_sheet.dart';
-import 'package:flutter_app/features/calendar/presentation/widgets/add_event_sheet.dart';
-import 'package:flutter_app/features/calendar/presentation/widgets/app_sidebar.dart';
-import 'package:flutter_app/features/calendar/presentation/widgets/date_picker.dart';
-import 'package:flutter_app/features/calendar/presentation/widgets/main_calendar widgets/calendar_builder.dart';
-import 'package:flutter_app/features/calendar/presentation/widgets/main_calendar%20widgets/day_view.dart';
-import 'package:flutter_app/features/calendar/presentation/widgets/main_calendar%20widgets/week_view.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/sheets/add_birthday_sheet.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/sheets/add_event_sheet.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/components/app_sidebar.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/selectors/date_picker.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/calendars/calendar_builder.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/calendars/day_view.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/calendars/week_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 
-import '../widgets/add_task_sheet.dart'; 
+import '../widgets/sheets/add_task_sheet.dart'; 
 import '../../domain/entities/task.dart';
-import '../widgets/ai_tip_widget.dart'; 
+import '../widgets/components/calendar_ai_tip.dart'; 
 import '../widgets/dialogs/app_confirmation_dialog.dart';
 import '../widgets/dialogs/app_warning_dialog.dart';
 

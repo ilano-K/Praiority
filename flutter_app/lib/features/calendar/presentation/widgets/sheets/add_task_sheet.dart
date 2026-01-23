@@ -6,19 +6,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
-import 'package:flutter_app/features/calendar/presentation/controllers/calendar_controller_providers.dart';
-import 'package:flutter_app/features/calendar/presentation/providers/calendar_providers.dart';
-import 'package:flutter_app/features/calendar/presentation/widgets/date_picker.dart';
-import 'package:flutter_app/features/calendar/presentation/widgets/pick_time.dart';
+import 'package:flutter_app/features/calendar/presentation/managers/calendar_notifier.dart';
+import 'package:flutter_app/features/calendar/presentation/managers/calendar_provider.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/selectors/date_picker.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/selectors/pick_time.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../utils/time_adjust.dart';
+import '../../utils/time_adjust.dart';
 import 'package:intl/intl.dart';
 
 // Import your separate widgets
-import 'priority_selector.dart';
-import 'category_selector.dart';
-import 'tag_selector.dart';
-import 'color_selector.dart'; // Ensure this is imported for CalendarColor
+import '../selectors/priority_selector.dart';
+import '../selectors/category_selector.dart';
+import '../selectors/tag_selector.dart';
+import '../selectors/color_selector.dart'; // Ensure this is imported for CalendarColor
 
 // IMPORTANT: Import the new Reusable Header (You must create this file)
 import 'add_header_sheet.dart'; // Assuming the file is named '_add_sheet_header.dart'

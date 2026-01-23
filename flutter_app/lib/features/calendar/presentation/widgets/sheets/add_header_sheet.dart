@@ -10,14 +10,14 @@ import 'package:flutter_app/core/errors/task_invalid_time_exception.dart';
 // --- DOMAIN & CONTROLLERS ---
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
-import 'package:flutter_app/features/calendar/presentation/controllers/calendar_controller_providers.dart';
+import 'package:flutter_app/features/calendar/presentation/managers/calendar_notifier.dart';
 
 // --- SERVICES ---
-import 'package:flutter_app/features/calendar/presentation/services/delete_task_service.dart';
-import 'package:flutter_app/features/calendar/presentation/services/save_task_service.dart';
+import 'package:flutter_app/features/calendar/domain/usecases/delete_task_usecase.dart';
+import 'package:flutter_app/features/calendar/domain/usecases/save_task_usecase.dart';
 
 // --- LOCAL WIDGETS ---
-import 'color_selector.dart';
+import '../selectors/color_selector.dart';
 import 'add_task_sheet.dart'; 
 import 'add_event_sheet.dart';
 import 'add_birthday_sheet.dart'; 

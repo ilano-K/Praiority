@@ -2,8 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
-import 'package:flutter_app/features/calendar/presentation/widgets/appointment_card.dart';
-import 'package:flutter_app/features/calendar/presentation/widgets/color_selector.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/components/appointment_card.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/selectors/color_selector.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';

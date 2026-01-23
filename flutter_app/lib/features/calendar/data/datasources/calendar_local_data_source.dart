@@ -3,7 +3,7 @@
 import 'package:flutter_app/features/calendar/data/models/task_tag_model.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
-import '../data/models/task_model.dart';
+import '../models/task_model.dart';
 
 abstract class CalendarLocalDataSource {
   Future<void>saveAndUpdateTask(Task task);

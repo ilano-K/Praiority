@@ -1,8 +1,8 @@
 import 'package:flutter_app/core/errors/task_invalid_time_exception.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
-import 'package:flutter_app/features/calendar/presentation/controllers/calendar_controller_providers.dart';
-import 'package:flutter_app/features/calendar/presentation/providers/calendar_providers.dart';
+import 'package:flutter_app/features/calendar/presentation/managers/calendar_notifier.dart';
+import 'package:flutter_app/features/calendar/presentation/managers/calendar_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_app/features/calendar/presentation/utils/time_utils.dart';
 
