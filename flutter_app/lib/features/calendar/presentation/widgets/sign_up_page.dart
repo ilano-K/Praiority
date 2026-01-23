@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_app/features/calendar/presentation/pages/main_calendar.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/auth_components.dart';
 
 class SignUpPage extends StatelessWidget {
