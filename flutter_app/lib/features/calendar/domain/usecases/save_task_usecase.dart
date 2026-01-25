@@ -41,8 +41,6 @@ class SaveTaskUseCase {
       throw TaskInvalidTimeException();
     }
 
-
-
     // 3. Database Transaction
     await repository.saveAndUpdateTask(task);
 

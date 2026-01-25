@@ -244,6 +244,7 @@ class _TaskViewState extends ConsumerState<TaskView> {
   }
 
   void _showSortSheet(BuildContext context) {
+    String _selectedCategory = "None";
     final colorScheme = Theme.of(context).colorScheme;
     showModalBottomSheet(
       context: context, backgroundColor: Colors.transparent, isScrollControlled: true,
@@ -258,7 +259,9 @@ class _TaskViewState extends ConsumerState<TaskView> {
               children: [
                 Text("Sort By", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
                 ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () async {
+                    sortTasks(_selectedCategory);
+                  },
                   style: ElevatedButton.styleFrom(backgroundColor: colorScheme.primary, foregroundColor: colorScheme.onSurface, elevation: 0, fixedSize: const Size(90, 30), padding: EdgeInsets.zero, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                   child: const Text("Sort", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                 )
@@ -266,8 +269,10 @@ class _TaskViewState extends ConsumerState<TaskView> {
             ),
             const SizedBox(height: 15),
             _buildSortOption(context, "Date", "None", () => pickDate(context)),
-            _buildSortOption(context, "Category", "None", () {
-              showModalBottomSheet(context: context, backgroundColor: Colors.transparent, builder: (context) => CategorySelector(currentCategory: "None", onCategorySelected: (val) {}));
+            _buildSortOption(context, "Category", _selectedCategory, () {
+              showModalBottomSheet(context: context, backgroundColor: Colors.transparent, builder: (context) => CategorySelector(currentCategory: "None", onCategorySelected: (val) {setState(() {
+                _selectedCategory = val;
+              });}));
             }),
             SizedBox(height: MediaQuery.of(context).padding.bottom),
           ],
@@ -275,6 +280,19 @@ class _TaskViewState extends ConsumerState<TaskView> {
       ),
     );
   }
+
+  void sortTasks(String category){
+    final category_map = {
+      "Easy": TaskCategory.easy,
+      "Average": TaskCategory.average,
+      "Hard": TaskCategory.hard,
+      "None": TaskCategory.none
+    };
+
+    final controller = ref.read(calendarControllerProvider.notifier);
+    controller.getTasksByCondition(category: category_map[category]);
+  }
+
 
   Widget _buildSortOption(BuildContext context, String title, String value, VoidCallback onTap) {
     final colorScheme = Theme.of(context).colorScheme;
