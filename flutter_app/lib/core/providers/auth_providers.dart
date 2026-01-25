@@ -4,4 +4,4 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 // For now, it just gives every feature a consistent "local_user" ID.
 final currentUserIdProvider = Provider<String?>((ref) {
   return "dev_user_phil_2026"; 
-});
+}); 

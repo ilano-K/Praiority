@@ -4,15 +4,17 @@
 |    |___ errors
 |    |    |___ task_conflict_exception.dart
 |    |    |___ task_invalid_time_exception.dart
+|    |___ providers
+|    |    |___ auth_providers.dart
 |    |___ services
 |    |    |___ local_database_service.dart
+|    |    |___ notification_service.dart
 |    |___ theme
 |    |    |___ cell.dart
 |    |    |___ theme_notifier.dart
 |    |    |___ themes.dart
 |    |___ utils
 |___ features
-|    |___ ai_assistant
 |    |___ auth
 |    |    |___ presentation
 |    |         |___ pages
@@ -41,31 +43,32 @@
 |    |    |    |    |___ task_tag.dart
 |    |    |    |___ repositories
 |    |    |    |    |___ calendar_repository.dart
-|    |    |    |___ services
-|    |    |         |___ delete_task_service.dart
-|    |    |         |___ notification_service.dart
-|    |    |         |___ save_task_service.dart
+|    |    |    |___ usecases
+|    |    |         |___ delete_task_usecase.dart
+|    |    |         |___ save_task_usecase.dart
+|    |    |         |___ schedule_task_notification.dart
 |    |    |___ presentation
-|    |         |___ controllers
-|    |         |    |___ calendar_controller_providers.dart
+|    |         |___ managers
+|    |         |    |___ calendar_notifier.dart
+|    |         |    |___ calendar_provider.dart
 |    |         |___ pages
 |    |         |    |___ main_calendar.dart
 |    |         |    |___ task_view.dart
-|    |         |___ providers
-|    |         |    |___ calendar_providers.dart
 |    |         |___ utils
 |    |         |    |___ repeat_to_rrule.dart
+|    |         |    |___ rrule_utils.dart
 |    |         |    |___ task_utils.dart
 |    |         |    |___ time_adjust.dart
 |    |         |    |___ time_utils.dart
 |    |         |___ widgets
-|    |              |___ app_sidebar.dart
-|    |              |___ appointment_card.dart
-|    |              |___ calendar_ai_tip.dart
 |    |              |___ calendars
 |    |              |    |___ calendar_builder.dart
 |    |              |    |___ day_view.dart
 |    |              |    |___ week_view.dart
+|    |              |___ components
+|    |              |    |___ app_sidebar.dart
+|    |              |    |___ appointment_card.dart
+|    |              |    |___ calendar_ai_tip.dart
 |    |              |___ dialogs
 |    |              |    |___ app_confirmation_dialog.dart
 |    |              |    |___ app_dialog.dart
@@ -84,6 +87,23 @@
 |    |                   |___ add_header_sheet.dart
 |    |                   |___ add_task_sheet.dart
 |    |___ settings
+|         |___ data
+|         |    |___ datasources
+|         |    |    |___ settings_local_data_source.dart
+|         |    |___ models
+|         |    |    |___ user_preferences_model.dart
+|         |    |    |___ user_preferences_model.g.dart
+|         |    |___ repositories
+|         |         |___ settings_repository_impl.dart
+|         |___ domain
+|         |    |___ entities
+|         |    |    |___ user_preferences.dart
+|         |    |___ repositories
+|         |         |___ settings_repository.dart
+|         |___ presentation
+|              |___ managers
+|                   |___ settings_notfier.dart
+|                   |___ settings_provider.dart
 |___ main.dart
 |___ project_structure.txt
 |___ script.py

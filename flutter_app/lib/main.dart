@@ -6,9 +6,18 @@ import 'package:flutter_app/features/auth/presentation/pages/auth_page.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_app/core/services/local_database_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await Supabase.initialize(
+    url: "https://hilgjdxewhfgpzdkqfyi.supabase.co", 
+    anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhpbGdqZHhld2hmZ3B6ZGtxZnlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyNzg3NDQsImV4cCI6MjA4NDg1NDc0NH0.BJPHc7yXNt91YjKmpUJ-y45fflSDFdWJGeiUHyfowyk",
+    authOptions: const FlutterAuthClientOptions(
+      authFlowType: AuthFlowType.pkce
+    ),
+  );
 
   final dbService = LocalDatabaseService();
   await dbService.init();
