@@ -12,13 +12,15 @@ DateTime endOfDay(DateTime date){
   }
 
 DateTime startOfWeek(DateTime date) {
-    final monday = date.subtract(Duration(days: date.weekday - 1));
-    return DateTime(monday.year, monday.month, monday.day);
-  }
+  final sunday = date.subtract(Duration(days: date.weekday % 7));
+  return DateTime(sunday.year, sunday.month, sunday.day);
+}
+
 DateTime endOfWeek(DateTime date) {
-    final sunday = date.add(Duration(days: 7 - date.weekday));
-    return DateTime(sunday.year, sunday.month, sunday.day, 23, 59, 59);
-  }
+  final saturday = date.add(Duration(days: 6 - (date.weekday % 7)));
+  return DateTime(saturday.year, saturday.month, saturday.day, 23, 59, 59);
+}
+
 
 DateTime startOfMonth(DateTime date) {
     return DateTime(date.year, date.month, 1); 

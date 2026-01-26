@@ -169,13 +169,16 @@ void _handleViewChanged(ViewChangedDetails details) {
         ? CalendarScope.week 
         : CalendarScope.day;
 
-    // Use the exact start and end of the visible week from Syncfusion
+    // For week view, set startTime to the first visible date and endTime to the last
+    // For day view, endTime can be null or the same as startTime
+    final startTime = details.visibleDates.first;
+    final endTime = scope == CalendarScope.week ? details.visibleDates.last : null;
+
     ref.read(calendarControllerProvider.notifier).setRange(
       DateRange(
         scope: scope, 
-        startTime: details.visibleDates.first,
-        // Ensure your DateRange entity or provider can handle an end time
-        // or that the provider knows a 'week' scope means start + 7 days
+        startTime: startTime,
+        endTime: endTime,  // Add this to DateRange if it doesn't exist
       ),
     );
   });
@@ -216,7 +219,13 @@ void _handleViewChanged(ViewChangedDetails details) {
       backgroundColor: colorScheme.surface,
       // --- PASS CALLBACK TO SIDEBAR ---
       drawer: AppSidebar(
-        onViewSelected: (view) => setState(() => _currentView = view),
+        onViewSelected: (view) {
+          setState(() {
+            _currentView = view;
+            // 1. FORCE THE CONTROLLER TO UPDATE
+            _calendarController.view = view; 
+          }); 
+        },
       ),
       floatingActionButton: CalendarBuilder.buildMainFab(
         colorScheme: colorScheme,
@@ -242,7 +251,7 @@ void _handleViewChanged(ViewChangedDetails details) {
             if (isLoading) const LinearProgressIndicator(minHeight: 2) else const SizedBox(height: 2),
 
             Expanded(
-              child: _buildCalendarView(tasks, colorScheme),
+              child: _buildCalendarView(tasks,colorScheme),
             ),
           ],
         ),
@@ -251,30 +260,31 @@ void _handleViewChanged(ViewChangedDetails details) {
   }
 
   // --- HELPER TO SWAP VIEWS ---
-  Widget _buildCalendarView(List<Task> tasks, ColorScheme colorScheme) {
+  Widget _buildCalendarView(List<Task>tasks , ColorScheme colorScheme) {
     final greyBlocks = _getGreyBlocks(colorScheme.secondary);
     
     if (_currentView == CalendarView.week) {
+      // final day = DateRange(scope: CalendarScope.week, startTime: DateTime.now());
+      // controller.setRange(day);
       return WeekView(
-        // tasks: tasks,
-        // calendarController: _calendarController,
+        tasks: tasks,
+        calendarController: _calendarController,
         // selectedDate: _selectedDate, 
-        // onViewChanged: _handleViewChanged,
-        // onTaskTap: _showAiTipBeforeEdit,
+        onViewChanged: _handleViewChanged,
+        onTaskTap: _showAiTipBeforeEdit,
         // onDateTap: () => _pickDate(context),
-        // greyBlocks: greyBlocks,
+        greyBlocks: greyBlocks,
       );
    }
-    
     // Default to DayView
-    return DayView(
-      tasks: tasks,
-      calendarController: _calendarController,
-      selectedDate: _selectedDate,
-      onViewChanged: _handleViewChanged,
-      onTaskTap: _showAiTipBeforeEdit,
-      onDateTap: () => _pickDate(context),
-      greyBlocks: greyBlocks,
-    );
+      return DayView(
+        tasks: tasks,
+        calendarController: _calendarController,
+        selectedDate: _selectedDate,
+        onViewChanged: _handleViewChanged,
+        onTaskTap: _showAiTipBeforeEdit,
+        onDateTap: () => _pickDate(context),
+        greyBlocks: greyBlocks,
+      );
   }
 }

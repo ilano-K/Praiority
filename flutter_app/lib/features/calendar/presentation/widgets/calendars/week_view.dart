@@ -1,64 +1,119 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_app/features/calendar/domain/entities/enums.dart'; // Import your enums
+import 'package:flutter_app/features/calendar/domain/entities/task.dart';  // Import your Task entity
+import 'package:flutter_app/features/calendar/presentation/widgets/components/appointment_card.dart'; // Import your card
+import 'package:flutter_app/features/calendar/presentation/widgets/calendars/day_view.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 
-class WeekView extends StatefulWidget {
-  const WeekView({super.key});
+// Assuming TaskDataSource is in the same file or imported
+// import 'path_to_your_day_view_file.dart'; 
+
+class WeekView extends ConsumerWidget {
+  final List<Task> tasks;
+  final CalendarController calendarController;
+  final Function(ViewChangedDetails) onViewChanged;
+  final Function(Task) onTaskTap;
+  final List<TimeRegion> greyBlocks;
+
+  const WeekView({
+    super.key,
+    required this.tasks,
+    required this.calendarController,
+    required this.onViewChanged,
+    required this.onTaskTap,
+    required this.greyBlocks,
+  });
 
   @override
-  State<WeekView> createState() => _WeekViewState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colorScheme = Theme.of(context).colorScheme;
+    // final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
-class _WeekViewState extends State<WeekView> {
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colorScheme.surface,
       body: SafeArea(
         child: SfCalendar(
           view: CalendarView.week,
-          // Removes the default Syncfusion header (January, navigation arrows)
-          headerHeight: 0, 
-          // Match your design: Start week on Sunday
-          firstDayOfWeek: 7, 
+          controller: calendarController,
           
-          // Styling the Time Slots
-          timeSlotViewSettings: const TimeSlotViewSettings(
-            timeIntervalHeight: 80, // Height of the gray blocks
+          // 1. Data Source & Filtering
+          // Unlike DayView (where you built a custom AllDay list), in WeekView 
+          // we usually pass ALL tasks and let Syncfusion handle the AllDay panel at the top.
+          dataSource: TaskDataSource(
+            tasks.where((t) => t.type != TaskType.birthday && t.startTime != null).toList(),
+            context,
+          ),
+
+          // 2. Custom Appointment Card
+          appointmentBuilder: (context, details) {
+            // This renders your custom card for every appointment
+            final Appointment appointment = details.appointments.first;
+            return AppointmentCard(appointment: appointment);
+          },
+
+          // 3. Layout Settings
+          headerHeight: 0, // Removes the "January 2026" header
+          firstDayOfWeek: 7, // Sunday
+          backgroundColor: colorScheme.surface,
+          cellBorderColor: Colors.transparent, // Cleaner look
+          
+          // 4. Time Slot Styling (Matched to DayView)
+          specialRegions: greyBlocks,
+          timeSlotViewSettings: TimeSlotViewSettings(
+            timeIntervalHeight: 80,
+            timeRulerSize: 60, // Matches DayView ruler width
             timeTextStyle: TextStyle(
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w600,
               fontSize: 11,
-              color: Colors.black,
+              color: colorScheme.onSurface.withOpacity(0.7), // Adaptive color
             ),
-            // Customizing the vertical grid lines
-            dayFormat: 'EEE', // "Thu"
+            dayFormat: 'EEE', // "Mon", "Tue"
           ),
 
-          // Styling the Header (Dates/Days)
-          viewHeaderStyle: const ViewHeaderStyle(
-            dayTextStyle: TextStyle(color: Colors.grey, fontSize: 12),
+          // 5. Header Styling (Mon 12, Tue 13...)
+          viewHeaderStyle: ViewHeaderStyle(
+            dayTextStyle: TextStyle(
+              color: colorScheme.onSurface.withOpacity(0.5), 
+              fontSize: 12
+            ),
             dateTextStyle: TextStyle(
-              fontWeight: FontWeight.bold, 
-              fontSize: 16, 
-              color: Colors.black
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              color: colorScheme.onSurface,
             ),
           ),
 
-          // Customizing the Cell Appearance
+          // 6. Interactions
+          onViewChanged: onViewChanged,
+          onTap: (CalendarTapDetails details) {
+            if (details.targetElement == CalendarElement.appointment &&
+                details.appointments != null) {
+              final Appointment selectedAppt = details.appointments!.first;
+              
+              // Find the original Task object matching the ID
+              try {
+                final tappedTask = tasks.firstWhere((t) => t.id == selectedAppt.id);
+                onTaskTap(tappedTask);
+              } catch (e) {
+                print("Task not found for appointment id: ${selectedAppt.id}");
+              }
+            }
+          },
+
+          // 7. Selection Decoration (Optional: if you want a border when clicking empty slots)
           selectionDecoration: BoxDecoration(
-          // Use 'color' for the background; transparent ensures the grey blocks show through
-          color: Colors.grey, 
-          // Matches your specific brand color or deepPurple as previously used
-          border: Border.all(color: Colors.deepPurple, width: 2),
-          borderRadius: BorderRadius.circular(8),
-        ),
-          
-          // Background cell styling
-          cellBorderColor: Colors.transparent, // We'll handle borders with the theme
+            color: Colors.transparent,
+            border: Border.all(color: colorScheme.primary, width: 2),
+            borderRadius: BorderRadius.circular(8),
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        backgroundColor: const Color(0xFFDDE0FF),
+        onPressed: () {
+          // Add your add logic here
+        },
+        backgroundColor: const Color(0xFFDDE0FF), // Or use colorScheme.primaryContainer
         child: const Icon(Icons.add, color: Colors.black),
       ),
     );
