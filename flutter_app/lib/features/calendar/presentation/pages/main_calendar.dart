@@ -4,13 +4,13 @@ import 'package:flutter_app/features/calendar/domain/entities/date_range.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_notifier.dart';
 import 'package:flutter_app/features/calendar/presentation/utils/time_utils.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/calendars/week_view.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/sheets/add_birthday_sheet.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/sheets/add_event_sheet.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/components/app_sidebar.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/selectors/date_picker.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/calendars/calendar_builder.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/calendars/day_view.dart';
-import 'package:flutter_app/features/calendar/presentation/widgets/calendars/week_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
@@ -151,7 +151,9 @@ void _showAiTipBeforeEdit(Task task) {
 void _handleViewChanged(ViewChangedDetails details) {
   if (details.visibleDates.isEmpty) return;
   
-  final newDate = dateOnly(details.visibleDates.first);
+  // Use the middle or first date of the visible range to avoid jumpiness
+  final newDate = dateOnly(details.visibleDates[details.visibleDates.length ~/ 2]);
+  
   if (_lastRangeDate == newDate) return;
 
   _debounceTimer?.cancel();
@@ -161,13 +163,20 @@ void _handleViewChanged(ViewChangedDetails details) {
     _lastRangeDate = newDate;
     setState(() => _selectedDate = newDate);
 
-    // Update the scope based on the CURRENT VIEW
-    final currentScope = _currentView == CalendarView.week 
+    // --- THE FIX ---
+    // Instead of guessing the scope, check the actual visible range length
+    final scope = details.visibleDates.length > 1 
         ? CalendarScope.week 
         : CalendarScope.day;
 
+    // Use the exact start and end of the visible week from Syncfusion
     ref.read(calendarControllerProvider.notifier).setRange(
-      DateRange(scope: currentScope, startTime: newDate),
+      DateRange(
+        scope: scope, 
+        startTime: details.visibleDates.first,
+        // Ensure your DateRange entity or provider can handle an end time
+        // or that the provider knows a 'week' scope means start + 7 days
+      ),
     );
   });
 }
@@ -243,19 +252,19 @@ void _handleViewChanged(ViewChangedDetails details) {
 
   // --- HELPER TO SWAP VIEWS ---
   Widget _buildCalendarView(List<Task> tasks, ColorScheme colorScheme) {
+    final greyBlocks = _getGreyBlocks(colorScheme.secondary);
+    
     if (_currentView == CalendarView.week) {
-    return WeekView(
-      tasks: tasks,
-      calendarController: _calendarController,
-      // Pass the selectedDate so WeekView knows which week to display in the header
-      selectedDate: _selectedDate, 
-      onViewChanged: _handleViewChanged,
-      onTaskTap: _showAiTipBeforeEdit,
-      // Pass the date picker logic to allow header interaction
-      onDateTap: () => _pickDate(context), 
-      greyBlocks: _getGreyBlocks(colorScheme.secondary),
-    );
-  }
+      return WeekView(
+        // tasks: tasks,
+        // calendarController: _calendarController,
+        // selectedDate: _selectedDate, 
+        // onViewChanged: _handleViewChanged,
+        // onTaskTap: _showAiTipBeforeEdit,
+        // onDateTap: () => _pickDate(context),
+        // greyBlocks: greyBlocks,
+      );
+   }
     
     // Default to DayView
     return DayView(
@@ -265,7 +274,7 @@ void _handleViewChanged(ViewChangedDetails details) {
       onViewChanged: _handleViewChanged,
       onTaskTap: _showAiTipBeforeEdit,
       onDateTap: () => _pickDate(context),
-      greyBlocks: _getGreyBlocks(colorScheme.secondary),
+      greyBlocks: greyBlocks,
     );
   }
 }
