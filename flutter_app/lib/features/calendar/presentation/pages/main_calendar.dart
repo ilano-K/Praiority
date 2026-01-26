@@ -269,11 +269,11 @@ void _handleViewChanged(ViewChangedDetails details) {
       return WeekView(
         tasks: tasks,
         calendarController: _calendarController,
-        // selectedDate: _selectedDate, 
+        selectedDate: _selectedDate, 
         onViewChanged: _handleViewChanged,
         onTaskTap: _showAiTipBeforeEdit,
         // onDateTap: () => _pickDate(context),
-        greyBlocks: greyBlocks,
+        // greyBlocks: greyBlocks,
       );
    }
     // Default to DayView

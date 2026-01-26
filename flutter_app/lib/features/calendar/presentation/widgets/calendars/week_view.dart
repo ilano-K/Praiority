@@ -1,120 +1,213 @@
+// File: lib/features/calendar/presentation/pages/week_view.dart
 import 'package:flutter/material.dart';
-import 'package:flutter_app/features/calendar/domain/entities/enums.dart'; // Import your enums
-import 'package:flutter_app/features/calendar/domain/entities/task.dart';  // Import your Task entity
-import 'package:flutter_app/features/calendar/presentation/widgets/components/appointment_card.dart'; // Import your card
-import 'package:flutter_app/features/calendar/presentation/widgets/calendars/day_view.dart';
+import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
+import 'package:flutter_app/features/calendar/domain/entities/task.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/components/alldays.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/components/appointment_card.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/selectors/color_selector.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
-
-// Assuming TaskDataSource is in the same file or imported
-// import 'path_to_your_day_view_file.dart'; 
+import 'day_view.dart'; 
 
 class WeekView extends ConsumerWidget {
   final List<Task> tasks;
   final CalendarController calendarController;
+  final DateTime selectedDate;
   final Function(ViewChangedDetails) onViewChanged;
   final Function(Task) onTaskTap;
-  final List<TimeRegion> greyBlocks;
 
   const WeekView({
     super.key,
     required this.tasks,
     required this.calendarController,
+    required this.selectedDate,
     required this.onViewChanged,
     required this.onTaskTap,
-    required this.greyBlocks,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
-    // final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final DateTime now = DateTime.now();
 
-    return Scaffold(
-      backgroundColor: colorScheme.surface,
-      body: SafeArea(
-        child: SfCalendar(
-          view: CalendarView.week,
-          controller: calendarController,
-          
-          // 1. Data Source & Filtering
-          // Unlike DayView (where you built a custom AllDay list), in WeekView 
-          // we usually pass ALL tasks and let Syncfusion handle the AllDay panel at the top.
-          dataSource: TaskDataSource(
-            tasks.where((t) => t.type != TaskType.birthday && t.startTime != null).toList(),
-            context,
+    final DateTime firstDayOfWeek = selectedDate.subtract(Duration(days: selectedDate.weekday % 7));
+
+    // --- GRID GENERATION ---
+    final List<TimeRegion> gridRegions = [];
+    for (int d = 0; d < 7; d++) {
+      final day = firstDayOfWeek.add(Duration(days: d));
+      for (int h = 0; h < 24; h++) {
+        gridRegions.add(
+          TimeRegion(
+            startTime: DateTime(day.year, day.month, day.day, h, 0),
+            endTime: DateTime(day.year, day.month, day.day, h, 59),
+            enablePointerInteraction: false,
           ),
+        );
+      }
+    }
 
-          // 2. Custom Appointment Card
-          appointmentBuilder: (context, details) {
-            // This renders your custom card for every appointment
-            final Appointment appointment = details.appointments.first;
-            return AppointmentCard(appointment: appointment);
-          },
+    return Column(
+      children: [
+        _buildHeader(context, colorScheme, firstDayOfWeek, isDark, now),
+        Expanded(
+          child: SfCalendar(
+            view: CalendarView.week,
+            controller: calendarController,
+            headerHeight: 0,
+            viewHeaderHeight: 0, 
+            backgroundColor: colorScheme.surface,
+            cellBorderColor: Colors.transparent, 
+            specialRegions: gridRegions,
+            
+            // --- GRID LOOK: 1px Gaps & Shorter Blocks ---
+            timeRegionBuilder: (context, details) {
+              return Container(
+                // 0.5 vertical margin creates a total 1px line between hours
+                margin: const EdgeInsets.symmetric(horizontal: 1, vertical: 0.5),
+                decoration: BoxDecoration(
+                  color: colorScheme.onSurface.withOpacity(isDark ? 0.05 : 0.08),
+                  borderRadius: BorderRadius.circular(8), 
+                ),
+              );
+            },
 
-          // 3. Layout Settings
-          headerHeight: 0, // Removes the "January 2026" header
-          firstDayOfWeek: 7, // Sunday
-          backgroundColor: colorScheme.surface,
-          cellBorderColor: Colors.transparent, // Cleaner look
-          
-          // 4. Time Slot Styling (Matched to DayView)
-          specialRegions: greyBlocks,
-          timeSlotViewSettings: TimeSlotViewSettings(
-            timeIntervalHeight: 80,
-            timeRulerSize: 60, // Matches DayView ruler width
-            timeTextStyle: TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 11,
-              color: colorScheme.onSurface.withOpacity(0.7), // Adaptive color
+            dataSource: TaskDataSource(
+              tasks.where((t) => !t.isAllDay && t.type != TaskType.birthday && t.startTime != null).toList(),
+              context,
             ),
-            dayFormat: 'EEE', // "Mon", "Tue"
-          ),
+            
+            appointmentBuilder: (context, details) {
+              final Appointment appointment = details.appointments.first;
+              return Container(
+                margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                child: AppointmentCard(appointment: appointment),
+              );
+            },
 
-          // 5. Header Styling (Mon 12, Tue 13...)
-          viewHeaderStyle: ViewHeaderStyle(
-            dayTextStyle: TextStyle(
-              color: colorScheme.onSurface.withOpacity(0.5), 
-              fontSize: 12
-            ),
-            dateTextStyle: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-              color: colorScheme.onSurface,
-            ),
-          ),
-
-          // 6. Interactions
-          onViewChanged: onViewChanged,
-          onTap: (CalendarTapDetails details) {
-            if (details.targetElement == CalendarElement.appointment &&
-                details.appointments != null) {
-              final Appointment selectedAppt = details.appointments!.first;
-              
-              // Find the original Task object matching the ID
-              try {
-                final tappedTask = tasks.firstWhere((t) => t.id == selectedAppt.id);
+            onViewChanged: onViewChanged,
+            onTap: (details) {
+              if (details.targetElement == CalendarElement.appointment && details.appointments != null) {
+                final tappedTask = tasks.firstWhere((t) => t.id == details.appointments!.first.id);
                 onTaskTap(tappedTask);
-              } catch (e) {
-                print("Task not found for appointment id: ${selectedAppt.id}");
               }
-            }
-          },
-
-          // 7. Selection Decoration (Optional: if you want a border when clicking empty slots)
-          selectionDecoration: BoxDecoration(
-            color: Colors.transparent,
-            border: Border.all(color: colorScheme.primary, width: 2),
-            borderRadius: BorderRadius.circular(8),
+            },
+            
+            timeSlotViewSettings: TimeSlotViewSettings(
+              timeRulerSize: 60,
+              timeTextStyle: TextStyle(
+                color: colorScheme.onSurface,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+              // SHORTER BLOCKS: Reduced to 85 for a compact grid
+              timeIntervalHeight: 85, 
+            ),
           ),
         ),
+      ],
+    );
+  }
+
+Widget _buildHeader(BuildContext context, ColorScheme colorScheme, DateTime firstDayOfWeek, bool isDark, DateTime now) {
+    final List<DateTime> weekDays = List.generate(7, (i) => firstDayOfWeek.add(Duration(days: i)));
+    return Container(
+      color: colorScheme.surface,
+      // REDUCED: bottom padding from 12 to 8 to save space
+      padding: const EdgeInsets.only(bottom: 8, top: 8), 
+      child: Row(
+        children: [
+          const SizedBox(width: 60),
+          ...weekDays.map((day) {
+            final bool isToday = DateUtils.isSameDay(day, now);
+            return Expanded(
+              child: Column(
+                // ADDED: MainAxisSize.min to ensure the column doesn't try to take extra space
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(DateFormat('E').format(day), style: TextStyle(fontSize: 11, color: colorScheme.onSurface.withOpacity(0.6))),
+                  const SizedBox(height: 4), // Reduced from 6 to 4
+                  Container(
+                    padding: const EdgeInsets.all(6), // Reduced from 8 to 6
+                    decoration: BoxDecoration(
+                      color: isToday ? colorScheme.primary : Colors.transparent,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(
+                      DateFormat('d').format(day),
+                      style: TextStyle(
+                        fontSize: 14, // Slightly reduced from 15 to 14
+                        color: isToday ? colorScheme.onPrimary : colorScheme.onSurface, 
+                        fontWeight: FontWeight.bold
+                      ),
+                    ),
+                  ),
+                  _buildDayTaskList(context, day, isDark),
+                ],
+              ),
+            );
+          }),
+        ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Add your add logic here
-        },
-        backgroundColor: const Color(0xFFDDE0FF), // Or use colorScheme.primaryContainer
-        child: const Icon(Icons.add, color: Colors.black),
+    );
+  }
+
+  Widget _buildDayTaskList(BuildContext context, DateTime day, bool isDark) {
+    final dayAllDayTasks = tasks.where((t) => 
+      (t.isAllDay || t.type == TaskType.birthday) && 
+      t.startTime != null && 
+      DateUtils.isSameDay(t.startTime!, day)
+    ).toList();
+
+    final bool hasMore = dayAllDayTasks.length > 2;
+    final displayTasks = dayAllDayTasks.take(2).toList();
+
+    return ConstrainedBox(
+      // FIXED: Changed from fixed height 44 to a maximum constraint
+      constraints: const BoxConstraints(minHeight: 40, maxHeight: 44),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ...displayTasks.map((task) {
+            final paletteMatch = appEventColors.firstWhere(
+              (c) => c.light.value == task.colorValue || c.dark.value == task.colorValue,
+              orElse: () => appEventColors[0],
+            );
+            return GestureDetector(
+              onTap: () => onTaskTap(task),
+              child: Container(
+                height: 12, // Reduced from 14 to 12 to prevent overflow
+                width: 30, 
+                margin: const EdgeInsets.only(top: 2),
+                decoration: BoxDecoration(
+                  color: isDark ? paletteMatch.dark : paletteMatch.light,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            );
+          }),
+          if (hasMore)
+            GestureDetector(
+              onTap: () {
+                showModalBottomSheet(
+                  context: context,
+                  backgroundColor: Colors.transparent,
+                  isScrollControlled: true,
+                  builder: (context) => AllDayPopup(
+                    date: day,
+                    tasks: dayAllDayTasks,
+                    onTaskTap: onTaskTap,
+                  ),
+                );
+              },
+              child: Padding(
+                padding: const EdgeInsets.only(top: 1), // Reduced from 2 to 1
+                child: Text("+${dayAllDayTasks.length - 2}", style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold)),
+              ),
+            ),
+        ],
       ),
     );
   }
