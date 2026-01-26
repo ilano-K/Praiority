@@ -244,7 +244,7 @@ class _TaskViewState extends ConsumerState<TaskView> {
   }
 
   void _showSortSheet(BuildContext context) {
-    String _selectedCategory = "None";
+    String selectedCategory = "None";
     final colorScheme = Theme.of(context).colorScheme;
     showModalBottomSheet(
       context: context, backgroundColor: Colors.transparent, isScrollControlled: true,
@@ -260,7 +260,7 @@ class _TaskViewState extends ConsumerState<TaskView> {
                 Text("Sort By", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
                 ElevatedButton(
                   onPressed: () async {
-                    sortTasks(_selectedCategory);
+                    sortTasks(selectedCategory);
                   },
                   style: ElevatedButton.styleFrom(backgroundColor: colorScheme.primary, foregroundColor: colorScheme.onSurface, elevation: 0, fixedSize: const Size(90, 30), padding: EdgeInsets.zero, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                   child: const Text("Sort", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
@@ -269,9 +269,9 @@ class _TaskViewState extends ConsumerState<TaskView> {
             ),
             const SizedBox(height: 15),
             _buildSortOption(context, "Date", "None", () => pickDate(context)),
-            _buildSortOption(context, "Category", _selectedCategory, () {
+            _buildSortOption(context, "Category", selectedCategory, () {
               showModalBottomSheet(context: context, backgroundColor: Colors.transparent, builder: (context) => CategorySelector(currentCategory: "None", onCategorySelected: (val) {setState(() {
-                _selectedCategory = val;
+                selectedCategory = val;
               });}));
             }),
             SizedBox(height: MediaQuery.of(context).padding.bottom),
@@ -282,7 +282,7 @@ class _TaskViewState extends ConsumerState<TaskView> {
   }
 
   void sortTasks(String category){
-    final category_map = {
+    final categoryMap = {
       "Easy": TaskCategory.easy,
       "Average": TaskCategory.average,
       "Hard": TaskCategory.hard,
@@ -290,7 +290,7 @@ class _TaskViewState extends ConsumerState<TaskView> {
     };
 
     final controller = ref.read(calendarControllerProvider.notifier);
-    controller.getTasksByCondition(category: category_map[category]);
+    controller.getTasksByCondition(category: categoryMap[category]);
   }
 
 
