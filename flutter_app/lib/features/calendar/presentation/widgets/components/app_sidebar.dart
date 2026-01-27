@@ -1,5 +1,6 @@
 // File: lib/features/calendar/presentation/widgets/app_sidebar.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_app/features/auth/presentation/manager/auth_controller.dart';
 import 'package:flutter_app/features/auth/presentation/pages/auth_page.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart'; // Required for the Enum
@@ -75,12 +76,10 @@ class AppSidebar extends ConsumerWidget {
                     context, 
                     icon: Icons.logout_outlined, 
                     label: "Log Out",
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context, 
-                        MaterialPageRoute(builder: (context) => const AuthPage())
-                      );
-                    }
+                    onTap: () async {
+                        final authController = ref.read(authControllerProvider.notifier);
+                        await authController.signOut();
+                    } 
                   ),
                 ],
               ),

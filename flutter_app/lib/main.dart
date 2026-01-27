@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/core/services/notification_service.dart';
 import 'package:flutter_app/core/theme/theme_notifier.dart';
-import 'package:flutter_app/features/auth/presentation/pages/auth_page.dart';
+import 'package:flutter_app/features/auth/presentation/pages/auth_gate.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_app/core/services/local_database_service.dart';
@@ -51,7 +51,7 @@ class MyApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       theme: themeData,
       // --- CHANGE THIS FROM MainCalendar TO AuthPage ---
-      home: const AuthPage(), 
+      home: const AuthGate(), 
     );
   }
 }

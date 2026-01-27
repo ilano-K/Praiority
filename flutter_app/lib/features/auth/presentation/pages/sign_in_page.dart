@@ -1,36 +1,47 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_app/core/utils/error_utils.dart';
+import 'package:flutter_app/features/auth/presentation/manager/auth_controller.dart';
 import 'package:flutter_app/features/auth/presentation/widgets/auth_components.dart';
 import 'package:flutter_app/features/calendar/presentation/pages/main_calendar.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class SignInPage extends StatefulWidget {
+
+class SignInPage extends ConsumerStatefulWidget {
   final VoidCallback onSwitch;
   const SignInPage({super.key, required this.onSwitch});
 
   @override
-  State<SignInPage> createState() => _SignInPageState();
+  ConsumerState<SignInPage> createState() => _SignInPageState();
 }
 
-class _SignInPageState extends State<SignInPage> {
+class _SignInPageState extends ConsumerState<SignInPage> {
   final TextEditingController _emailUnController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
   // --- LOGIC: STANDARD SIGN IN ---
-    void _handleSignIn() {
-      final identifier = _emailUnController.text.trim();
+    void _handleSignIn() async {
+      final email = _emailUnController.text.trim();
+      final password = _passwordController.text.trim();
 
-      // If the user included an '@', treat it as an email and validate
-      if (identifier.contains('@')) {
-        if (!isValidEmail(identifier)) {
-          debugPrint("Invalid email format");
-          return;
-        }
-      } else if (identifier.length < 3) {
-        // If it's a username, ensure it's at least 3 characters
-        debugPrint("Username too short");
+      if (email.isEmpty || password.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Please enter both email and password")),
+        );
         return;
+      } 
+
+      if(!isValidEmail(email)){
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Please enter a valid email address")),
+        );
+        return; 
       }
 
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const MainCalendar()));
+      // hide keyboard
+      FocusScope.of(context).unfocus();
+      final authController = ref.read(authControllerProvider.notifier);
+      await authController.signIn(email: email, password: password);
+      // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const MainCalendar()));
     }
 
   // --- LOGIC: GOOGLE SIGN IN ---
@@ -48,10 +59,35 @@ class _SignInPageState extends State<SignInPage> {
 
   @override
   Widget build(BuildContext context) {
+    //sign in logic
+    final authState = ref.watch(authControllerProvider);
+    
+    // 2. Listen for Errors to show a SnackBar
+    ref.listen<AsyncValue>(
+      authControllerProvider,
+      (_, state) {
+        // Guard clause: If there is no error, do nothing.
+        if (!state.hasError) return;
+
+        // A. CONVERT: Pass the raw error to your utility
+        // parseError() returns an 'AppException' object
+        final appException = parseError(state.error!);
+
+        // B. DISPLAY: Use .message to show the friendly text
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(appException.message), // e.g. "Invalid email"
+            backgroundColor: Theme.of(context).colorScheme.error, // Use error color
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      },
+    );
+
     final colorScheme = Theme.of(context).colorScheme;
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final String logoPath = isDarkMode ? 'assets/images/DarkLogo.png' : 'assets/images/LightLogo.png';
-
+    final isLoading = authState.isLoading;
     return Scaffold(
       backgroundColor: colorScheme.surface,
       body: SafeArea(
@@ -68,7 +104,7 @@ class _SignInPageState extends State<SignInPage> {
               const SizedBox(height: 15),
               AuthField(hint: "Password", isPass: true, controller: _passwordController),
               const SizedBox(height: 25),
-              AuthComponents.buildButton(context, "Sign In", onPressed: _handleSignIn),
+              AuthComponents.buildButton(context, "Sign In", onPressed: isLoading? null: _handleSignIn),
               const SizedBox(height: 20),
               AuthComponents.buildSocialDivider(context, "sign in"),
               const SizedBox(height: 20),

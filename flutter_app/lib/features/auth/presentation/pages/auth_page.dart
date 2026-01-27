@@ -1,18 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_app/features/auth/data/auth_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_app/features/auth/presentation/pages/sign_in_page.dart';
-import 'package:flutter_app/features/auth/presentation/pages/sign_up_page.dart';
+import 'package:flutter_app/features/auth/presentation/pages/sign_up_page.dart'; 
 
-class AuthPage extends StatefulWidget {
+class AuthPage extends ConsumerStatefulWidget {
   const AuthPage({super.key});
 
   @override
-  State<AuthPage> createState() => _AuthPageState();
+  ConsumerState<AuthPage> createState() => _AuthPageState();
 }
 
-class _AuthPageState extends State<AuthPage> {
+class _AuthPageState extends ConsumerState<AuthPage> {
   bool _isLogin = true;
 
-  void _toggleAuth() => setState(() => _isLogin = !_isLogin);
+  void _toggleAuth() {
+    setState(() {
+      _isLogin = !_isLogin;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,9 +26,17 @@ class _AuthPageState extends State<AuthPage> {
       backgroundColor: Theme.of(context).colorScheme.surface,
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 500),
-        child: _isLogin 
-            ? SignInPage(onSwitch: _toggleAuth, key: const ValueKey('SignIn')) 
-            : SignUpPage(onSwitch: _toggleAuth, key: const ValueKey('SignUp')),
+        switchInCurve: Curves.easeInOut,
+        switchOutCurve: Curves.easeInOut,
+        child: _isLogin
+            ? SignInPage(
+                key: const ValueKey('SignIn'), // Key ensures animation works
+                onSwitch: _toggleAuth,
+              )
+            : SignUpPage(
+                key: const ValueKey('SignUp'),
+                onSwitch: _toggleAuth,
+              ),
       ),
     );
   }
