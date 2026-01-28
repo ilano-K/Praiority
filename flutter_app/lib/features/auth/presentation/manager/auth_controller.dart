@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_app/features/auth/data/auth_provider.dart';
+import 'package:flutter_app/features/auth/data/auth_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final authControllerProvider = AsyncNotifierProvider<AuthController, void>((){
@@ -33,6 +34,14 @@ class AuthController extends AsyncNotifier<void> {
     state = await AsyncValue.guard(() async {
       final authService = ref.read(authServiceProvider);
       await authService.signOut();
+    });
+  }
+
+  Future<void> signInWithGoogle() async {
+    state = AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      final authService = ref.read(authServiceProvider);
+      await authService.signInWithGoogle();
     });
   }
 }

@@ -45,9 +45,9 @@ class _SignInPageState extends ConsumerState<SignInPage> {
     }
 
   // --- LOGIC: GOOGLE SIGN IN ---
-  void _handleGoogleSignIn() {
-    debugPrint("Google Sign-In Triggered");
-    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const MainCalendar()));
+  void _handleGoogleSignIn() async {
+    final authController = ref.read(authControllerProvider.notifier);
+    await authController.signInWithGoogle();
   }
 
   @override

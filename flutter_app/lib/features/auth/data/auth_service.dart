@@ -1,10 +1,16 @@
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthService {
   // supabase client
   final SupabaseClient _supabase = Supabase.instance.client;
+  static const String _webClientId = "863361017196-70lclvjrohu7mtio0kpb9d4oblrjusd5.apps.googleusercontent.com";
 
-  // account creation
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    serverClientId: _webClientId,
+  );
+
+  // account creation 
   Future<AuthResponse> signUp(String username, String email, String password) async {
     try{
       final response = await _supabase.auth.signUp(
@@ -37,8 +43,33 @@ class AuthService {
     }
   }
 
+  Future<AuthResponse> signInWithGoogle() async {
+    try{
+      // trigger login pop up
+      final googleUser = await _googleSignIn.signIn();
+
+      if(googleUser == null){
+        throw 'Login canceled';
+      }
+
+      final googleAuth = await googleUser.authentication;
+      final accessToken = googleAuth.accessToken;
+      final idToken = googleAuth.idToken;
+
+      if(idToken == null)throw  'No Id Token Found';
+
+      return await _supabase.auth.signInWithIdToken(
+        provider: OAuthProvider.google, 
+        idToken: idToken, 
+        accessToken: accessToken
+      ); 
+    }catch (e){
+      rethrow;
+    }
+  }
   //sign out
   Future<void> signOut() async {
+    await _googleSignIn.signOut();
     await _supabase.auth.signOut();
   }
 
