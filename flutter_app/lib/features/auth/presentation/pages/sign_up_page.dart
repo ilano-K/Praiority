@@ -84,8 +84,6 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(appException.message), // e.g. "Invalid email"
-            backgroundColor: Theme.of(context).colorScheme.error, // Use error color
-            behavior: SnackBarBehavior.floating,
           ),
         );
       },
