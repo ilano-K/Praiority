@@ -52,32 +52,13 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
   
   // MASTER TAG LIST (Persists new tags)
   List<String> _tagsList = [];
+  
   @override
   void initState() {
     super.initState();
 
     if (widget.task != null) {
-      final e = widget.task!;
-      _titleController.text = e.title;
-      _descController.text = e.description ?? "";
-      _isAllDay = e.isAllDay;
-      _startDate = e.startTime ?? DateTime.now();
-      _startTime = TimeOfDay.fromDateTime(e.startTime ?? DateTime.now());
-      _endDate = e.endTime ?? DateTime.now();
-      _endTime = TimeOfDay.fromDateTime(e.endTime ?? DateTime.now());
-      _selectedTags = e.tags;
-      _location = e.location ?? "None";
-      setState(() {
-      _repeat = rruleToRepeat(e.recurrenceRule);
-      });
-      // _repeat would need rrule parsing logic here
-
-      if (e.colorValue != null) {
-        _selectedColor = appEventColors.firstWhere(
-          (c) => c.light.value == e.colorValue || c.dark.value == e.colorValue,
-          orElse: () => appEventColors[0],
-        );
-      }
+      _prefillFromEvent(widget.task!);
     }
 
     // Fetch tags from repository
@@ -92,64 +73,75 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
 
-  // --- SAVE CALLBACK ---
-  Task createTaskSaveTemplate(bool isDark) {
-    DateTime? startTime;
-    DateTime? endTime;
+  // --- HELPERS ---
+  void _prefillFromEvent(Task event) {
+    _titleController.text = event.title;
+    _descController.text = event.description ?? "";
+    _isAllDay = event.isAllDay;
+    _startDate = event.startTime ?? DateTime.now();
+    _startTime = TimeOfDay.fromDateTime(event.startTime ?? DateTime.now());
+    _endDate = event.endTime ?? DateTime.now();
+    _endTime = TimeOfDay.fromDateTime(event.endTime ?? DateTime.now());
+    _selectedTags = event.tags;
+    _location = event.location ?? "None";
+    _repeat = rruleToRepeat(event.recurrenceRule);
 
-    if(_isAllDay){
-      startTime = startOfDay(_startDate);
-      endTime = endOfDay(_startDate);
-    } else {
-      startTime = DateTime(
-        _startDate.year,_startDate.month,_startDate.day,
-        _startTime.hour,_startTime.minute,
-      );
-      endTime = DateTime(
-        _endDate.year,_endDate.month,_endDate.day,
-        _endTime.hour,_endTime.minute,
+    if (event.colorValue != null) {
+      _selectedColor = appEventColors.firstWhere(
+        (c) => c.light.value == event.colorValue || c.dark.value == event.colorValue,
+        orElse: () => appEventColors[0],
       );
     }
-  
+  }
 
-    DateTime startTimeForRule = _isAllDay 
+  DateTime _combineDateAndTime(DateTime date, TimeOfDay time) {
+    return DateTime(date.year, date.month, date.day, time.hour, time.minute);
+  }
+
+  // --- SAVE CALLBACK ---
+  Task createTaskSaveTemplate(bool isDark) {
+    final colorValue = isDark ? _selectedColor.dark.value : _selectedColor.light.value;
+    final title = _titleController.text.trim().isEmpty ? "Untitled Event" : _titleController.text.trim();
+    final description = _descController.text.trim();
+    
+    final DateTime startTime = _isAllDay 
+        ? startOfDay(_startDate)
+        : _combineDateAndTime(_startDate, _startTime);
+        
+    final DateTime endTime = _isAllDay
+        ? endOfDay(_startDate)
+        : _combineDateAndTime(_endDate, _endTime);
+
+    final DateTime startTimeForRule = _isAllDay 
         ? startOfDay(_startDate) 
-        : DateTime(_startDate.year, _startDate.month, _startDate.day, _startTime.hour, _startTime.minute);
+        : _combineDateAndTime(_startDate, _startTime);
 
-    // 2. THE DECISION: Edit vs Create
+    final baseTask = Task.create(
+      type: TaskType.event,
+      title: title,
+      description: description,
+      startTime: startTime,
+      endTime: endTime,
+      isAllDay: _isAllDay,
+      tags: _selectedTags, 
+      location: _location,
+      status: TaskStatus.scheduled,
+      recurrenceRule: repeatToRRule(_repeat, start: startTimeForRule),
+      colorValue: colorValue,
+    );
 
-    final int colorValue = isDark ? _selectedColor.dark.value : _selectedColor.light.value;
-
-        if (widget.task != null) {
-          // EDIT MODE: Preserves the Task ID
-          return widget.task!.copyWith(
-            title: _titleController.text.trim().isEmpty ? "Untitled Event" : _titleController.text.trim(),
-            description: _descController.text.trim(),
-            startTime: startTime,
-            endTime: endTime,
-            isAllDay: _isAllDay,
-            tags: _selectedTags, 
-            location: _location,
-            recurrenceRule: repeatToRRule(_repeat, start: startTimeForRule),
-            colorValue: colorValue,
-          );
-        } else {
-          // CREATE MODE: Generates a new ID
-          return Task.create(
-            type: TaskType.event,
-            title: _titleController.text.trim().isEmpty ? "Untitled Event" : _titleController.text.trim(),
-            description: _descController.text.trim(),
-            startTime: startTime,
-            endTime: endTime,
-            isAllDay: _isAllDay,
-            tags: _selectedTags, 
-            location: _location,
-            status: TaskStatus.scheduled,
-            recurrenceRule: repeatToRRule(_repeat, start: startTimeForRule),
-            colorValue: colorValue,
-          );
-        }
-      }
+    return widget.task != null ? widget.task!.copyWith(
+      title: baseTask.title,
+      description: baseTask.description,
+      startTime: baseTask.startTime,
+      endTime: baseTask.endTime,
+      isAllDay: baseTask.isAllDay,
+      tags: baseTask.tags, 
+      location: baseTask.location,
+      recurrenceRule: baseTask.recurrenceRule,
+      colorValue: baseTask.colorValue,
+    ) : baseTask;
+  }
 
   @override
   Widget build(BuildContext context) {

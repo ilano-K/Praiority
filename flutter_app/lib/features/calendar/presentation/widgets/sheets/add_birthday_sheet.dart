@@ -38,21 +38,23 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
   void initState() {
     super.initState();
 
-    // 1. EDIT MODE: Pre-fill if an existing birthday was passed
     if (widget.task != null) {
-      final b = widget.task!; // Defined as 'b' here
-      _titleController.text = b.title;
-      _descController.text = b.description ?? "";
-      _birthdayDate = b.startTime ?? DateTime.now();
-      _location = b.location ?? "None";
+      _prefillFromBirthday(widget.task!);
+    }
+  }
 
-      // --- FIXED: Using 'b' instead of 'e' ---
-      if (b.colorValue != null) { // Changed 'e' to 'b' and matched your 'colorValue' parameter
-        _selectedColor = appEventColors.firstWhere(
-          (c) => c.light.value == b.colorValue || c.dark.value == b.colorValue,
-          orElse: () => appEventColors[0],
-        );
-      }
+  // --- HELPER ---
+  void _prefillFromBirthday(Task birthday) {
+    _titleController.text = birthday.title;
+    _descController.text = birthday.description ?? "";
+    _birthdayDate = birthday.startTime ?? DateTime.now();
+    _location = birthday.location ?? "None";
+
+    if (birthday.colorValue != null) {
+      _selectedColor = appEventColors.firstWhere(
+        (c) => c.light.value == birthday.colorValue || c.dark.value == birthday.colorValue,
+        orElse: () => appEventColors[0],
+      );
     }
   }
 
@@ -60,32 +62,28 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
 
 // --- SAVE CALLBACK ---
   Task _handleSave(bool isDark) {
-  // you must define colorValue here first to fix the red error
-  final int colorValue = isDark ? _selectedColor.dark.value : _selectedColor.light.value;
+    final colorValue = isDark ? _selectedColor.dark.value : _selectedColor.light.value;
+    final title = _titleController.text.trim().isEmpty ? "Birthday" : _titleController.text.trim();
+    final description = _descController.text.trim();
 
-  if (widget.task != null) {
-    // EDIT MODE: Preserves the original Task ID
-    debugPrint(widget.task!.startTime.toString());
-    return widget.task!.copyWith(
-      title: _titleController.text.trim().isEmpty ? "Birthday" : _titleController.text.trim(),
-      description: _descController.text.trim(),
-      isAllDay: true,
-      location: _location,
-      colorValue: colorValue, // now this won't be red
-    );
-  } else {
-    // CREATE MODE: Generates a new unique ID
-    return Task.create(
+    final baseTask = Task.create(
       type: TaskType.birthday,
-      title: _titleController.text.trim().isEmpty ? "Birthday" : _titleController.text.trim(),
-      description: _descController.text.trim(),
+      title: title,
+      description: description,
       isAllDay: true,
       location: _location,
       status: TaskStatus.scheduled,
-      colorValue: colorValue, // now this won't be red
+      colorValue: colorValue,
     );
+
+    return widget.task != null ? widget.task!.copyWith(
+      title: baseTask.title,
+      description: baseTask.description,
+      isAllDay: baseTask.isAllDay,
+      location: baseTask.location,
+      colorValue: baseTask.colorValue,
+    ) : baseTask;
   }
-}
 @override
   Widget build(BuildContext context) {
     // 1. ACCESS THEME

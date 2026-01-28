@@ -48,34 +48,13 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
 
   // 1. MASTER TAG LIST
   List<String> _tagsList = [];
+  
   @override
   void initState() {
     super.initState();
 
-    // --- PRE-FILL LOGIC ---
     if (widget.task != null) {
-      final t = widget.task!;
-      _titleController.text = t.title;
-      _descController.text = t.description ?? "";
-      _isSmartScheduleEnabled = t.isSmartSchedule;
-      _startDate = t.startTime ?? DateTime.now();
-      _startTime = TimeOfDay.fromDateTime(t.startTime ?? DateTime.now());
-      _endTime = TimeOfDay.fromDateTime(t.endTime ?? DateTime.now().add(const Duration(hours: 1)));
-      _deadlineDate = t.deadline ?? DateTime.now();
-      _deadlineTime = TimeOfDay.fromDateTime(t.deadline ?? DateTime.now());
-      _selectedTags = t.tags;
-
-      
-      // Map Enums to Strings
-      _priority = t.priority.name[0].toUpperCase() + t.priority.name.substring(1);
-      _category = t.category.name[0].toUpperCase() + t.category.name.substring(1);
-
-     if (t.colorValue != null) {
-        _selectedColor = appEventColors.firstWhere(
-          (c) => c.light.value == t.colorValue || c.dark.value == t.colorValue,
-          orElse: () => appEventColors[0],
-        );
-      }
+      _prefillFromTask(widget.task!);
     }
 
     // Fetch tags from repository
@@ -117,66 +96,73 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
     "None" : TaskCategory.none
   };
 
+  // --- HELPERS ---
+  String _enumToString(dynamic enumValue) {
+    final name = enumValue.toString().split('.').last;
+    return name[0].toUpperCase() + name.substring(1);
+  }
+
+  void _prefillFromTask(Task task) {
+    _titleController.text = task.title;
+    _descController.text = task.description ?? "";
+    _isSmartScheduleEnabled = task.isSmartSchedule;
+    _startDate = task.startTime ?? DateTime.now();
+    _startTime = TimeOfDay.fromDateTime(task.startTime ?? DateTime.now());
+    _endTime = TimeOfDay.fromDateTime(task.endTime ?? DateTime.now().add(const Duration(hours: 1)));
+    _deadlineDate = task.deadline ?? DateTime.now();
+    _deadlineTime = TimeOfDay.fromDateTime(task.deadline ?? DateTime.now());
+    _selectedTags = task.tags;
+    _priority = _enumToString(task.priority);
+    _category = _enumToString(task.category);
+
+    if (task.colorValue != null) {
+      _selectedColor = appEventColors.firstWhere(
+        (c) => c.light.value == task.colorValue || c.dark.value == task.colorValue,
+        orElse: () => appEventColors[0],
+      );
+    }
+  }
+
+  DateTime _combineDateAndTime(DateTime date, TimeOfDay time) {
+    return DateTime(date.year, date.month, date.day, time.hour, time.minute);
+  }
+
   // --- SAVE CALLBACK ---
   Task createTaskSaveTemplate(bool isDark) {
-    // Current save logic: just close the sheet (no controller implementation yet)
-    DateTime deadline = DateTime(
-        _deadlineDate.year,
-        _deadlineDate.month,
-        _deadlineDate.day,
-        _deadlineTime.hour,
-        _deadlineTime.minute,
-    );
-    DateTime startTime = DateTime(
-        _startDate.year,
-        _startDate.month,
-        _startDate.day,
-        _startTime.hour,
-        _startTime.minute,
+    final colorValue = isDark ? _selectedColor.dark.value : _selectedColor.light.value;
+    
+    final startDateTime = _combineDateAndTime(_startDate, _startTime);
+    final endDateTime = _combineDateAndTime(_startDate, _endTime);
+    final deadlineDateTime = _combineDateAndTime(_deadlineDate, _deadlineTime);
+
+    final baseTask = Task.create(
+      type: TaskType.task,
+      title: _titleController.text.trim(),
+      description: _descController.text.trim(),
+      startTime: startDateTime,
+      endTime: endDateTime,
+      deadline: deadlineDateTime,
+      priority: priorityMap[_priority]!,
+      category: categoryMap[_category]!,
+      tags: _selectedTags,
+      status: TaskStatus.scheduled,
+      colorValue: colorValue,
     );
 
-    DateTime endTime = DateTime(
-        _startDate.year,
-        _startDate.month,
-        _startDate.day,
-        _endTime.hour,
-        _endTime.minute,
-    );
-      // --- 2. THE DECISION (The part you are replacing) ---
-
-      final int colorValue = isDark ? _selectedColor.dark.value : _selectedColor.light.value;
-
-          if (widget.task != null) {
-            return widget.task!.copyWith(
-              title: _titleController.text.trim(),
-              description: _descController.text.trim(),
-              startTime: startTime,
-              endTime: endTime,
-              deadline: deadline,
-              priority: priorityMap[_priority]!,
-              category: categoryMap[_category]!,
-              tags: _selectedTags, // Ensure tags are captured
-              status: TaskStatus.scheduled,
-              colorValue: colorValue,
-              isAllDay: false
-            );
-          } else {
-            debugPrint("These are the tags $_selectedTags");
-            return Task.create(
-              type: TaskType.task,
-              title: _titleController.text.trim(),
-              description: _descController.text.trim(),
-              startTime: startTime,
-              endTime: endTime,
-              deadline: deadline,
-              priority: priorityMap[_priority]!,
-              category: categoryMap[_category]!,
-              tags: _selectedTags,
-              status: TaskStatus.scheduled,
-              colorValue: colorValue,
-            );
-          }
-        }
+    return widget.task != null ? widget.task!.copyWith(
+      title: baseTask.title,
+      description: baseTask.description,
+      startTime: baseTask.startTime,
+      endTime: baseTask.endTime,
+      deadline: baseTask.deadline,
+      priority: baseTask.priority,
+      category: baseTask.category,
+      tags: baseTask.tags,
+      status: baseTask.status,
+      colorValue: baseTask.colorValue,
+      isAllDay: false,
+    ) : baseTask;
+  }
 
   @override
   Widget build(BuildContext context) {

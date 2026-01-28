@@ -37,7 +37,7 @@ class SaveTaskUseCase {
       }
     }
 
-    if(!validDateTime(task.startTime!, task.endTime!, task.deadline)){
+    if(!validDateTime(task.startTime!, task.endTime!, task.deadline) && task.isAllDay != true){
       throw TaskInvalidTimeException();
     }
 
