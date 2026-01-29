@@ -1,18 +1,18 @@
+// File: lib/features/calendar/presentation/pages/task_view.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_notifier.dart';
-import 'package:flutter_app/features/calendar/domain/usecases/delete_task_usecase.dart';
-import 'package:flutter_app/features/calendar/domain/usecases/save_task_usecase.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/selectors/category_selector.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/selectors/date_picker.dart';
-import 'package:flutter_app/features/calendar/presentation/widgets/dialogs/app_dialog.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../widgets/selectors/category_selector.dart';
+import 'package:intl/intl.dart';
 
 // --- IMPORT EDIT SHEETS ---
 import '../widgets/sheets/add_task_sheet.dart'; 
 import '../widgets/sheets/add_event_sheet.dart';
 import '../widgets/sheets/add_birthday_sheet.dart';
+import '../widgets/dialogs/app_dialog.dart';
 
 class TaskView extends ConsumerStatefulWidget {
   const TaskView({super.key});
@@ -59,24 +59,13 @@ class _TaskViewState extends ConsumerState<TaskView> {
         ),
         title: Row(
           children: [
-            Icon(Icons.assignment_turned_in_outlined, color: colorScheme.onSurface, size: 28),
+            Icon(Icons.assignment_outlined, color: colorScheme.onSurface, size: 28),
             const SizedBox(width: 12),
             const Text(
               "Tasks",
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
             ),
           ],
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.swap_vert, color: colorScheme.onSurface, size: 28),
-            onPressed: () => _showSortSheet(context),
-          ),
-          const SizedBox(width: 8),
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Divider(color: colorScheme.onSurface.withOpacity(0.1), height: 1),
         ),
       ),
       body: tasksAsync.when(
@@ -90,10 +79,14 @@ class _TaskViewState extends ConsumerState<TaskView> {
           return ListView(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
             children: [
-              _buildExpandableCategory(context, scheduled, "My Scheduled Tasks", _isScheduledExpanded, 
-                  () => setState(() => _isScheduledExpanded = !_isScheduledExpanded), showActions: true),
+              // 1. Scheduled Tasks with your Summary Header logic
+              _buildScheduledCategory(context, scheduled),
+              
+              // 2. Pending Tasks
               _buildExpandableCategory(context, pending, "My Pending Tasks", _isPendingExpanded, 
                   () => setState(() => _isPendingExpanded = !_isPendingExpanded), showActions: false),
+              
+              // 3. Completed Tasks
               _buildExpandableCategory(context, completed, "My Completed Tasks", _isCompletedExpanded, 
                   () => setState(() => _isCompletedExpanded = !_isCompletedExpanded), showActions: true),
             ],
@@ -103,8 +96,12 @@ class _TaskViewState extends ConsumerState<TaskView> {
     );
   }
 
-  Widget _buildExpandableCategory(BuildContext context, List<Task> tasks, String title, bool isExpanded, VoidCallback onTap, {required bool showActions}) {
+  // --- COPIED SUMMARY LOGIC FROM TaskSummaryView ---
+  Widget _buildScheduledCategory(BuildContext context, List<Task> tasks) {
     final colorScheme = Theme.of(context).colorScheme;
+    final regularTasks = tasks.where((t) => t.type == TaskType.task).toList();
+    final events = tasks.where((t) => t.type == TaskType.event).toList();
+    final birthdays = tasks.where((t) => t.type == TaskType.birthday).toList();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -114,109 +111,26 @@ class _TaskViewState extends ConsumerState<TaskView> {
       ),
       child: Column(
         children: [
-          InkWell(
-            borderRadius: BorderRadius.circular(12),
-            onTap: onTap,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      "$title (${tasks.length})",
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: colorScheme.onSurface),
-                    ),
-                  ),
-                  SizedBox(
-                    width: 54,
-                    child: Align(
-                      alignment: Alignment.centerRight,
-                      child: SizedBox(
-                        width: 32,
-                        child: AnimatedRotation(
-                          turns: isExpanded ? 0.5 : 0,
-                          duration: const Duration(milliseconds: 300),
-                          child: Icon(Icons.keyboard_arrow_down, color: colorScheme.onSurface),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          _buildCategoryHeader("My Scheduled Tasks", tasks.length, _isScheduledExpanded, 
+              () => setState(() => _isScheduledExpanded = !_isScheduledExpanded)),
           AnimatedSize(
-            duration: const Duration(milliseconds: 400), // Slightly slower for smoother feel
+            duration: const Duration(milliseconds: 400),
             curve: Curves.easeInOut,
-            child: isExpanded
+            child: _isScheduledExpanded
                 ? Column(
-                    children: tasks.map((task) {
-                      final bool isDone = task.status == TaskStatus.completed;
-
-                      return Padding(
-                        key: ValueKey(task.id), // Added ValueKey to prevent layout flickering
-                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () => _openTaskSheet(task),
-                                child: Text(
-                                  task.title,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    fontStyle: isDone ? FontStyle.italic : FontStyle.normal,
-                                    color: isDone ? colorScheme.onSurface.withOpacity(0.4) : colorScheme.onSurface,
-                                    decoration: isDone ? TextDecoration.lineThrough : TextDecoration.none,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            
-                            if (showActions) 
-                              SizedBox(
-                                width: 54,
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  children: [
-                                    GestureDetector(
-                                      onTap: () => _updateTaskStatus(task, isDone ? TaskStatus.scheduled : TaskStatus.completed),
-                                      child: Container(
-                                        width: 18, 
-                                        height: 18,
-                                        decoration: BoxDecoration(
-                                          color: isDone ? colorScheme.primary : Colors.transparent,
-                                          shape: BoxShape.circle,
-                                          border: Border.all(color: colorScheme.onSurface, width: 1.2),
-                                        ),
-                                        child: isDone ? Icon(Icons.check, size: 12, color: colorScheme.onSurface) : null,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    SizedBox(
-                                      width: 32, height: 32,
-                                      child: IconButton(
-                                        icon: Icon(Icons.delete_outline, size: 22, color: colorScheme.onSurface),
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(),
-                                        onPressed: () => AppDialogs.showConfirmation(
-                                          context, title: "Delete Task", message: "Remove '${task.title}' permanently?", confirmLabel: "Delete", isDestructive: true,
-                                          onConfirm: () async {
-                                            final controller = ref.read(calendarControllerProvider.notifier);
-                                            await controller.deleteTask(task);
-                                            ref.invalidate(calendarControllerProvider);
-                                          },
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                          ],
-                        ),
-                      );
-                    }).toList(),
+                    children: [
+                      // Replicating Section logic from TaskSummaryView
+                      if (regularTasks.isNotEmpty) _buildSummaryHeader(context, "Tasks", colorScheme),
+                      if (regularTasks.isNotEmpty) ...regularTasks.map((t) => _buildTaskItem(t, true)),
+                      
+                      if (events.isNotEmpty) _buildSummaryHeader(context, "Events", colorScheme),
+                      if (events.isNotEmpty) ...events.map((t) => _buildTaskItem(t, true)),
+                      
+                      if (birthdays.isNotEmpty) _buildSummaryHeader(context, "Birthdays", colorScheme),
+                      if (birthdays.isNotEmpty) ...birthdays.map((t) => _buildTaskItem(t, true)),
+                      
+                      const SizedBox(height: 12),
+                    ],
                   )
                 : const SizedBox(width: double.infinity, height: 0),
           ),
@@ -225,22 +139,134 @@ class _TaskViewState extends ConsumerState<TaskView> {
     );
   }
 
-  // --- LOGIC: SMOOTH TRANSITION HELPER ---
+  // --- HEADER COMPONENT: COPIED FROM TaskSummaryView ---
+  Widget _buildSummaryHeader(BuildContext context, String title, ColorScheme colorScheme) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+      child: Row(
+        children: [
+          Text(
+            title.toUpperCase(),
+            style: TextStyle(
+              fontSize: 13, 
+              fontWeight: FontWeight.w900, 
+              color: colorScheme.onSurface, 
+              letterSpacing: 1.5,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Divider(
+              color: colorScheme.onSurface.withOpacity(0.1), 
+              thickness: 1,
+            )
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- REMAINING UI HELPERS ---
+  Widget _buildCategoryHeader(String title, int count, bool isExpanded, VoidCallback onTap) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text("$title ($count)", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            ),
+            AnimatedRotation(
+              turns: isExpanded ? 0.5 : 0,
+              duration: const Duration(milliseconds: 300),
+              child: const Icon(Icons.keyboard_arrow_down),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTaskItem(Task task, bool showActions) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final bool isDone = task.status == TaskStatus.completed;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+      child: Row(
+        children: [
+          Expanded(
+            child: GestureDetector(
+              onTap: () => _openTaskSheet(task),
+              child: Text(
+                task.title,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: isDone ? colorScheme.onSurface.withOpacity(0.4) : colorScheme.onSurface,
+                  decoration: isDone ? TextDecoration.lineThrough : null,
+                ),
+              ),
+            ),
+          ),
+          if (showActions)
+            Row(
+              children: [
+                GestureDetector(
+                  onTap: () => _updateTaskStatus(task, isDone ? TaskStatus.scheduled : TaskStatus.completed),
+                  child: Container(
+                    width: 28, height: 28,
+                    decoration: BoxDecoration(
+                      color: isDone ? colorScheme.primary : Colors.transparent,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: colorScheme.onSurface, width: 1.5),
+                    ),
+                    child: isDone ? const Icon(Icons.check, size: 18, color: Colors.white) : null,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, size: 30),
+                  onPressed: () => AppDialogs.showConfirmation(
+                    context, 
+                    title: "Delete Task", 
+                    message: "Remove '${task.title}' permanently?", 
+                    confirmLabel: "Delete", 
+                    isDestructive: true,
+                    onConfirm: () async {
+                      await ref.read(calendarControllerProvider.notifier).deleteTask(task);
+                      ref.invalidate(calendarControllerProvider);
+                    },
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExpandableCategory(BuildContext context, List<Task> tasks, String title, bool isExpanded, VoidCallback onTap, {required bool showActions}) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(color: colorScheme.secondary, borderRadius: BorderRadius.circular(12)),
+      child: Column(
+        children: [
+          _buildCategoryHeader(title, tasks.length, isExpanded, onTap),
+          if (isExpanded) ...tasks.map((task) => _buildTaskItem(task, showActions)).toList(),
+        ],
+      ),
+    );
+  }
+
   Future<void> _updateTaskStatus(Task task, TaskStatus newStatus) async {
-    final controller = ref.read(calendarControllerProvider.notifier);
-    final updatedTask = task.copyWith(status: newStatus);
-    
-    // 1. First, save the status change to the DB
-    await controller.addTask(updatedTask);
-    
-    // 2. Add a tiny delay (300ms) so the user sees the italic/faded style
-    // before the item physically moves to the next section.
+    await ref.read(calendarControllerProvider.notifier).addTask(task.copyWith(status: newStatus));
     await Future.delayed(const Duration(milliseconds: 300));
-    
-    // 3. Now refresh the UI state
-    if (mounted) {
-      ref.invalidate(calendarControllerProvider);
-    }
+    if (mounted) ref.invalidate(calendarControllerProvider);
   }
 
   void _showSortSheet(BuildContext context) {
@@ -288,11 +314,9 @@ class _TaskViewState extends ConsumerState<TaskView> {
       "Hard": TaskCategory.hard,
       "None": TaskCategory.none
     };
-
     final controller = ref.read(calendarControllerProvider.notifier);
     controller.getTasksByCondition(category: categoryMap[category]);
   }
-
 
   Widget _buildSortOption(BuildContext context, String title, String value, VoidCallback onTap) {
     final colorScheme = Theme.of(context).colorScheme;

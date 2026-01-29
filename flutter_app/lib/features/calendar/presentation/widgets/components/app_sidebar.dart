@@ -84,7 +84,6 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                     context, 
                     lightIcon: 'assets/icons/view.png', 
                     darkIcon: 'assets/icons/viewDark.png', 
-                    // UPDATED: Swap text based on expansion state
                     label: _isExpanded ? "View" : _getViewLabel(widget.currentView),
                     isDark: isDark,
                   ),
@@ -93,10 +92,25 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                     icon: Icons.access_time_outlined, 
                     label: "Working Hours",
                   ),
-                  _buildDrawerItem(
-                    context, 
-                    icon: Icons.cloud_sync_outlined, 
-                    label: "Cloud Sync",
+                  // UPDATED: Replaced IconData with an Image.asset for the Google logo
+                  ListTile(
+                    leading: Padding(
+                      padding: const EdgeInsets.only(left: 2.0), // Aligning with other icons
+                      child: Image.asset(
+                        'assets/images/G.png', // Ensure you have this asset in your project
+                        width: 24, 
+                        height: 24
+                      ),
+                    ),
+                    title: Text(
+                      "Google Sync", 
+                      style: TextStyle(
+                        fontSize: 17, 
+                        fontWeight: FontWeight.w600, 
+                        color: colorScheme.onSurface
+                      )
+                    ),
+                    onTap: () => Navigator.pop(context),
                   ),
                   _buildDrawerItem(
                     context, 
@@ -139,7 +153,6 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
     return Theme(
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
       child: ExpansionTile(
-        // UPDATED: Trigger rebuild when expanding/collapsing
         onExpansionChanged: (expanded) {
           setState(() => _isExpanded = expanded);
         },

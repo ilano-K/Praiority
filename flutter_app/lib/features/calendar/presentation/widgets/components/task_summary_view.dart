@@ -112,12 +112,7 @@ class TaskSummaryView extends StatelessWidget {
                 offset: const Offset(0, 4),
               ),
             ],
-            border: Border(
-              left: BorderSide(
-                color: Color(task.colorValue ?? 0).withOpacity(0.9), 
-                width: 6,
-              ),
-            ),
+
           ),
           child: Text(
             task.title.isEmpty ? "Untitled Task" : task.title,

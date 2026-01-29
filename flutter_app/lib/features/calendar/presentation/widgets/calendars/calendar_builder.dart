@@ -41,14 +41,27 @@ class CalendarBuilder {
             ),
           ),
           const Spacer(),
-          Icon(Icons.refresh, size: 24, color: colorScheme.onSurface),
-          const SizedBox(width: 10),
-          Icon(Icons.swap_vert, size: 24, color: colorScheme.onSurface),
+          
+          // --- UPDATED: REFRESH ICON REPLACED WITH GOOGLE ASSET ---
+          Padding(
+            padding: const EdgeInsets.only(right: 10.0),
+            child: Image.asset(
+              'assets/images/G.png', 
+              width: 22, // Sized slightly smaller than 24 to match visual weight
+              height: 22,
+              fit: BoxFit.contain,
+            ),
+          ),
+          
           const SizedBox(width: 10),
           GestureDetector(
             onTap: () => Navigator.push(
                 context, MaterialPageRoute(builder: (context) => const TaskView())),
-            child: Icon(Icons.paste, size: 24, color: colorScheme.onSurface),
+            child: Icon(
+              Icons.assignment_outlined, // Matches your image
+              size: 24, 
+              color: colorScheme.onSurface,
+            ),
           ),
         ],
       ),
