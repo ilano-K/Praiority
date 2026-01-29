@@ -3,16 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_notifier.dart';
-import 'package:flutter_app/features/calendar/presentation/widgets/selectors/category_selector.dart';
-import 'package:flutter_app/features/calendar/presentation/widgets/selectors/date_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-// --- IMPORT EDIT SHEETS ---
+// --- IMPORT EDIT SHEETS & SELECTORS ---
 import '../widgets/sheets/add_task_sheet.dart'; 
 import '../widgets/sheets/add_event_sheet.dart';
 import '../widgets/sheets/add_birthday_sheet.dart';
 import '../widgets/dialogs/app_dialog.dart';
+import '../widgets/selectors/sort_selector.dart'; // NEW IMPORT
 
 class TaskView extends ConsumerStatefulWidget {
   const TaskView({super.key});
@@ -26,6 +25,17 @@ class _TaskViewState extends ConsumerState<TaskView> {
   bool _isPendingExpanded = false;
   bool _isCompletedExpanded = false;
 
+  @override
+void initState() {
+  super.initState();
+  Future.microtask(() {
+    final currentState = ref.read(calendarControllerProvider);
+    // Only fetch "All" if we don't have any data yet
+    if (currentState.value == null || currentState.value!.isEmpty) {
+      ref.read(calendarControllerProvider.notifier).getTasksByCondition();
+    }
+  });
+}
   void _openTaskSheet(Task task) {
     showModalBottomSheet(
       context: context,
@@ -40,6 +50,15 @@ class _TaskViewState extends ConsumerState<TaskView> {
           return AddTaskSheet(task: task);
         }
       },
+    );
+  }
+
+  void _showSortSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context, 
+      backgroundColor: Colors.transparent, 
+      isScrollControlled: true,
+      builder: (context) => const SortSelector(), // USING NEW CLASS
     );
   }
 
@@ -67,6 +86,13 @@ class _TaskViewState extends ConsumerState<TaskView> {
             ),
           ],
         ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.swap_vert, color: colorScheme.onSurface, size: 28),
+            onPressed: () => _showSortSheet(context),
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: tasksAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -79,14 +105,9 @@ class _TaskViewState extends ConsumerState<TaskView> {
           return ListView(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
             children: [
-              // 1. Scheduled Tasks with your Summary Header logic
               _buildScheduledCategory(context, scheduled),
-              
-              // 2. Pending Tasks
               _buildExpandableCategory(context, pending, "My Pending Tasks", _isPendingExpanded, 
                   () => setState(() => _isPendingExpanded = !_isPendingExpanded), showActions: false),
-              
-              // 3. Completed Tasks
               _buildExpandableCategory(context, completed, "My Completed Tasks", _isCompletedExpanded, 
                   () => setState(() => _isCompletedExpanded = !_isCompletedExpanded), showActions: true),
             ],
@@ -96,7 +117,6 @@ class _TaskViewState extends ConsumerState<TaskView> {
     );
   }
 
-  // --- COPIED SUMMARY LOGIC FROM TaskSummaryView ---
   Widget _buildScheduledCategory(BuildContext context, List<Task> tasks) {
     final colorScheme = Theme.of(context).colorScheme;
     final regularTasks = tasks.where((t) => t.type == TaskType.task).toList();
@@ -119,7 +139,6 @@ class _TaskViewState extends ConsumerState<TaskView> {
             child: _isScheduledExpanded
                 ? Column(
                     children: [
-                      // Replicating Section logic from TaskSummaryView
                       if (regularTasks.isNotEmpty) _buildSummaryHeader(context, "Tasks", colorScheme),
                       if (regularTasks.isNotEmpty) ...regularTasks.map((t) => _buildTaskItem(t, true)),
                       
@@ -139,7 +158,6 @@ class _TaskViewState extends ConsumerState<TaskView> {
     );
   }
 
-  // --- HEADER COMPONENT: COPIED FROM TaskSummaryView ---
   Widget _buildSummaryHeader(BuildContext context, String title, ColorScheme colorScheme) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
@@ -166,7 +184,6 @@ class _TaskViewState extends ConsumerState<TaskView> {
     );
   }
 
-  // --- REMAINING UI HELPERS ---
   Widget _buildCategoryHeader(String title, int count, bool isExpanded, VoidCallback onTap) {
     final colorScheme = Theme.of(context).colorScheme;
     return InkWell(
@@ -267,63 +284,5 @@ class _TaskViewState extends ConsumerState<TaskView> {
     await ref.read(calendarControllerProvider.notifier).addTask(task.copyWith(status: newStatus));
     await Future.delayed(const Duration(milliseconds: 300));
     if (mounted) ref.invalidate(calendarControllerProvider);
-  }
-
-  void _showSortSheet(BuildContext context) {
-    String selectedCategory = "None";
-    final colorScheme = Theme.of(context).colorScheme;
-    showModalBottomSheet(
-      context: context, backgroundColor: Colors.transparent, isScrollControlled: true,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(color: colorScheme.surface, borderRadius: const BorderRadius.vertical(top: Radius.circular(20))),
-        child: Column(
-          mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text("Sort By", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
-                ElevatedButton(
-                  onPressed: () async {
-                    sortTasks(selectedCategory);
-                  },
-                  style: ElevatedButton.styleFrom(backgroundColor: colorScheme.primary, foregroundColor: colorScheme.onSurface, elevation: 0, fixedSize: const Size(90, 30), padding: EdgeInsets.zero, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                  child: const Text("Sort", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                )
-              ],
-            ),
-            const SizedBox(height: 15),
-            _buildSortOption(context, "Date", "None", () => pickDate(context)),
-            _buildSortOption(context, "Category", selectedCategory, () {
-              showModalBottomSheet(context: context, backgroundColor: Colors.transparent, builder: (context) => CategorySelector(currentCategory: "None", onCategorySelected: (val) {setState(() {
-                selectedCategory = val;
-              });}));
-            }),
-            SizedBox(height: MediaQuery.of(context).padding.bottom),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void sortTasks(String category){
-    final categoryMap = {
-      "Easy": TaskCategory.easy,
-      "Average": TaskCategory.average,
-      "Hard": TaskCategory.hard,
-      "None": TaskCategory.none
-    };
-    final controller = ref.read(calendarControllerProvider.notifier);
-    controller.getTasksByCondition(category: categoryMap[category]);
-  }
-
-  Widget _buildSortOption(BuildContext context, String title, String value, VoidCallback onTap) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return ListTile(
-      contentPadding: EdgeInsets.zero, onTap: onTap,
-      title: Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
-      subtitle: Text(value, style: TextStyle(fontSize: 14, color: colorScheme.onSurface.withOpacity(0.5))),
-    );
   }
 }

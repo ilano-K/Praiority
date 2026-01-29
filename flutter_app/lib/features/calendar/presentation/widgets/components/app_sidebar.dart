@@ -1,6 +1,7 @@
 // File: lib/features/calendar/presentation/widgets/app_sidebar.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_app/features/auth/presentation/manager/auth_controller.dart';
+import 'package:flutter_app/features/calendar/presentation/managers/calendar_notifier.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart'; 
 import '../../../../../core/theme/theme_notifier.dart';
@@ -170,18 +171,24 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
     );
   }
 
-  Widget _buildSubItem(BuildContext context, String label, String lightIcon, String darkIcon, bool isDark, CalendarView view) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return ListTile(
-      leading: Image.asset(isDark ? darkIcon : lightIcon, width: 24, height: 24),
-      title: Text(label, style: TextStyle(fontWeight: FontWeight.w500, color: colorScheme.onSurface)),
-      onTap: () {
-        widget.onViewSelected(view); 
-        Navigator.pop(context); 
-      },
-    );
-  }
+Widget _buildSubItem(BuildContext context, String label, String lightIcon, String darkIcon, bool isDark, CalendarView view) {
+  final colorScheme = Theme.of(context).colorScheme;
+  return ListTile(
+    leading: Image.asset(isDark ? darkIcon : lightIcon, width: 24, height: 24),
+    title: Text(label, style: TextStyle(fontWeight: FontWeight.w500, color: colorScheme.onSurface)),
+    onTap: () {
+      // --- THE FIX ---
+      // If we are switching to Month View, we must clear the current date range filter
+      // so the dots show up for the entire month, not just the previously selected day/week.
+      if (view == CalendarView.month) {
+        ref.read(calendarControllerProvider.notifier).getTasksByCondition();
+      }
 
+      widget.onViewSelected(view); 
+      Navigator.pop(context); 
+    },
+  );
+}
   Widget _buildThemeToggle(BuildContext context, WidgetRef ref, bool isDark) {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
