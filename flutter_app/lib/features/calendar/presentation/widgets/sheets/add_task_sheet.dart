@@ -130,15 +130,16 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
   // --- SAVE CALLBACK ---
   Task createTaskSaveTemplate(bool isDark) {
     final colorValue = isDark ? _selectedColor.dark.value : _selectedColor.light.value;
-    
+    final title = _titleController.text.trim().isEmpty ? "Untitled Task" : _titleController.text.trim();
+    final description = _descController.text.trim();
     final startDateTime = _combineDateAndTime(_startDate, _startTime);
     final endDateTime = _combineDateAndTime(_startDate, _endTime);
     final deadlineDateTime = _combineDateAndTime(_deadlineDate, _deadlineTime);
 
     final baseTask = Task.create(
       type: TaskType.task,
-      title: _titleController.text.trim(),
-      description: _descController.text.trim(),
+      title: title,
+      description: description,
       startTime: startDateTime,
       endTime: endDateTime,
       deadline: deadlineDateTime,

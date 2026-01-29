@@ -220,14 +220,15 @@ void _handleViewChanged(ViewChangedDetails details) {
       backgroundColor: colorScheme.surface,
       // --- PASS CALLBACK TO SIDEBAR ---
       drawer: AppSidebar(
-        onViewSelected: (view) {
-          setState(() {
-            _currentView = view;
-            // 1. FORCE THE CONTROLLER TO UPDATE
-            _calendarController.view = view; 
-          }); 
-        },
-      ),
+      currentView: _currentView, // ADD THIS: Pass the current view state
+      onViewSelected: (view) {
+        setState(() {
+          _currentView = view;
+          // 1. FORCE THE CONTROLLER TO UPDATE
+          _calendarController.view = view; 
+        }); 
+      },
+    ),
       floatingActionButton: CalendarBuilder.buildMainFab(
         colorScheme: colorScheme,
         fabController: _fabController,

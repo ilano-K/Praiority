@@ -1,18 +1,43 @@
 // File: lib/features/calendar/presentation/widgets/app_sidebar.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_app/features/auth/presentation/manager/auth_controller.dart';
-import 'package:flutter_app/features/auth/presentation/pages/auth_page.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:syncfusion_flutter_calendar/calendar.dart'; // Required for the Enum
+import 'package:syncfusion_flutter_calendar/calendar.dart'; 
 import '../../../../../core/theme/theme_notifier.dart';
 
-class AppSidebar extends ConsumerWidget {
-  final Function(CalendarView) onViewSelected; // Callback for view switching
+class AppSidebar extends ConsumerStatefulWidget {
+  final CalendarView currentView; // Required to know the current active view
+  final Function(CalendarView) onViewSelected;
 
-  const AppSidebar({super.key, required this.onViewSelected});
+  const AppSidebar({
+    super.key, 
+    required this.currentView, 
+    required this.onViewSelected
+  });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AppSidebar> createState() => _AppSidebarState();
+}
+
+class _AppSidebarState extends ConsumerState<AppSidebar> {
+  bool _isExpanded = false; // Internal state to track if the View menu is open
+
+  // Helper to get the correct string for the label
+  String _getViewLabel(CalendarView view) {
+    switch (view) {
+      case CalendarView.month:
+        return "Month View";
+      case CalendarView.week:
+        return "Week View";
+      case CalendarView.day:
+        return "Day View";
+      default:
+        return "View";
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -59,7 +84,8 @@ class AppSidebar extends ConsumerWidget {
                     context, 
                     lightIcon: 'assets/icons/view.png', 
                     darkIcon: 'assets/icons/viewDark.png', 
-                    label: "View",
+                    // UPDATED: Swap text based on expansion state
+                    label: _isExpanded ? "View" : _getViewLabel(widget.currentView),
                     isDark: isDark,
                   ),
                   _buildDrawerItem(
@@ -113,6 +139,10 @@ class AppSidebar extends ConsumerWidget {
     return Theme(
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
       child: ExpansionTile(
+        // UPDATED: Trigger rebuild when expanding/collapsing
+        onExpansionChanged: (expanded) {
+          setState(() => _isExpanded = expanded);
+        },
         leading: Image.asset(isDark ? darkIcon : lightIcon, width: 28, height: 28),
         title: Text(label, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: colorScheme.onSurface)),
         iconColor: colorScheme.onSurface,
@@ -133,8 +163,8 @@ class AppSidebar extends ConsumerWidget {
       leading: Image.asset(isDark ? darkIcon : lightIcon, width: 24, height: 24),
       title: Text(label, style: TextStyle(fontWeight: FontWeight.w500, color: colorScheme.onSurface)),
       onTap: () {
-        onViewSelected(view); // Change the view
-        Navigator.pop(context); // Close the drawer
+        widget.onViewSelected(view); 
+        Navigator.pop(context); 
       },
     );
   }
