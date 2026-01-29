@@ -44,38 +44,44 @@ class TaskUtils{
 
     // parse rrule 
     final ruleString = task.recurrenceRule!.startsWith('RRULE:') ? task.recurrenceRule! : 'RRULE:${task.recurrenceRule!}';
-    final rule = RecurrenceRule.fromString(ruleString);
+    
+    try {
+      final rule = RecurrenceRule.fromString(ruleString);
 
-    // remove seconds precision and convert to utc
-    // rrule pacakge requires the use of UTC
-    final startLocal = DateTime(
-      taskStartTime.year, taskStartTime.month, taskStartTime.day,
-      taskStartTime.hour, taskStartTime.minute,taskStartTime.second,
-    );
-    final startUtc = startLocal.toUtc();
-    final afterUTC = startOfDay(rangeStart).toUtc();
-    final beforeUTC = endOfDay(rangeEnd).toUtc();
+      // remove seconds precision and convert to utc
+      // rrule pacakge requires the use of UTC
+      final startLocal = DateTime(
+        taskStartTime.year, taskStartTime.month, taskStartTime.day,
+        taskStartTime.hour, taskStartTime.minute, taskStartTime.second,
+      );
+      final startUtc = startLocal.toUtc();
+      final afterUTC = startOfDay(rangeStart).toUtc();
+      final beforeUTC = endOfDay(rangeEnd).toUtc();
 
-    // If the computed "before" bound is earlier than the rule start,
-    // there can be no instances — avoid calling getInstances with
-    // before < start which triggers an assertion in the rrule package.
-    if (beforeUTC.isBefore(startUtc)) {
-      return false;
+      // If the computed "before" bound is earlier than the rule start,
+      // there can be no instances — avoid calling getInstances with
+      // before < start which triggers an assertion in the rrule package.
+      if (beforeUTC.isBefore(startUtc)) {
+        return false;
+      }
+
+      DateTime afterArg = afterUTC.subtract(const Duration(seconds: 1));
+      if (afterArg.isBefore(startUtc)) {
+        afterArg = startUtc;
+      }
+
+      final instances = rule.getInstances(
+        start: startUtc,
+        after: afterArg,
+        before: beforeUTC,
+        includeAfter: true,
+      );
+
+      return instances.isNotEmpty;
+    } catch (e) {
+      // If there's an error parsing the recurrence rule, treat it as a non-recurring task
+      return !taskEndTime.isBefore(rangeStart) && !taskStartTime.isAfter(rangeEnd);
     }
-
-    DateTime afterArg = afterUTC.subtract(const Duration(seconds: 1));
-    if (afterArg.isBefore(startUtc)) {
-      afterArg = startUtc;
-    }
-
-    final instances = rule.getInstances(
-      start: startUtc,
-      after: afterArg,
-      before: beforeUTC,
-      includeAfter: true,
-    );
-
-    return instances.isNotEmpty;
   }
 
 }

@@ -4,6 +4,7 @@ import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'package:flutter_app/features/calendar/presentation/pages/task_view.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/selectors/color_selector.dart';
+import 'package:flutter_app/features/calendar/presentation/utils/time_utils.dart';
 import 'package:intl/intl.dart';
 import 'dart:math' as math;
 
@@ -107,9 +108,24 @@ static Widget buildAllDayList({
     required List<Task> tasks,
     required bool isDark,
     required Function(Task) onTaskTap,
+    required DateTime selectedDate,
   }) {
-    final allDayTasks =
-        tasks.where((t) => t.isAllDay || t.type == TaskType.birthday).toList();
+    final selectedDateOnly = dateOnly(selectedDate);
+    final allDayTasks = tasks.where((t) {
+      if ((t.isAllDay || t.type == TaskType.birthday) && t.startTime != null) {
+        final taskDateOnly = dateOnly(t.startTime!);
+        
+        // For non-recurring tasks, check exact date match
+        if (t.recurrenceRule == null || t.recurrenceRule == "" || t.recurrenceRule == "None") {
+          return taskDateOnly == selectedDateOnly;
+        }
+        
+        // For recurring tasks, check if this date is within the recurring range
+        // For birthdays, they repeat every year on the same month/day
+        return t.startTime!.month == selectedDate.month && t.startTime!.day == selectedDate.day;
+      }
+      return false;
+    }).toList();
 
     return ConstrainedBox(
       constraints: BoxConstraints(

@@ -100,7 +100,7 @@ void _showAiTipBeforeEdit(Task task) {
               );
             },
 
-            onComplete: () async {
+            onComplete: task.type == TaskType.birthday ? null : () async {
               final controller = ref.read(calendarControllerProvider.notifier);
               final newStatus = task.status == TaskStatus.completed 
                   ? TaskStatus.scheduled 

@@ -51,7 +51,8 @@ class DayView extends ConsumerWidget {
                   child: CalendarBuilder.buildAllDayList(
                     tasks: tasks,
                     isDark: isDark,
-                    onTaskTap: onTaskTap, // This passes the callback to the builder
+                    onTaskTap: onTaskTap,
+                    selectedDate: selectedDate,
                   ),
                 ),
               ),

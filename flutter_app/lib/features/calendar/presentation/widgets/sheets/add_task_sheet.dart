@@ -145,7 +145,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
       deadline: deadlineDateTime,
       priority: priorityMap[_priority]!,
       category: categoryMap[_category]!,
-      tags: _selectedTags,
+      tags: _selectedTags, 
       status: TaskStatus.scheduled,
       colorValue: colorValue,
     );

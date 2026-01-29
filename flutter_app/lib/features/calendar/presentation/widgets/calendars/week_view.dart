@@ -112,134 +112,103 @@ class WeekView extends ConsumerWidget {
   }
 
 Widget _buildHeader(BuildContext context, ColorScheme colorScheme, DateTime firstDayOfWeek, bool isDark, DateTime now) {
-  final List<DateTime> weekDays = List.generate(7, (i) => firstDayOfWeek.add(Duration(days: i)));
-  
-  return Container(
-    color: colorScheme.surface,
-    padding: const EdgeInsets.only(bottom: 8, top: 8), 
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start, // Align top so dates stay level
-      children: [
-        const SizedBox(width: 60), 
-        ...weekDays.map((day) {
-          final bool isToday = DateUtils.isSameDay(day, now);
-          
-          return Expanded(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center, 
-              children: [
-                Text(
-                  DateFormat('E').format(day), 
-                  style: TextStyle(
-                    fontSize: 11, 
-                    color: colorScheme.onSurface.withOpacity(0.6),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: isToday ? colorScheme.primary : Colors.transparent,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Text(
-                    DateFormat('d').format(day),
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: isToday ? colorScheme.onPrimary : colorScheme.onSurface, 
-                      fontWeight: FontWeight.bold
+    final List<DateTime> weekDays = List.generate(7, (i) => firstDayOfWeek.add(Duration(days: i)));
+    return Container(
+      color: colorScheme.surface,
+      // REDUCED: bottom padding from 12 to 8 to save space
+      padding: const EdgeInsets.only(bottom: 8, top: 8), 
+      child: Row(
+        children: [
+          const SizedBox(width: 60),
+          ...weekDays.map((day) {
+            final bool isToday = DateUtils.isSameDay(day, now);
+            return Expanded(
+              child: Column(
+                // ADDED: MainAxisSize.min to ensure the column doesn't try to take extra space
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(DateFormat('E').format(day), style: TextStyle(fontSize: 11, color: colorScheme.onSurface.withOpacity(0.6))),
+                  const SizedBox(height: 4), // Reduced from 6 to 4
+                  Container(
+                    padding: const EdgeInsets.all(6), // Reduced from 8 to 6
+                    decoration: BoxDecoration(
+                      color: isToday ? colorScheme.primary : Colors.transparent,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(
+                      DateFormat('d').format(day),
+                      style: TextStyle(
+                        fontSize: 14, // Slightly reduced from 15 to 14
+                        color: isToday ? colorScheme.onPrimary : colorScheme.onSurface, 
+                        fontWeight: FontWeight.bold
+                      ),
                     ),
                   ),
-                ),
-                // FIXED: Reserved height prevents the header from expanding/contracting
-                const SizedBox(height: 4),
-                SizedBox(
-                  height: 80, // Enough height for ~3 rows of tasks (2 tasks + overflow)
-                  child: _buildDayTaskList(context, day, isDark),
-                ),
-              ],
-            ),
-          );
-        }),
-      ],
-    ),
-  );
-}
+                  _buildDayTaskList(context, day, isDark),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
 
-Widget _buildDayTaskList(BuildContext context, DateTime day, bool isDark) {
-  final dayAllDayTasks = tasks.where((t) => 
-    (t.isAllDay || t.type == TaskType.birthday) && 
-    t.startTime != null && 
-    DateUtils.isSameDay(t.startTime!, day)
-  ).toList();
+  Widget _buildDayTaskList(BuildContext context, DateTime day, bool isDark) {
+    final dayAllDayTasks = tasks.where((t) => 
+      (t.isAllDay || t.type == TaskType.birthday) && 
+      t.startTime != null && 
+      DateUtils.isSameDay(t.startTime!, day)
+    ).toList();
 
-  if (dayAllDayTasks.isEmpty) return const SizedBox.shrink();
+    final bool hasMore = dayAllDayTasks.length > 2;
+    final displayTasks = dayAllDayTasks.take(2).toList();
 
-  final bool hasMore = dayAllDayTasks.length > 2;
-  final displayTasks = dayAllDayTasks.take(2).toList();
-
-  return Column(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      ...displayTasks.map((task) {
-        final paletteMatch = appEventColors.firstWhere(
-          (c) => c.light.value == task.colorValue || c.dark.value == task.colorValue,
-          orElse: () => appEventColors[0],
-        );
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 4), // Changed to bottom padding for consistent spacing
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(6),
+    return ConstrainedBox(
+      // FIXED: Changed from fixed height 44 to a maximum constraint
+      constraints: const BoxConstraints(minHeight: 40, maxHeight: 44),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ...displayTasks.map((task) {
+            final paletteMatch = appEventColors.firstWhere(
+              (c) => c.light.value == task.colorValue || c.dark.value == task.colorValue,
+              orElse: () => appEventColors[0],
+            );
+            return GestureDetector(
               onTap: () => onTaskTap(task),
               child: Container(
-                height: 22,
-                width: 38,
+                height: 12, // Reduced from 14 to 12 to prevent overflow
+                width: 30, 
+                margin: const EdgeInsets.only(top: 2),
                 decoration: BoxDecoration(
                   color: isDark ? paletteMatch.dark : paletteMatch.light,
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(4),
                 ),
               ),
-            ),
-          ),
-        );
-      }),
-      if (hasMore)
-        Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(6),
-            onTap: () {
-              showModalBottomSheet(
-                context: context,
-                backgroundColor: Colors.transparent,
-                isScrollControlled: true,
-                builder: (context) => TaskSummaryView(
-                  date: day,
-                  tasks: dayAllDayTasks,
-                  onTaskTap: onTaskTap,
-                ),
-              );
-            },
-            child: Container(
-              height: 22,
-              width: 38,
-              alignment: Alignment.center,
-              child: Text(
-                "+${dayAllDayTasks.length - 2}", 
-                style: const TextStyle(
-                  fontSize: 12, // Slightly smaller for fit
-                  fontWeight: FontWeight.w900,
-                  color: Colors.black,
-                )
+            );
+          }),
+          if (hasMore)
+            GestureDetector(
+              onTap: () {
+                showModalBottomSheet(
+                  context: context,
+                  backgroundColor: Colors.transparent,
+                  isScrollControlled: true,
+                  builder: (context) => TaskSummaryView(
+                    date: day,
+                    tasks: dayAllDayTasks,
+                    onTaskTap: onTaskTap,
+                  ),
+                );
+              },
+              child: Padding(
+                padding: const EdgeInsets.only(top: 1), // Reduced from 2 to 1
+                child: Text("+${dayAllDayTasks.length - 2}", style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold)),
               ),
             ),
-          ),
-        ),
-    ],
-  );
-}
+        ],
+      ),
+    );
+  }
 }

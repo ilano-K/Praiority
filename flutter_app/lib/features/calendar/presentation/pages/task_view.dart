@@ -210,6 +210,7 @@ void initState() {
   Widget _buildTaskItem(Task task, bool showActions) {
     final colorScheme = Theme.of(context).colorScheme;
     final bool isDone = task.status == TaskStatus.completed;
+    final bool isBirthday = task.type == TaskType.birthday;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
@@ -232,19 +233,20 @@ void initState() {
           if (showActions)
             Row(
               children: [
-                GestureDetector(
-                  onTap: () => _updateTaskStatus(task, isDone ? TaskStatus.scheduled : TaskStatus.completed),
-                  child: Container(
-                    width: 28, height: 28,
-                    decoration: BoxDecoration(
-                      color: isDone ? colorScheme.primary : Colors.transparent,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: colorScheme.onSurface, width: 1.5),
+                if (!isBirthday)
+                  GestureDetector(
+                    onTap: () => _updateTaskStatus(task, isDone ? TaskStatus.scheduled : TaskStatus.completed),
+                    child: Container(
+                      width: 28, height: 28,
+                      decoration: BoxDecoration(
+                        color: isDone ? colorScheme.primary : Colors.transparent,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: colorScheme.onSurface, width: 1.5),
+                      ),
+                      child: isDone ? const Icon(Icons.check, size: 18, color: Colors.white) : null,
                     ),
-                    child: isDone ? const Icon(Icons.check, size: 18, color: Colors.white) : null,
                   ),
-                ),
-                const SizedBox(width: 14),
+                if (!isBirthday) const SizedBox(width: 14),
                 IconButton(
                   icon: const Icon(Icons.delete_outline, size: 30),
                   onPressed: () => AppDialogs.showConfirmation(

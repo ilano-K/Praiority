@@ -8,7 +8,7 @@ class AiTipWidget extends StatefulWidget {
   final String generatedTip;
   final bool isCompleted;
   final VoidCallback onEdit;
-  final VoidCallback onComplete;
+  final VoidCallback? onComplete;
   final VoidCallback onDelete;
 
   const AiTipWidget({
@@ -17,7 +17,7 @@ class AiTipWidget extends StatefulWidget {
     required this.description,
     required this.generatedTip,
     required this.onEdit,
-    required this.onComplete,
+    this.onComplete,
     required this.onDelete,
     this.isCompleted = false,
   });
@@ -102,33 +102,34 @@ class _AiTipWidgetState extends State<AiTipWidget> {
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                   ),
-                  const SizedBox(width: 10),
-                  GestureDetector(
-                    onTap: widget.onComplete,
-                    child: Container(
-                      width: 28, 
-                      height: 28,
-                      decoration: BoxDecoration(
-                        // The fill uses the primary "action" color from your scheme
-                        color: widget.isCompleted ? colorScheme.primary : Colors.transparent,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          // Border uses onSurface (Light: 000000, Dark: FFFFFF)
-                          color: colorScheme.onSurface, 
-                          width: 1.5,
-                        ),
-                      ),
-                      child: widget.isCompleted 
-                        ? Icon(
-                            Icons.check, 
-                            size: 18, 
-                            // Using onSurface ensures the checkmark matches your 
-                            // Icon/Text color (Black in Light, White in Dark)
+                  if (widget.onComplete != null) const SizedBox(width: 10),
+                  if (widget.onComplete != null)
+                    GestureDetector(
+                      onTap: widget.onComplete,
+                      child: Container(
+                        width: 28, 
+                        height: 28,
+                        decoration: BoxDecoration(
+                          // The fill uses the primary "action" color from your scheme
+                          color: widget.isCompleted ? colorScheme.primary : Colors.transparent,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            // Border uses onSurface (Light: 000000, Dark: FFFFFF)
                             color: colorScheme.onSurface, 
-                          ) 
-                        : null,
-                    ),
-                  )
+                            width: 1.5,
+                          ),
+                        ),
+                        child: widget.isCompleted 
+                          ? Icon(
+                              Icons.check, 
+                              size: 18, 
+                              // Using onSurface ensures the checkmark matches your 
+                              // Icon/Text color (Black in Light, White in Dark)
+                              color: colorScheme.onSurface, 
+                            ) 
+                          : null,
+                      ),
+                    )
                 ],
               )
             ],

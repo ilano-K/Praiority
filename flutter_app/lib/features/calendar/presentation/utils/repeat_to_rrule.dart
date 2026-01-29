@@ -18,6 +18,14 @@ String? repeatToRRule(String repeat, {DateTime? start}) {
     return '$base;BYDAY=$byday';
   }
 
+  // For yearly recurrences (like birthdays), set an UNTIL date far in the future
+  // to ensure the rrule package correctly generates instances
+  if (repeat == 'Yearly') {
+    final untilDate = DateTime(2099, 12, 31);
+    final untilString = '${untilDate.year}${untilDate.month.toString().padLeft(2, '0')}${untilDate.day.toString().padLeft(2, '0')}';
+    return '$base;UNTIL=$untilString';
+  }
+
   return base;
 }
 
