@@ -4,6 +4,7 @@ import 'package:flutter_app/features/calendar/domain/entities/date_range.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_notifier.dart';
 import 'package:flutter_app/features/calendar/presentation/utils/time_utils.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/calendars/month_view.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/calendars/week_view.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/sheets/add_birthday_sheet.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/sheets/add_event_sheet.dart';
@@ -275,7 +276,17 @@ void _handleViewChanged(ViewChangedDetails details) {
         // onDateTap: () => _pickDate(context),
         // greyBlocks: greyBlocks,
       );
-   }
+   } else if (_currentView == CalendarView.month) {
+      return MonthView(
+        tasks: tasks,
+        calendarController: _calendarController,
+        selectedDate: _selectedDate, 
+        onViewChanged: _handleViewChanged,
+        onTaskTap: _showAiTipBeforeEdit,
+        // onDateTap: () => _pickDate(context),
+        // greyBlocks: greyBlocks,
+      );
+  }
     // Default to DayView
       return DayView(
         tasks: tasks,

@@ -1,19 +1,17 @@
 // File: lib/features/calendar/presentation/widgets/add_birthday_sheet.dart
-// Purpose: UI sheet for adding birthday events; simplifies pre-filled fields.
 import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/selectors/date_picker.dart';
 import 'package:intl/intl.dart';
-
-// Import switching sheets
 
 // Required Imports for Header
 import '../selectors/color_selector.dart';
-import 'add_header_sheet.dart'; // <--- NEW IMPORT
+import 'add_header_sheet.dart';
 
 class AddBirthdaySheet extends StatefulWidget {
-  final Task? task; // <--- ADDED: Data pocket for editing
-  const AddBirthdaySheet({super.key, this.task}); // <--- UPDATED constructor
+  final Task? task; 
+  const AddBirthdaySheet({super.key, this.task});
 
   @override
   State<AddBirthdaySheet> createState() => _AddBirthdaySheetState();
@@ -34,7 +32,7 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
 
-@override
+  @override
   void initState() {
     super.initState();
 
@@ -58,9 +56,7 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
     }
   }
 
-    
-
-// --- SAVE CALLBACK ---
+  // --- SAVE CALLBACK ---
   Task _handleSave(bool isDark) {
     final colorValue = isDark ? _selectedColor.dark.value : _selectedColor.light.value;
     final title = _titleController.text.trim().isEmpty ? "Birthday" : _titleController.text.trim();
@@ -70,6 +66,7 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
       type: TaskType.birthday,
       title: title,
       description: description,
+      startTime: _birthdayDate, // Birthdays usually start on the selected date
       isAllDay: true,
       location: _location,
       status: TaskStatus.scheduled,
@@ -79,33 +76,26 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
     return widget.task != null ? widget.task!.copyWith(
       title: baseTask.title,
       description: baseTask.description,
+      startTime: baseTask.startTime,
       isAllDay: baseTask.isAllDay,
       location: baseTask.location,
       colorValue: baseTask.colorValue,
     ) : baseTask;
   }
-@override
-  Widget build(BuildContext context) {
-    // 1. ACCESS THEME
-    final colorScheme = Theme.of(context).colorScheme;
-    
-    // ADD THIS: DETECT THEME MODE
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // 2. USE THEME COLOR
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final Color sheetBackground = colorScheme.inversePrimary; 
 
-    // --- Create Header Data Object ---
     final headerData = HeaderData(
       selectedType: _selectedType,
       selectedColor: _selectedColor,
       titleController: _titleController,
       descController: _descController,
-      // Update local state when user selects a different type/color
       onTypeSelected: (type) => setState(() => _selectedType = type),
       onColorSelected: (color) => setState(() => _selectedColor = color),
-      
-      // CHANGE THIS LINE: Wrap it in a function and pass isDark
       saveTemplate: () => _handleSave(isDark), 
     );
     
@@ -119,22 +109,28 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          
-          // --- REPLACED: HEADER, TEXT FIELDS, TYPE BUTTONS, COLOR PICKER ---
           AddSheetHeader(data: headerData), 
-          // ------------------------------------------------------------------
 
-          // --- BIRTHDAY DETAILS LIST (Specific to Birthdays) ---
           Expanded(
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  // 1. ARRANGE A DAY (Date Picker)
+                  // 1. ARRANGE A DAY (Updated to use your separate pickDate)
                   _buildInteractiveRow(
                     label: "Arrange a Day", 
                     value: DateFormat('MMMM d, y').format(_birthdayDate),
                     colors: colorScheme,
-                    onTapValue: () => _pickDate(context, (date) => setState(() => _birthdayDate = date)),
+                    onTapValue: () async {
+                      final picked = await pickDate(
+                        context, 
+                        initialDate: _birthdayDate,
+                        firstDate: DateTime(1900), // Standard birthday range
+                        lastDate: DateTime(2100),
+                      );
+                      if (picked != null) {
+                        setState(() => _birthdayDate = picked);
+                      }
+                    },
                   ),
 
                   // 2. LOCATION
@@ -153,21 +149,6 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
         ],
       ),
     );
-  }
-
-  // --- LOGIC: Date Picker ---
-  Future<void> _pickDate(BuildContext context, Function(DateTime) onPicked) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(1900), 
-      lastDate: DateTime(2100),
-      builder: (context, child) => Theme(
-        data: Theme.of(context).copyWith(colorScheme: Theme.of(context).colorScheme),
-        child: child!,
-      ),
-    );
-    if (picked != null) onPicked(picked);
   }
 
   // --- LOGIC: Location Dialog ---

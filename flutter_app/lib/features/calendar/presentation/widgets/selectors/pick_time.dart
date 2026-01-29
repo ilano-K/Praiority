@@ -26,8 +26,11 @@ Future<TimeOfDay?> pickTime(BuildContext context, {TimeOfDay? initialTime}) asyn
             ),
             dayPeriodBorderSide: BorderSide(color: colorScheme.primary),
           ),
+          // --- TARGETING OK AND CANCEL BUTTONS ---
           textButtonTheme: TextButtonThemeData(
-            style: TextButton.styleFrom(foregroundColor: colorScheme.primary),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.black, // Set to Black
+            ),
           ),
         ),
         child: child!,

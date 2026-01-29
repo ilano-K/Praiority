@@ -1,5 +1,4 @@
 // File: lib/features/calendar/presentation/widgets/add_event_sheet.dart
-// Purpose: Bottom sheet UI for creating calendar events (non-task items).
 import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
@@ -7,22 +6,20 @@ import 'package:flutter_app/features/calendar/presentation/managers/calendar_pro
 import 'package:flutter_app/features/calendar/presentation/utils/repeat_to_rrule.dart';
 import 'package:flutter_app/features/calendar/presentation/utils/time_adjust.dart';
 import 'package:flutter_app/features/calendar/presentation/utils/time_utils.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/selectors/date_picker.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/selectors/pick_time.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-// Import your separate widgets
 import '../selectors/tag_selector.dart';
 import '../selectors/repeat_selector.dart'; 
-import '../selectors/color_selector.dart'; // <--- Required for CalendarColor
+import '../selectors/color_selector.dart'; 
+import 'add_header_sheet.dart'; 
 
-// IMPORTANT: Import the new Reusable Header
-import 'add_header_sheet.dart'; // <--- NEW IMPORT
-
-// IMPORTANT: Import other sheets for switching
 
 class AddEventSheet extends ConsumerStatefulWidget {
-  final Task? task; // <--- ADDED
-  const AddEventSheet({super.key, this.task}); // <--- UPDATED
+  final Task? task;
+  const AddEventSheet({super.key, this.task});
 
   @override
   ConsumerState<AddEventSheet> createState() => _AddEventSheetState();
@@ -31,9 +28,7 @@ class AddEventSheet extends ConsumerStatefulWidget {
 class _AddEventSheetState extends ConsumerState<AddEventSheet> {
   // --- STATE VARIABLES ---
   String _selectedType = 'Event'; 
-  
-  // Event Specific Fields
-  bool _isAllDay = false; // Toggles Date/Time display
+  bool _isAllDay = false; 
   
   DateTime _startDate = DateTime.now();
   TimeOfDay _startTime = TimeOfDay.now();
@@ -46,13 +41,12 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
   String _repeat = "None";
   String _location = "None"; 
   List<String> _selectedTags = [];
-
-  // --- SELECTED COLOR STATE ---
   CalendarColor _selectedColor = appEventColors[0];
-  
-  // MASTER TAG LIST (Persists new tags)
   List<String> _tagsList = [];
   
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _descController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -61,7 +55,6 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
       _prefillFromEvent(widget.task!);
     }
 
-    // Fetch tags from repository
     ref.read(calendarRepositoryProvider).getAllTagNames().then((tags) {
       setState(() {
         _tagsList = tags.toList();
@@ -69,11 +62,6 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
     });
   }
 
-  // Controllers
-  final TextEditingController _titleController = TextEditingController();
-  final TextEditingController _descController = TextEditingController();
-
-  // --- HELPERS ---
   void _prefillFromEvent(Task event) {
     _titleController.text = event.title;
     _descController.text = event.description ?? "";
@@ -98,7 +86,6 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
     return DateTime(date.year, date.month, date.day, time.hour, time.minute);
   }
 
-  // --- SAVE CALLBACK ---
   Task createTaskSaveTemplate(bool isDark) {
     final colorValue = isDark ? _selectedColor.dark.value : _selectedColor.light.value;
     final title = _titleController.text.trim().isEmpty ? "Untitled Event" : _titleController.text.trim();
@@ -145,21 +132,15 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
 
   @override
   Widget build(BuildContext context) {
-    // 1. ACCESS THEME
     final colorScheme = Theme.of(context).colorScheme;
-    
-    // 2. USE THEME COLOR
     final Color sheetBackground = colorScheme.inversePrimary; 
-
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // --- Create Header Data Object ---
     final headerData = HeaderData(
       selectedType: _selectedType,
       selectedColor: _selectedColor,
       titleController: _titleController,
       descController: _descController,
-      // Update local state when user selects a different type/color
       onTypeSelected: (type) => setState(() => _selectedType = type),
       onColorSelected: (color) => setState(() => _selectedColor = color),
       saveTemplate: () => createTaskSaveTemplate(isDark),
@@ -175,17 +156,11 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          
-          // --- REPLACED: HEADER, TEXT FIELDS, TYPE BUTTONS, COLOR PICKER ---
           AddSheetHeader(data: headerData), 
-          // ------------------------------------------------------------------
-
-          // --- EVENT DETAILS LIST ---
           Expanded(
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  // 1. ALL DAY TOGGLE
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -202,61 +177,67 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                       ),
                     ],
                   ),
-                  
                   const SizedBox(height: 10),
 
-                  // 2. DYNAMIC DATE/TIME ROWS
                   if (_isAllDay) ...[
-                    // --- ALL DAY MODE: Show Single Date ---
                     _buildInteractiveRow(
                       label: "Date", 
                       value: DateFormat('MMMM d, y').format(_startDate),
                       colors: colorScheme,
-                      onTapValue: () => _pickDate(context, _startDate, (date) => setState(() => _startDate = date)),
+                      onTapValue: () async {
+                        final date = await pickDate(context, initialDate: _startDate);
+                        if (date != null) setState(() => _startDate = date);
+                      },
                     ),
                   ] else ...[
-                    // --- NORMAL MODE: Show From/To with Time ---
                     _buildInteractiveRow(
                       label: "From", 
                       value: DateFormat('MMMM d, y').format(_startDate),
                       trailing: _startTime.format(context), 
                       colors: colorScheme,
-                      onTapValue: () => _pickDate(context, _startDate, (date) {
-                        // When start date changes, ensure end datetime is not
-                        // before the new start. Preserve end time if possible.
-                        setState(() {
-                          _startDate = date;
-                          final reference = DateTime(date.year, date.month, date.day, _endTime.hour, _endTime.minute);
-                          final currentEnd = DateTime(_endDate.year, _endDate.month, _endDate.day, _endTime.hour, _endTime.minute);
-                          final adjusted = ensureNotBefore(currentEnd, reference, bumpIfBefore: const Duration(hours: 0));
-                          _endDate = DateTime(adjusted.year, adjusted.month, adjusted.day);
-                          _endTime = TimeOfDay(hour: adjusted.hour, minute: adjusted.minute);
-                        });
-                      }),
-                      onTapTrailing: () => _pickTime(context, _startTime, (time) {
-                        // When start time changes, ensure end is after start;
-                        // if not, bump end by 1 hour after start.
-                        setState(() {
-                          _startTime = time;
-                          final newStart = DateTime(_startDate.year, _startDate.month, _startDate.day, _startTime.hour, _startTime.minute);
-                          final currentEnd = DateTime(_endDate.year, _endDate.month, _endDate.day, _endTime.hour, _endTime.minute);
-                          final adjusted = ensureNotBefore(currentEnd, newStart, bumpIfBefore: const Duration(hours: 1));
-                          _endDate = DateTime(adjusted.year, adjusted.month, adjusted.day);
-                          _endTime = TimeOfDay(hour: adjusted.hour, minute: adjusted.minute);
-                        });
-                      }),
+                      onTapValue: () async {
+                        final date = await pickDate(context, initialDate: _startDate);
+                        if (date != null) {
+                          setState(() {
+                            _startDate = date;
+                            final reference = DateTime(date.year, date.month, date.day, _endTime.hour, _endTime.minute);
+                            final currentEnd = DateTime(_endDate.year, _endDate.month, _endDate.day, _endTime.hour, _endTime.minute);
+                            final adjusted = ensureNotBefore(currentEnd, reference, bumpIfBefore: const Duration(hours: 0));
+                            _endDate = DateTime(adjusted.year, adjusted.month, adjusted.day);
+                            _endTime = TimeOfDay(hour: adjusted.hour, minute: adjusted.minute);
+                          });
+                        }
+                      },
+                      onTapTrailing: () async {
+                        final time = await pickTime(context, initialTime: _startTime);
+                        if (time != null) {
+                          setState(() {
+                            _startTime = time;
+                            final newStart = DateTime(_startDate.year, _startDate.month, _startDate.day, _startTime.hour, _startTime.minute);
+                            final currentEnd = DateTime(_endDate.year, _endDate.month, _endDate.day, _endTime.hour, _endTime.minute);
+                            final adjusted = ensureNotBefore(currentEnd, newStart, bumpIfBefore: const Duration(hours: 1));
+                            _endDate = DateTime(adjusted.year, adjusted.month, adjusted.day);
+                            _endTime = TimeOfDay(hour: adjusted.hour, minute: adjusted.minute);
+                          });
+                        }
+                      },
                     ),
                     _buildInteractiveRow(
                       label: "To", 
                       value: DateFormat('MMMM d, y').format(_endDate),
                       trailing: _endTime.format(context),
                       colors: colorScheme,
-                      onTapValue: () => _pickDate(context, _endDate, (date) => setState(() => _endDate = date)),
-                      onTapTrailing: () => _pickTime(context, _endTime, (time) => setState(() => _endTime = time)),
+                      onTapValue: () async {
+                        final date = await pickDate(context, initialDate: _endDate);
+                        if (date != null) setState(() => _endDate = date);
+                      },
+                      onTapTrailing: () async {
+                        final time = await pickTime(context, initialTime: _endTime);
+                        if (time != null) setState(() => _endTime = time);
+                      },
                     ),
                   ],
 
-                  // 3. REPEAT
                   _buildInteractiveRow(
                     label: "Repeat",
                     value: _repeat,
@@ -273,7 +254,6 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                     },
                   ),
 
-                  // 4. LOCATION
                   _buildInteractiveRow(
                     label: "Location", 
                     value: _location,
@@ -281,7 +261,6 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                     onTap: () => _showLocationDialog(context, colorScheme),
                   ),
 
-                  // 5. TAGS
                   _buildInteractiveRow(
                     label: "Tags", 
                     value: _selectedTags.isEmpty ? "None" : _selectedTags.join(", "), 
@@ -292,14 +271,12 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                         isScrollControlled: true,
                         backgroundColor: Colors.transparent,
                         builder: (context) {
-                          // StatefulBuilder allows the BottomSheet to refresh itself
                           return StatefulBuilder(
                             builder: (BuildContext context, StateSetter sheetSetState) {
                               return TagSelector(
                                 selectedTags: _selectedTags,
                                 availableTags: _tagsList, 
                                 onTagsChanged: (newList) {
-                                  // Update BOTH the parent and the sheet
                                   setState(() => _selectedTags = newList);
                                   sheetSetState(() {}); 
                                 },
@@ -309,7 +286,6 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                                       _tagsList.add(newTag);
                                     }
                                   });
-                                  // Update the sheet so the new tag appears immediately
                                   sheetSetState(() {});
                                 },
                                 onTagRemoved: (removedTag) {
@@ -326,7 +302,6 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                       );
                     }
                   ),
-                  
                   const SizedBox(height: 40),
                 ],
               ),
@@ -337,53 +312,6 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
     );
   }
 
-  // --- LOGIC: Date Picker ---
-  Future<void> _pickDate(BuildContext context, DateTime initial, Function(DateTime) onPicked) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: initial,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
-      builder: (context, child) => Theme(
-        data: Theme.of(context).copyWith(colorScheme: Theme.of(context).colorScheme),
-        child: child!,
-      ),
-    );
-    if (picked != null) onPicked(picked);
-  }
-
-  // --- LOGIC: Time Picker ---
-  Future<void> _pickTime(BuildContext context, TimeOfDay initial, Function(TimeOfDay) onPicked) async {
-    final colorScheme = Theme.of(context).colorScheme;
-    final TimeOfDay? picked = await showTimePicker(
-      context: context,
-      initialTime: initial,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            timePickerTheme: TimePickerThemeData(
-              backgroundColor: colorScheme.surface,
-              dialHandColor: colorScheme.primary,
-              dialTextColor: colorScheme.onSurface,
-              dialBackgroundColor: colorScheme.surfaceContainerHighest,
-                dayPeriodTextColor: WidgetStateColor.resolveWith((states) =>
-                  states.contains(WidgetState.selected) ? Colors.white : colorScheme.onSurface),
-                dayPeriodColor: WidgetStateColor.resolveWith((states) =>
-                  states.contains(WidgetState.selected) ? colorScheme.primary : Colors.transparent),
-              dayPeriodBorderSide: BorderSide(color: colorScheme.primary),
-            ),
-            textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(foregroundColor: colorScheme.primary),
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null) onPicked(picked);
-  }
-
-  // --- LOGIC: Location Dialog ---
   void _showLocationDialog(BuildContext context, ColorScheme colorScheme) {
     TextEditingController locController = TextEditingController(text: _location == "None" ? "" : _location);
     showDialog(
@@ -424,7 +352,6 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
     );
   }
 
-  // --- WIDGET HELPER: Interactive Rows ---
   Widget _buildInteractiveRow({
     required String label, 
     required String value, 
