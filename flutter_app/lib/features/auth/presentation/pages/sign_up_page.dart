@@ -41,6 +41,14 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
         return; 
       }
 
+      // --- ADDED SUCCESS NOTIFICATION ---
+      // This triggers because the inputs are confirmed correct at this point
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Check your email for user verification"),
+        ),
+      );
+
       final authController = ref.read(authControllerProvider.notifier);
       await authController.signUp(username: username, email: email, password: password);
       // 3. Proceed if valid
