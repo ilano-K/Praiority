@@ -12,7 +12,6 @@ class TaskSyncService {
 
   Future<void> syncAll() async {
     if(_supabase.auth.currentUser == null) return;
-
     await pushLocalChanges();
     await pullRemoteChanges();
   }
@@ -36,6 +35,7 @@ class TaskSyncService {
   }
 
   Future<void> pullRemoteChanges() async {
+    debugPrint("[DEBUG] PULLING LOCAL CHANGES NOW!");
     try{
       final response = await _supabase
         .from("tasks")

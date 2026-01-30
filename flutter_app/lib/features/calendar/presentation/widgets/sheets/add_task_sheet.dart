@@ -148,6 +148,8 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
       tags: _selectedTags, 
       status: TaskStatus.scheduled,
       colorValue: colorValue,
+      isAllDay: false,
+      recurrenceRule: null,
     );
 
     return widget.task != null ? widget.task!.copyWith(
@@ -162,6 +164,8 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
       status: baseTask.status,
       colorValue: baseTask.colorValue,
       isAllDay: false,
+      recurrenceRule: null,
+      
     ) : baseTask;
   }
 

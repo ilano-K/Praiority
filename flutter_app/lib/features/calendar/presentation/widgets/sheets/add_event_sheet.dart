@@ -127,6 +127,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
       location: baseTask.location,
       recurrenceRule: baseTask.recurrenceRule,
       colorValue: baseTask.colorValue,
+      deadline: null,
     ) : baseTask;
   }
 

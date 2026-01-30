@@ -21,5 +21,6 @@ abstract class CalendarLocalDataSource {
   Future<List<TaskModel>> getUnsyncedTasks();
   Future<void>markTasksAsSynced(String originalId);
   Future<void>updateTasksFromCloud(List<TaskModel> cloudTasks);
+  Future<void> clearAllTasks();
 } 
 

@@ -27,7 +27,7 @@ class SaveTaskUseCase {
 
     // 1. Fetch existing tasks for conflict checking
     final tasksInRange = await repository.getTasksByRange(checkStart, checkEnd);
-
+     print("[DEBUG]: These are the tasks in range: ${tasksInRange}");
     // 2. Conflict Validation
     if (task.type != TaskType.birthday) {
       for (var d = checkStart; !d.isAfter(checkEnd); d = d.add(const Duration(days: 1))) {
@@ -40,7 +40,8 @@ class SaveTaskUseCase {
     if(!validDateTime(task.startTime!, task.endTime!, task.deadline) && task.isAllDay != true){
       throw TaskInvalidTimeException();
     }
-
+    print("[DEBUG]: SAVING TASK WITH RECURRENCE RULE: ${task.recurrenceRule}");
+    print("[DEBUG]: SAVING TASK WITH RECURRENCE RULE: ${task.type}");
     // 3. Database Transaction
     await repository.saveAndUpdateTask(task);
 

@@ -205,23 +205,35 @@ class CalendarLocalDataSourceImpl implements CalendarLocalDataSource{
   }
 
   @override  
-  Future<void>updateTasksFromCloud(List<TaskModel> cloudTasks) async {
+  Future<void> updateTasksFromCloud(List<TaskModel> cloudTasks) async {
     await isar.writeTxn(() async {
-       for(var task in cloudTasks){
+      for (var cloudTask in cloudTasks) {
         final localTask = await isar.taskModels
-        .filter()
-        .originalIdEqualTo(task.originalId)
-        .findFirst();
+            .filter()
+            .originalIdEqualTo(cloudTask.originalId)
+            .findFirst();
 
-        if(localTask != null){
-          task.id = localTask.id;
-          task.isSynced = true;
-          task.status = TaskStatus.scheduled;
-          task.updatedAt = DateTime.now();
-          await isar.taskModels.put(task);
+        if (localTask != null) {
+          // Task exists locally → update fields
+          cloudTask.id = localTask.id; // preserve local Isar ID
+          cloudTask.isSynced = true;
+          cloudTask.status = TaskStatus.scheduled;
+          cloudTask.updatedAt = DateTime.now();
+        } else {
+          // New task → insert as is
+          cloudTask.isSynced = true;
+          cloudTask.status = TaskStatus.scheduled;
+          cloudTask.updatedAt = DateTime.now();
         }
-       }
+
+        await isar.taskModels.put(cloudTask);
+      }
     });
   }
-
+  @override  
+  Future<void> clearAllTasks() async {
+    await isar.writeTxn(() async {
+      await isar.clear();
+    });
+  }
 }

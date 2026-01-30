@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 import 'package:uuid/uuid.dart';
 import 'enums.dart';
 
+const unset = Object();
 // Equatable--useful for editing a task. 
 class Task extends Equatable{
   final String id;
@@ -129,7 +130,7 @@ class Task extends Equatable{
     bool? isAiMovable,
     bool? isSmartSchedule, // Add to copyWith
     List<Duration>? reminderOffsets,
-    String? recurrenceRule,
+    Object? recurrenceRule = unset,
     TaskStatus? status,
     bool? isConflicting,
     bool? isSynced,
@@ -152,7 +153,9 @@ class Task extends Equatable{
       isAiMovable: isAiMovable ?? this.isAiMovable,
       isSmartSchedule: isSmartSchedule ?? this.isSmartSchedule,
       reminderOffsets: reminderOffsets ?? this.reminderOffsets,
-      recurrenceRule: recurrenceRule ?? this.recurrenceRule,
+      recurrenceRule: recurrenceRule == unset
+        ? this.recurrenceRule
+        : recurrenceRule as String?, 
       status: status ?? this.status,
       isConflicting: isConflicting ?? this.isConflicting,
       isSynced: isSynced ?? this.isSynced,

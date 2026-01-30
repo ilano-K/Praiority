@@ -5,8 +5,10 @@ import 'package:flutter_app/core/utils/error_utils.dart';
 import 'package:flutter_app/features/auth/presentation/manager/auth_controller.dart';
 import 'package:flutter_app/features/auth/presentation/pages/forgot_pass_page.dart';
 import 'package:flutter_app/features/auth/presentation/widgets/auth_components.dart';
+import 'package:flutter_app/features/calendar/presentation/managers/calendar_provider.dart';
 import 'package:flutter_app/features/settings/presentation/pages/work_hours.dart'; 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:async';
 
 class SignInPage extends ConsumerStatefulWidget {
   final VoidCallback onSwitch;
@@ -46,6 +48,10 @@ class _SignInPageState extends ConsumerState<SignInPage> {
     // Await the sign-in process
     await authController.signIn(email: email, password: password);
 
+    final taskSyncService = ref.read(taskSyncServiceProvider);
+    // sync tasks 
+    unawaited(taskSyncService.syncAll());
+
     // --- UPDATED: Navigate to WorkHours first ---
     if (mounted && !ref.read(authControllerProvider).hasError) {
       Navigator.pushReplacement(
@@ -59,6 +65,10 @@ class _SignInPageState extends ConsumerState<SignInPage> {
   void _handleGoogleSignIn() async {
     final authController = ref.read(authControllerProvider.notifier);
     await authController.signInWithGoogle();
+
+    final taskSyncService = ref.read(taskSyncServiceProvider);
+    // sync tasks 
+    unawaited(taskSyncService.syncAll());
 
     // --- UPDATED: Navigate to WorkHours first ---
     if (mounted && !ref.read(authControllerProvider).hasError) {

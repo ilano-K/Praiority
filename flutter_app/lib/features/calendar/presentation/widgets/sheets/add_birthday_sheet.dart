@@ -82,7 +82,8 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
       isAllDay: baseTask.isAllDay,
       location: baseTask.location,
       colorValue: baseTask.colorValue,
-      recurrenceRule: baseTask.recurrenceRule
+      recurrenceRule: baseTask.recurrenceRule,
+      deadline: null
     ) : baseTask;
   }
 
