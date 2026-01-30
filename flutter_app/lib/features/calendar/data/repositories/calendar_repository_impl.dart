@@ -32,43 +32,7 @@ class CalendarRepositoryImpl implements CalendarRepository{
   Future<void> deleteTag(String tag) async {
     await localDataSource.deleteTag(tag);
   }
-  @override
-  Future<List<Task>> getTasksByCategory(TaskCategory category) async {
-    final models = await localDataSource.getTasksByCategory(category);
-    return models.map((model) => model.toEntity()).toList();
-  }
-
-  @override
-  Future<List<Task>> getUnscheduledTasks() async{
-    final models = await localDataSource.getTasksByStatus(TaskStatus.unscheduled);
-    return models.map((model) => model.toEntity()).toList();
-  }
-
-  @override
-  Future<List<Task>> getScheduledTasks() async{
-    final models = await localDataSource.getTasksByStatus(TaskStatus.scheduled);
-    return models.map((model) => model.toEntity()).toList();
-  }
-
-  @override
-  Future<List<Task>> getCompletedTasks() async{
-    final models = await localDataSource.getTasksByStatus(TaskStatus.completed);
-    return models.map((model) => model.toEntity()).toList();
-  }
-
-
-  @override
-  Future<List<Task>> getTasksByTags(String tags) async {
-    final models = await localDataSource.getTasksByTags(tags);
-    return models.map((model) => model.toEntity()).toList();
-  }
-
-  @override
-  Future<List<Task>> getTasksByType(TaskType type) async {
-    final models = await localDataSource.getTasksByType(type);
-    return models.map((model) => model.toEntity()).toList();
-  }
-
+ 
    @override
   Future<List<Task>> getTasksByRange(DateTime start, DateTime end) async {
     final models = await localDataSource.getTasksByRange(start, end);

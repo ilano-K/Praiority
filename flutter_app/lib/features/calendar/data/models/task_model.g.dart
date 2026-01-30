@@ -58,41 +58,41 @@ const TaskModelSchema = CollectionSchema(
       name: r'isAllDay',
       type: IsarType.bool,
     ),
-    r'isSmartSchedule': PropertySchema(
+    r'isConflicting': PropertySchema(
       id: 8,
-      name: r'isSmartSchedule',
+      name: r'isConflicting',
+      type: IsarType.bool,
+    ),
+    r'isDeleted': PropertySchema(
+      id: 9,
+      name: r'isDeleted',
       type: IsarType.bool,
     ),
     r'isSynced': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'isSynced',
       type: IsarType.bool,
     ),
     r'location': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'location',
       type: IsarType.string,
     ),
     r'originalId': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'originalId',
       type: IsarType.string,
     ),
     r'priority': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'priority',
       type: IsarType.byte,
       enumMap: _TaskModelpriorityEnumValueMap,
     ),
     r'recurrenceRule': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'recurrenceRule',
       type: IsarType.string,
-    ),
-    r'reminderOffsets': PropertySchema(
-      id: 14,
-      name: r'reminderOffsets',
-      type: IsarType.longList,
     ),
     r'startTime': PropertySchema(
       id: 15,
@@ -120,6 +120,11 @@ const TaskModelSchema = CollectionSchema(
       name: r'type',
       type: IsarType.string,
       enumMap: _TaskModeltypeEnumValueMap,
+    ),
+    r'updatedAt': PropertySchema(
+      id: 20,
+      name: r'updatedAt',
+      type: IsarType.dateTime,
     )
   },
   estimateSize: _taskModelEstimateSize,
@@ -138,6 +143,32 @@ const TaskModelSchema = CollectionSchema(
           name: r'originalId',
           type: IndexType.hash,
           caseSensitive: true,
+        )
+      ],
+    ),
+    r'isDeleted': IndexSchema(
+      id: -786475870904832312,
+      name: r'isDeleted',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'isDeleted',
+          type: IndexType.value,
+          caseSensitive: false,
+        )
+      ],
+    ),
+    r'isSynced': IndexSchema(
+      id: -39763503327887510,
+      name: r'isSynced',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'isSynced',
+          type: IndexType.value,
+          caseSensitive: false,
         )
       ],
     )
@@ -176,7 +207,6 @@ int _taskModelEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
-  bytesCount += 3 + object.reminderOffsets.length * 8;
   bytesCount += 3 + object.status.name.length * 3;
   bytesCount += 3 + object.tags.length * 3;
   {
@@ -204,18 +234,19 @@ void _taskModelSerialize(
   writer.writeDateTime(offsets[5], object.endTime);
   writer.writeBool(offsets[6], object.isAiMovable);
   writer.writeBool(offsets[7], object.isAllDay);
-  writer.writeBool(offsets[8], object.isSmartSchedule);
-  writer.writeBool(offsets[9], object.isSynced);
-  writer.writeString(offsets[10], object.location);
-  writer.writeString(offsets[11], object.originalId);
-  writer.writeByte(offsets[12], object.priority.index);
-  writer.writeString(offsets[13], object.recurrenceRule);
-  writer.writeLongList(offsets[14], object.reminderOffsets);
+  writer.writeBool(offsets[8], object.isConflicting);
+  writer.writeBool(offsets[9], object.isDeleted);
+  writer.writeBool(offsets[10], object.isSynced);
+  writer.writeString(offsets[11], object.location);
+  writer.writeString(offsets[12], object.originalId);
+  writer.writeByte(offsets[13], object.priority.index);
+  writer.writeString(offsets[14], object.recurrenceRule);
   writer.writeDateTime(offsets[15], object.startTime);
   writer.writeString(offsets[16], object.status.name);
   writer.writeStringList(offsets[17], object.tags);
   writer.writeString(offsets[18], object.title);
   writer.writeString(offsets[19], object.type.name);
+  writer.writeDateTime(offsets[20], object.updatedAt);
 }
 
 TaskModel _taskModelDeserialize(
@@ -236,15 +267,15 @@ TaskModel _taskModelDeserialize(
   object.id = id;
   object.isAiMovable = reader.readBool(offsets[6]);
   object.isAllDay = reader.readBool(offsets[7]);
-  object.isSmartSchedule = reader.readBool(offsets[8]);
-  object.isSynced = reader.readBool(offsets[9]);
-  object.location = reader.readStringOrNull(offsets[10]);
-  object.originalId = reader.readString(offsets[11]);
+  object.isConflicting = reader.readBool(offsets[8]);
+  object.isDeleted = reader.readBool(offsets[9]);
+  object.isSynced = reader.readBool(offsets[10]);
+  object.location = reader.readStringOrNull(offsets[11]);
+  object.originalId = reader.readString(offsets[12]);
   object.priority =
-      _TaskModelpriorityValueEnumMap[reader.readByteOrNull(offsets[12])] ??
+      _TaskModelpriorityValueEnumMap[reader.readByteOrNull(offsets[13])] ??
           TaskPriority.low;
-  object.recurrenceRule = reader.readStringOrNull(offsets[13]);
-  object.reminderOffsets = reader.readLongList(offsets[14]) ?? [];
+  object.recurrenceRule = reader.readStringOrNull(offsets[14]);
   object.startTime = reader.readDateTimeOrNull(offsets[15]);
   object.status =
       _TaskModelstatusValueEnumMap[reader.readStringOrNull(offsets[16])] ??
@@ -254,6 +285,7 @@ TaskModel _taskModelDeserialize(
   object.type =
       _TaskModeltypeValueEnumMap[reader.readStringOrNull(offsets[19])] ??
           TaskType.task;
+  object.updatedAt = reader.readDateTimeOrNull(offsets[20]);
   return object;
 }
 
@@ -286,16 +318,16 @@ P _taskModelDeserializeProp<P>(
     case 9:
       return (reader.readBool(offset)) as P;
     case 10:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 11:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 12:
+      return (reader.readString(offset)) as P;
+    case 13:
       return (_TaskModelpriorityValueEnumMap[reader.readByteOrNull(offset)] ??
           TaskPriority.low) as P;
-    case 13:
-      return (reader.readStringOrNull(offset)) as P;
     case 14:
-      return (reader.readLongList(offset) ?? []) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 15:
       return (reader.readDateTimeOrNull(offset)) as P;
     case 16:
@@ -308,6 +340,8 @@ P _taskModelDeserializeProp<P>(
     case 19:
       return (_TaskModeltypeValueEnumMap[reader.readStringOrNull(offset)] ??
           TaskType.task) as P;
+    case 20:
+      return (reader.readDateTimeOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -430,6 +464,22 @@ extension TaskModelQueryWhereSort
       return query.addWhereClause(const IdWhereClause.any());
     });
   }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterWhere> anyIsDeleted() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        const IndexWhereClause.any(indexName: r'isDeleted'),
+      );
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterWhere> anyIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        const IndexWhereClause.any(indexName: r'isSynced'),
+      );
+    });
+  }
 }
 
 extension TaskModelQueryWhere
@@ -538,6 +588,96 @@ extension TaskModelQueryWhere
               indexName: r'originalId',
               lower: [],
               upper: [originalId],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterWhereClause> isDeletedEqualTo(
+      bool isDeleted) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'isDeleted',
+        value: [isDeleted],
+      ));
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterWhereClause> isDeletedNotEqualTo(
+      bool isDeleted) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'isDeleted',
+              lower: [],
+              upper: [isDeleted],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'isDeleted',
+              lower: [isDeleted],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'isDeleted',
+              lower: [isDeleted],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'isDeleted',
+              lower: [],
+              upper: [isDeleted],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterWhereClause> isSyncedEqualTo(
+      bool isSynced) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'isSynced',
+        value: [isSynced],
+      ));
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterWhereClause> isSyncedNotEqualTo(
+      bool isSynced) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'isSynced',
+              lower: [],
+              upper: [isSynced],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'isSynced',
+              lower: [isSynced],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'isSynced',
+              lower: [isSynced],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'isSynced',
+              lower: [],
+              upper: [isSynced],
               includeUpper: false,
             ));
       }
@@ -1188,10 +1328,20 @@ extension TaskModelQueryFilter
   }
 
   QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition>
-      isSmartScheduleEqualTo(bool value) {
+      isConflictingEqualTo(bool value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'isSmartSchedule',
+        property: r'isConflicting',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> isDeletedEqualTo(
+      bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isDeleted',
         value: value,
       ));
     });
@@ -1693,151 +1843,6 @@ extension TaskModelQueryFilter
         property: r'recurrenceRule',
         value: '',
       ));
-    });
-  }
-
-  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition>
-      reminderOffsetsElementEqualTo(int value) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'reminderOffsets',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition>
-      reminderOffsetsElementGreaterThan(
-    int value, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'reminderOffsets',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition>
-      reminderOffsetsElementLessThan(
-    int value, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'reminderOffsets',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition>
-      reminderOffsetsElementBetween(
-    int lower,
-    int upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'reminderOffsets',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-      ));
-    });
-  }
-
-  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition>
-      reminderOffsetsLengthEqualTo(int length) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'reminderOffsets',
-        length,
-        true,
-        length,
-        true,
-      );
-    });
-  }
-
-  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition>
-      reminderOffsetsIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'reminderOffsets',
-        0,
-        true,
-        0,
-        true,
-      );
-    });
-  }
-
-  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition>
-      reminderOffsetsIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'reminderOffsets',
-        0,
-        false,
-        999999,
-        true,
-      );
-    });
-  }
-
-  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition>
-      reminderOffsetsLengthLessThan(
-    int length, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'reminderOffsets',
-        0,
-        true,
-        length,
-        include,
-      );
-    });
-  }
-
-  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition>
-      reminderOffsetsLengthGreaterThan(
-    int length, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'reminderOffsets',
-        length,
-        include,
-        999999,
-        true,
-      );
-    });
-  }
-
-  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition>
-      reminderOffsetsLengthBetween(
-    int lower,
-    int upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'reminderOffsets',
-        lower,
-        includeLower,
-        upper,
-        includeUpper,
-      );
     });
   }
 
@@ -2520,6 +2525,77 @@ extension TaskModelQueryFilter
       ));
     });
   }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> updatedAtIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'updatedAt',
+      ));
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition>
+      updatedAtIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'updatedAt',
+      ));
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> updatedAtEqualTo(
+      DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'updatedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition>
+      updatedAtGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'updatedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> updatedAtLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'updatedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> updatedAtBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'updatedAt',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension TaskModelQueryObject
@@ -2625,15 +2701,27 @@ extension TaskModelQuerySortBy on QueryBuilder<TaskModel, TaskModel, QSortBy> {
     });
   }
 
-  QueryBuilder<TaskModel, TaskModel, QAfterSortBy> sortByIsSmartSchedule() {
+  QueryBuilder<TaskModel, TaskModel, QAfterSortBy> sortByIsConflicting() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'isSmartSchedule', Sort.asc);
+      return query.addSortBy(r'isConflicting', Sort.asc);
     });
   }
 
-  QueryBuilder<TaskModel, TaskModel, QAfterSortBy> sortByIsSmartScheduleDesc() {
+  QueryBuilder<TaskModel, TaskModel, QAfterSortBy> sortByIsConflictingDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'isSmartSchedule', Sort.desc);
+      return query.addSortBy(r'isConflicting', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterSortBy> sortByIsDeleted() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isDeleted', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterSortBy> sortByIsDeletedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isDeleted', Sort.desc);
     });
   }
 
@@ -2742,6 +2830,18 @@ extension TaskModelQuerySortBy on QueryBuilder<TaskModel, TaskModel, QSortBy> {
   QueryBuilder<TaskModel, TaskModel, QAfterSortBy> sortByTypeDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'type', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterSortBy> sortByUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'updatedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterSortBy> sortByUpdatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'updatedAt', Sort.desc);
     });
   }
 }
@@ -2856,15 +2956,27 @@ extension TaskModelQuerySortThenBy
     });
   }
 
-  QueryBuilder<TaskModel, TaskModel, QAfterSortBy> thenByIsSmartSchedule() {
+  QueryBuilder<TaskModel, TaskModel, QAfterSortBy> thenByIsConflicting() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'isSmartSchedule', Sort.asc);
+      return query.addSortBy(r'isConflicting', Sort.asc);
     });
   }
 
-  QueryBuilder<TaskModel, TaskModel, QAfterSortBy> thenByIsSmartScheduleDesc() {
+  QueryBuilder<TaskModel, TaskModel, QAfterSortBy> thenByIsConflictingDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'isSmartSchedule', Sort.desc);
+      return query.addSortBy(r'isConflicting', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterSortBy> thenByIsDeleted() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isDeleted', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterSortBy> thenByIsDeletedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isDeleted', Sort.desc);
     });
   }
 
@@ -2975,6 +3087,18 @@ extension TaskModelQuerySortThenBy
       return query.addSortBy(r'type', Sort.desc);
     });
   }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterSortBy> thenByUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'updatedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterSortBy> thenByUpdatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'updatedAt', Sort.desc);
+    });
+  }
 }
 
 extension TaskModelQueryWhereDistinct
@@ -3029,9 +3153,15 @@ extension TaskModelQueryWhereDistinct
     });
   }
 
-  QueryBuilder<TaskModel, TaskModel, QDistinct> distinctByIsSmartSchedule() {
+  QueryBuilder<TaskModel, TaskModel, QDistinct> distinctByIsConflicting() {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'isSmartSchedule');
+      return query.addDistinctBy(r'isConflicting');
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QDistinct> distinctByIsDeleted() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isDeleted');
     });
   }
 
@@ -3069,12 +3199,6 @@ extension TaskModelQueryWhereDistinct
     });
   }
 
-  QueryBuilder<TaskModel, TaskModel, QDistinct> distinctByReminderOffsets() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'reminderOffsets');
-    });
-  }
-
   QueryBuilder<TaskModel, TaskModel, QDistinct> distinctByStartTime() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'startTime');
@@ -3105,6 +3229,12 @@ extension TaskModelQueryWhereDistinct
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'type', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QDistinct> distinctByUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'updatedAt');
     });
   }
 }
@@ -3165,9 +3295,15 @@ extension TaskModelQueryProperty
     });
   }
 
-  QueryBuilder<TaskModel, bool, QQueryOperations> isSmartScheduleProperty() {
+  QueryBuilder<TaskModel, bool, QQueryOperations> isConflictingProperty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'isSmartSchedule');
+      return query.addPropertyName(r'isConflicting');
+    });
+  }
+
+  QueryBuilder<TaskModel, bool, QQueryOperations> isDeletedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isDeleted');
     });
   }
 
@@ -3201,13 +3337,6 @@ extension TaskModelQueryProperty
     });
   }
 
-  QueryBuilder<TaskModel, List<int>, QQueryOperations>
-      reminderOffsetsProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'reminderOffsets');
-    });
-  }
-
   QueryBuilder<TaskModel, DateTime?, QQueryOperations> startTimeProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'startTime');
@@ -3235,6 +3364,12 @@ extension TaskModelQueryProperty
   QueryBuilder<TaskModel, TaskType, QQueryOperations> typeProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'type');
+    });
+  }
+
+  QueryBuilder<TaskModel, DateTime?, QQueryOperations> updatedAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'updatedAt');
     });
   }
 }

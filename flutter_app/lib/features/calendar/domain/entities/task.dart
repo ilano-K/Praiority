@@ -37,6 +37,8 @@ class Task extends Equatable{
   final String?recurrenceRule; // using RRULE
 
   final TaskStatus status;
+
+  final bool isConflicting;
   final bool isSynced; 
 
   const Task({
@@ -59,6 +61,7 @@ class Task extends Equatable{
     this.reminderOffsets = const [],
     this.recurrenceRule,
     this.status = TaskStatus.unscheduled,
+    this.isConflicting = true ,
     this.isSynced = false,
   });
 
@@ -80,7 +83,9 @@ class Task extends Equatable{
     bool isSmartSchedule = false,
     List<Duration> reminderOffsets = const [],
     String? recurrenceRule,
+    bool isConflicting = true,
     TaskStatus status = TaskStatus.unscheduled,
+  
   }) {
     return Task(
       id: const Uuid().v4(), // AUTOMATIC ID GENERATION
@@ -102,6 +107,7 @@ class Task extends Equatable{
       reminderOffsets: reminderOffsets,
       recurrenceRule: recurrenceRule,
       status: status,
+      isConflicting: true,
       isSynced: false,
     );
   }
@@ -125,6 +131,7 @@ class Task extends Equatable{
     List<Duration>? reminderOffsets,
     String? recurrenceRule,
     TaskStatus? status,
+    bool? isConflicting,
     bool? isSynced,
   }){
     return Task(
@@ -147,6 +154,7 @@ class Task extends Equatable{
       reminderOffsets: reminderOffsets ?? this.reminderOffsets,
       recurrenceRule: recurrenceRule ?? this.recurrenceRule,
       status: status ?? this.status,
+      isConflicting: isConflicting ?? this.isConflicting,
       isSynced: isSynced ?? this.isSynced,
     );
   }
@@ -172,6 +180,7 @@ class Task extends Equatable{
         reminderOffsets,
         recurrenceRule,
         status,
+        isConflicting,
         isSynced,
       ];
   

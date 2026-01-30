@@ -1,4 +1,5 @@
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
+import 'package:flutter_app/features/calendar/presentation/utils/time_utils.dart';
 
 import '../../domain/entities/task.dart';
 
@@ -38,16 +39,20 @@ class TaskModel {
   late TaskPriority priority;
 
   late bool isAiMovable;
-  late bool isSmartSchedule;
 
-  late List<int> reminderOffsets;
-  
   String? recurrenceRule;
   
   @Enumerated(EnumType.name)
   late TaskStatus status;
 
-  late bool isSynced;
+  // syncing logic 
+  @Index()
+  bool isDeleted = false;
+  @Index()
+  bool isSynced = false;
+  DateTime? updatedAt;
+
+  late bool isConflicting;
 
   // Convert to task object 
   Task toEntity() {
@@ -67,13 +72,68 @@ class TaskModel {
       isAllDay: isAllDay,
       priority: priority,
       isAiMovable: isAiMovable,
-      isSmartSchedule: isSmartSchedule,
-      reminderOffsets: reminderOffsets.map((micros) => Duration(microseconds: micros)).toList(),
       recurrenceRule: recurrenceRule,
       status: status, // Map status
       isSynced: isSynced,
+      isConflicting: isConflicting
     );
   }
+
+  Map<String, dynamic> toCloudJsonFormat() {
+    return {
+      "id": originalId,
+      "type": type.name,
+      "tags": tags,
+      "title": title,
+      "description": description,
+      "location": location,
+      "category": category.name,
+      "status": status.name,
+      "color_value": colorValue,
+      "start_time": startTime?.toUtc().toIso8601String(),
+      "end_time": endTime?.toUtc().toIso8601String(),
+      "deadline": deadline?.toUtc().toIso8601String(),
+      "scheduled_date": startTime != null
+        ? dateOnly(startTime!).toUtc().toIso8601String()  // null-safe
+        : null,
+      "is_all_day": isAllDay,
+      "is_ai_movable": isAiMovable,
+      "priority": priority.name,
+      "recurrence_rule": recurrenceRule,
+      "is_conflicting": isConflicting,
+      "is_deleted": isDeleted,
+    };
+  }
+
+  static TaskModel fromCloudJson(Map<String, dynamic> json){
+    return TaskModel()
+      ..originalId = json["id"]
+      ..type = TaskType.values.byName(json["type"] as String) 
+      ..category =  TaskCategory.values.byName(json["category"] as String) 
+      ..tags = json["tags"] != null ? List<String>.from(json["tags"]) : []
+      ..title = json["title"] as String
+      ..description = json["description"] as String?
+      ..location = json["location"] as String?
+      ..colorValue = json["color_value"] as int?
+      ..startTime = json["start_time"] != null
+        ? DateTime.parse(json["start_time"] as String).toLocal()
+        : null
+      ..endTime = json["end_time"] != null
+        ? DateTime.parse(json["end_time"] as String).toLocal()
+        : null
+      ..deadline = json["deadline"] != null
+        ? DateTime.parse(json["deadline"] as String).toLocal()
+        : null
+      ..isAllDay =  json["is_all_day"] as bool? ?? false
+      ..priority = TaskPriority.values.byName(json["priority"] as String)
+      ..isAiMovable =  json["is_ai_movable"] as bool? ?? false
+      ..recurrenceRule = json["recurrence_rule"] as String?
+      ..status = TaskStatus.values.byName(json["status"] as String) 
+      ..isConflicting = json["is_conflicting"] as bool? ?? false
+      ..isDeleted = json["deleted"] as bool? ?? false;  
+  }
+
+
 
   // convert from task object to database compatible fields
   static TaskModel fromEntity(Task task) {
@@ -93,10 +153,10 @@ class TaskModel {
       ..isAllDay = task.isAllDay
       ..priority = task.priority
       ..isAiMovable = task.isAiMovable
-      ..isSmartSchedule = task.isSmartSchedule
-      ..reminderOffsets = task.reminderOffsets.map((d) => d.inMicroseconds).toList()
       ..recurrenceRule = task.recurrenceRule
       ..status = task.status // Map status
-      ..isSynced = task.isSynced;
+      ..isSynced = task.isSynced
+      ..isConflicting = task.isConflicting;
   }
 }
+                                                                    

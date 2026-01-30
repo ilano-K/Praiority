@@ -39,6 +39,9 @@ class CalendarLocalDataSourceImpl implements CalendarLocalDataSource{
           taskModel.id = existingTask.id;
         }
 
+        taskModel.isDeleted = false;
+        taskModel.isSynced = false;
+        taskModel.updatedAt = DateTime.now();
         // 3. Save the Task Model first (so it gets an ID)
         await isar.taskModels.put(taskModel);
         debugPrint('saveAndUpdateTask: put taskModel id=${taskModel.id}');
@@ -54,10 +57,17 @@ class CalendarLocalDataSourceImpl implements CalendarLocalDataSource{
   @override
   Future<void> deleteTask(String id) async{
     await isar.writeTxn(() async{
-      await isar.taskModels
+      final task = await isar.taskModels
         .filter()
         .originalIdEqualTo(id)
-        .deleteAll();
+        .findFirst();
+      if(task != null){
+        task.isDeleted = true;
+        task.isSynced = false;
+        task.updatedAt = DateTime.now();
+        print("[DEBUG]: ITS BEING DELETED NOW $id  ${task.isDeleted}");
+        await isar.taskModels.put(task);
+      }
     });
   }
 
@@ -90,7 +100,7 @@ class CalendarLocalDataSourceImpl implements CalendarLocalDataSource{
           .findFirst();
       
       if(existingTag != null){
-        final tasksWithTag = await getTasksByTags(tag);
+        final tasksWithTag = await getTasksByCondition(tag: tag);
 
         for(var task in tasksWithTag){
           final updatedTags = List<String>.from(task.tags ?? [])..remove(tag);
@@ -111,54 +121,11 @@ class CalendarLocalDataSourceImpl implements CalendarLocalDataSource{
   @override
   Future<List<TaskModel>> getTasksByRange(DateTime start, DateTime end) async {
     var q = isar.taskModels.filter().group((g) => g.startTimeBetween(start, end).or().recurrenceRuleIsNotNull());
-    final tasks = await q.sortByStartTime().findAll();
+    final tasks = await q.isDeletedEqualTo(false).sortByStartTime().findAll();
     return tasks
       .where((task) => TaskUtils.validTaskModelForDate(task, start, end))
       .toList();
   } 
-
-  // ---------------------------------------------------------------------------
-  // FILTER LOGIC
-  // ---------------------------------------------------------------------------
-
-  @override
-  Future<List<TaskModel>>getTasksByTags(String tag) async {
-    return await isar.taskModels
-        .filter()
-        .tagsElementEqualTo(tag)
-        .sortByStartTime()
-        .findAll();
-  }
-
-  // get by type (tasks or events)
-  @override
-  Future<List<TaskModel>>getTasksByType(TaskType type) async {
-    return await isar.taskModels
-        .filter()
-        .typeEqualTo(type)
-        .sortByStartTime()
-        .findAll();
-  }
-
-  // get by category (focus, active, lightweight ata)
-  @override
-  Future<List<TaskModel>>getTasksByCategory(TaskCategory category) async {
-    return await isar.taskModels
-        .filter()
-        .categoryEqualTo(category)
-        .sortByStartTime()
-        .findAll();
-  }
-
-  // get unsched, sched, and completed tasks
-  @override
-  Future<List<TaskModel>>getTasksByStatus(TaskStatus status) async {
-    return await isar.taskModels
-        .filter()
-        .statusEqualTo(status)
-        .sortByStartTime()
-        .findAll();
-  }
   @override
   Future<List<TaskModel>> getTasksByCondition({
     DateTime? start, 
@@ -176,7 +143,7 @@ class CalendarLocalDataSourceImpl implements CalendarLocalDataSource{
     if (status != null) query = query.statusEqualTo(status);
     if (tag != null) query = query.tagsElementEqualTo(tag);
 
-    final tasks = await query.findAll();
+    final tasks = await query.isDeletedEqualTo(false).findAll();
 
     if (tasks.isEmpty) return [];
 
@@ -208,6 +175,53 @@ class CalendarLocalDataSourceImpl implements CalendarLocalDataSource{
   @override
   Future<List<TaskTagModel>> getAllTagNames() async {
     return await isar.taskTagModels.where().findAll();
+  }
+
+  @override   
+  Future<List<TaskModel>> getUnsyncedTasks() async {
+    // Include deleted tasks so that deletions are pushed to the remote
+    // backend. Previously deleted tasks were excluded by filtering
+    // `isDeleted == false`, preventing the sync service from sending
+    // delete updates to Supabase.
+    return isar.taskModels
+      .filter()
+      .isSyncedEqualTo(false)
+      .findAll();
+  }
+
+  @override   
+  Future<void> markTasksAsSynced(String originalId) async {
+    await isar.writeTxn(() async {
+      final tasks = await isar.taskModels
+        .filter()
+        .originalIdEqualTo(originalId)
+        .findAll();
+      
+      for(var task in tasks){
+        task.isSynced = true;
+        await isar.taskModels.put(task);
+      }
+    });
+  }
+
+  @override  
+  Future<void>updateTasksFromCloud(List<TaskModel> cloudTasks) async {
+    await isar.writeTxn(() async {
+       for(var task in cloudTasks){
+        final localTask = await isar.taskModels
+        .filter()
+        .originalIdEqualTo(task.originalId)
+        .findFirst();
+
+        if(localTask != null){
+          task.id = localTask.id;
+          task.isSynced = true;
+          task.status = TaskStatus.scheduled;
+          task.updatedAt = DateTime.now();
+          await isar.taskModels.put(task);
+        }
+       }
+    });
   }
 
 }

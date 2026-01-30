@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
-import 'package:flutter_app/features/calendar/presentation/managers/calendar_notifier.dart';
+import 'package:flutter_app/features/calendar/presentation/managers/calendar_controller.dart';
 import 'package:intl/intl.dart';
 import 'category_selector.dart';
 import 'date_picker.dart'; // This contains your custom pickDate(context)

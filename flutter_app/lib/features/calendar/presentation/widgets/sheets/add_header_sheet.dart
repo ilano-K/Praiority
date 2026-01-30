@@ -10,7 +10,7 @@ import 'package:flutter_app/core/errors/task_invalid_time_exception.dart';
 // --- DOMAIN & CONTROLLERS ---
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
-import 'package:flutter_app/features/calendar/presentation/managers/calendar_notifier.dart';
+import 'package:flutter_app/features/calendar/presentation/managers/calendar_controller.dart';
 
 
 // --- LOCAL WIDGETS ---

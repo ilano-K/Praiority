@@ -3,7 +3,9 @@ import 'package:flutter_app/features/calendar/data/repositories/calendar_reposit
 import 'package:flutter_app/core/services/local_database_service.dart';
 import 'package:flutter_app/features/calendar/data/datasources/calendar_local_data_source.dart';
 import 'package:flutter_app/features/calendar/domain/repositories/calendar_repository.dart';
+import 'package:flutter_app/features/calendar/services/task_sync_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 final localStorageServiceProvider = Provider<LocalDatabaseService>((ref) {
   throw UnimplementedError('OVERRIDE TO NG MAIN LATER');
@@ -17,5 +19,11 @@ final calendarDataSourceProvider = Provider<CalendarLocalDataSource>((ref) {
 final calendarRepositoryProvider = Provider<CalendarRepository>((ref) {
   final dataSource = ref.watch(calendarDataSourceProvider);
   return CalendarRepositoryImpl(dataSource);
+});
+
+final taskSyncServiceProvider = Provider<TaskSyncService>((ref){
+  final localDb = ref.watch(calendarDataSourceProvider);
+  final supabase = Supabase.instance.client;
+  return TaskSyncService(supabase, localDb);
 });
 

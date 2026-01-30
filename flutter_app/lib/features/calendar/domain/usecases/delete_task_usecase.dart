@@ -3,11 +3,14 @@ import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'package:flutter_app/features/calendar/domain/repositories/calendar_repository.dart';
 import 'package:flutter_app/features/calendar/domain/usecases/schedule_task_notification.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_provider.dart';
+import 'package:flutter_app/features/calendar/services/task_sync_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:async';
 
 final deleteTaskUseCaseProvider = Provider((ref) {
   return DeleteTaskUseCase(ref.watch(calendarRepositoryProvider),
-                           ref.watch(scheduleTaskNotificationProvider));
+                           ref.watch(scheduleTaskNotificationProvider)
+                           );
 });
 
 class DeleteTaskUseCase {

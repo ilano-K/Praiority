@@ -12,15 +12,14 @@ abstract class CalendarLocalDataSource {
   Future<void>deleteTag(String tag);
   
   Future<List<TaskModel>> getTasksByRange(DateTime start, DateTime end);
-
-  Future<List<TaskModel>>getTasksByStatus(TaskStatus status);// unscheduled, scheduled, completed, past deadline wala pa
-  Future<List<TaskModel>>getTasksByCategory(TaskCategory category);
-  Future<List<TaskModel>>getTasksByType(TaskType type);
-  Future<List<TaskModel>>getTasksByTags(String tags);
-
   Future<List<TaskTagModel>> getAllTagNames();
   Future<List<TaskModel>>getTasksByCondition({DateTime? start, DateTime? end, TaskCategory? category,
                                               TaskType? type, TaskStatus? status, String? tag,
                                               });
+
+  // cloud 
+  Future<List<TaskModel>> getUnsyncedTasks();
+  Future<void>markTasksAsSynced(String originalId);
+  Future<void>updateTasksFromCloud(List<TaskModel> cloudTasks);
 } 
 
