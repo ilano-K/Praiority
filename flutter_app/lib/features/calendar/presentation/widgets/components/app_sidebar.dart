@@ -1,6 +1,7 @@
 // File: lib/features/calendar/presentation/widgets/app_sidebar.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_app/features/auth/presentation/manager/auth_controller.dart';
+import 'package:flutter_app/features/auth/presentation/pages/sign_in_page.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_notifier.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart'; 
@@ -118,8 +119,35 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                     icon: Icons.logout_outlined, 
                     label: "Log Out",
                     onTap: () async {
-                        final authController = ref.read(authControllerProvider.notifier);
-                        await authController.signOut();
+                      // 1. Close the sidebar first
+                      Navigator.pop(context);
+
+                      // 2. Perform the sign out
+                      final authController = ref.read(authControllerProvider.notifier);
+                      await authController.signOut();
+
+                      if (context.mounted) {
+                        // 3. Show the success notification
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Successfully signed out"),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+
+                        // 4. Navigate back to SignInPage
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => SignInPage(
+                              onSwitch: () {
+                                debugPrint("Switching to Sign Up from Sign In");
+                              },
+                            ),
+                          ),
+                          (route) => false, // Clears the navigation stack
+                        );
+                      }
                     } 
                   ),
                 ],

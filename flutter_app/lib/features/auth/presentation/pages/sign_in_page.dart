@@ -5,6 +5,7 @@ import 'package:flutter_app/core/utils/error_utils.dart';
 import 'package:flutter_app/features/auth/presentation/manager/auth_controller.dart';
 import 'package:flutter_app/features/auth/presentation/pages/forgot_pass_page.dart';
 import 'package:flutter_app/features/auth/presentation/widgets/auth_components.dart';
+import 'package:flutter_app/features/settings/presentation/pages/work_hours.dart'; 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class SignInPage extends ConsumerStatefulWidget {
@@ -41,13 +42,31 @@ class _SignInPageState extends ConsumerState<SignInPage> {
     // Hide keyboard for better UX
     FocusScope.of(context).unfocus();
     final authController = ref.read(authControllerProvider.notifier);
+    
+    // Await the sign-in process
     await authController.signIn(email: email, password: password);
+
+    // --- UPDATED: Navigate to WorkHours first ---
+    if (mounted && !ref.read(authControllerProvider).hasError) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const WorkHours()),
+      );
+    }
   }
 
   // --- LOGIC: GOOGLE SIGN IN ---
   void _handleGoogleSignIn() async {
     final authController = ref.read(authControllerProvider.notifier);
     await authController.signInWithGoogle();
+
+    // --- UPDATED: Navigate to WorkHours first ---
+    if (mounted && !ref.read(authControllerProvider).hasError) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const WorkHours()),
+      );
+    }
   }
 
   // --- LOGIC: SHOW FORGOT PASSWORD POPUP ---
@@ -175,7 +194,7 @@ class _SignInPageState extends ConsumerState<SignInPage> {
             color: Colors.black.withOpacity(0.5),
             child: Center(
               child: CircularProgressIndicator(
-                color: colorScheme.primary, // Using your brand's red
+                color: colorScheme.primary, // Using your brand color
               ),
             ),
           ),
