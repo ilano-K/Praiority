@@ -192,8 +192,8 @@ class _WorkHoursState extends State<WorkHours> {
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: colorScheme.primary, // B0C8F5 (Light) or 333459 (Dark)
-          foregroundColor: colorScheme.onSurface,
+          backgroundColor: colorScheme.onSurface,
+          foregroundColor: colorScheme.surface,
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15),
