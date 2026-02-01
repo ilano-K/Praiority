@@ -1,4 +1,4 @@
-import 'package:flutter_app/features/calendar/presentation/managers/calendar_provider.dart';
+import 'package:flutter_app/core/providers/global_providers.dart';
 import 'package:flutter_app/features/settings/data/datasources/settings_local_data_source.dart';
 import 'package:flutter_app/features/settings/data/repositories/settings_repository.dart';
 import 'package:flutter_app/features/settings/services/user_pref_sync_service.dart';

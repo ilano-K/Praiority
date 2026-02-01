@@ -1,9 +1,9 @@
-import 'dart:async'; // Needed for unawaited
+import 'dart:async'; 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-// ✅ IMPORTS (Adjust paths if necessary)
+// ✅ IMPORTS
 import 'package:flutter_app/features/auth/data/auth_provider.dart';
 import 'package:flutter_app/features/auth/presentation/pages/auth_page.dart';
 import 'package:flutter_app/features/calendar/presentation/pages/main_calendar.dart';
@@ -12,8 +12,8 @@ import 'package:flutter_app/features/settings/presentation/managers/settings_not
 import 'package:flutter_app/features/settings/presentation/managers/settings_provider.dart';
 import 'package:flutter_app/features/settings/presentation/pages/work_hours.dart';
 
-// Tracks if we are currently running the initial setup sync
-final _isPerformingLoginSyncProvider = StateProvider<bool>((ref) => false);
+// Lock for UI Loading State
+final _isLoadingUIProvider = StateProvider<bool>((ref) => false);
 
 class AuthGate extends ConsumerStatefulWidget {
   const AuthGate({super.key});
@@ -23,17 +23,17 @@ class AuthGate extends ConsumerStatefulWidget {
 }
 
 class _AuthGateState extends ConsumerState<AuthGate> {
+  // Prevent duplicate syncs
+  bool _isSyncing = false;
+  String? _lastSyncedUserId;
 
   @override
   void initState() {
     super.initState();
-    // -------------------------------------------------------------------------
-    // 1. COLD START SYNC (Optimistic)
-    // -------------------------------------------------------------------------
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final user = Supabase.instance.client.auth.currentUser;
       if (user != null) {
-        // Run quietly in background
+        _lastSyncedUserId = user.id; 
         ref.read(taskSyncServiceProvider).syncAllTasks();
         ref.read(userPrefSyncServiceProvider).syncPreferences(); 
       }
@@ -43,34 +43,44 @@ class _AuthGateState extends ConsumerState<AuthGate> {
   @override
   Widget build(BuildContext context) {
     // -------------------------------------------------------------------------
-    // 2. LISTENER (Handles Active Login/Logout Side Effects)
+    // 1. LISTENER (Side Effects)
     // -------------------------------------------------------------------------
     ref.listen(authStateProvider, (previous, next) async {
       final prevSession = previous?.value?.session;
       final nextSession = next.value?.session;
+      final currentUserId = nextSession?.user.id;
 
-      // ✅ CASE: LOGOUT DETECTED
+      // ✅ CASE: LOGOUT
       if (prevSession != null && nextSession == null) {
-        // Ensure Spinner is off
-        ref.read(_isPerformingLoginSyncProvider.notifier).state = false;
-        
-        // Clear Data (Fire and Forget - do NOT await)
+        ref.read(_isLoadingUIProvider.notifier).state = false;
+        _isSyncing = false;
+        _lastSyncedUserId = null;
         unawaited(ref.read(calendarDataSourceProvider).clearAllTasks());
       }
       
-      // ✅ CASE: LOGIN DETECTED
+      // ✅ CASE: LOGIN
       else if (prevSession == null && nextSession != null) {
-        ref.read(_isPerformingLoginSyncProvider.notifier).state = true;
+        if (currentUserId == _lastSyncedUserId) return;
+        if (_isSyncing) return;
+
+        _isSyncing = true;
+        _lastSyncedUserId = currentUserId; 
+        
+        // Turn on Spinner
+        ref.read(_isLoadingUIProvider.notifier).state = true;
 
         try {
-          await ref.read(taskSyncServiceProvider).syncAllTasks();
-          await ref.read(userPrefSyncServiceProvider).pullRemoteChanges();
+          // Timeout Protection (3 seconds)
+          await ref.read(taskSyncServiceProvider).syncAllTasks()
+              .timeout(const Duration(seconds: 3));
+
+          await ref.read(userPrefSyncServiceProvider).pullRemoteChanges()
+              .timeout(const Duration(seconds: 3));
           
           final userPrefsController = ref.read(settingsControllerProvider.notifier);
           final userPrefs = await userPrefsController.loadUserSettings();
           
-          ref.read(_isPerformingLoginSyncProvider.notifier).state = false;
-
+          // Check Work Hours
           if (userPrefs == null || userPrefs.startWorkHours == null) {
              if (context.mounted) {
                Navigator.of(context).push(
@@ -79,34 +89,43 @@ class _AuthGateState extends ConsumerState<AuthGate> {
              }
           }
         } catch (e) {
-           ref.read(_isPerformingLoginSyncProvider.notifier).state = false;
+           print("[AuthGate] Sync Error or Timeout: $e");
+        } finally {
+           // ALWAYS Unlock UI
+           if (mounted) {
+             ref.read(_isLoadingUIProvider.notifier).state = false;
+           }
+           _isSyncing = false;
         }
       }
     });
 
     // -------------------------------------------------------------------------
-    // 3. THE "NUCLEAR" FIX: BYPASS CACHE
+    // 2. BUILDER (The UI)
     // -------------------------------------------------------------------------
-    // We check the Supabase client DIRECTLY. If this is null, we are logged out.
-    // This ignores any lag in the Riverpod provider.
-    final currentSession = Supabase.instance.client.auth.currentSession;
-    
-    if (currentSession == null) {
-      return const AuthPage(); // Force Login Page immediately
+    final authState = ref.watch(authStateProvider);
+    final isLoading = ref.watch(_isLoadingUIProvider);
+
+    // ✅ PRIORITY 1: LOADING SPINNER
+    // If we are performing the initial sync, show spinner above everything
+    if (isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator())
+      );
     }
 
-    // -------------------------------------------------------------------------
-    // 4. NORMAL UI STATE
-    // -------------------------------------------------------------------------
-    final isSyncing = ref.watch(_isPerformingLoginSyncProvider);
-    
-    // If we are here, currentSession is NOT null.
-    // If we are actively syncing (just logged in), show spinner.
-    if (isSyncing) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-    
-    // Otherwise, show the app.
-    return const MainCalendar();
+    // ✅ PRIORITY 2: AUTH STATE
+    return authState.when(
+      data: (state) {
+        if (state.session != null) {
+           return const MainCalendar(); 
+        }
+        return const AuthPage(); 
+      },
+      // If Riverpod is initializing, show spinner
+      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      // If error, show Login
+      error: (err, stack) => const AuthPage(), 
+    );
   }
 }

@@ -20,4 +20,12 @@ class LocalDatabaseService {
       inspector: true, // debug
       );
   }
+
+  Future<void> clearDatabase() async {
+    if (isar.isOpen) {
+      await isar.writeTxn(() async {
+        await isar.clear(); 
+      });
+    }
+  }
 }

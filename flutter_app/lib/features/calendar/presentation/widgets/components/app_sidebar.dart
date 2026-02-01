@@ -1,11 +1,14 @@
 // File: lib/features/calendar/presentation/widgets/app_sidebar.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_app/core/providers/global_providers.dart';
 import 'package:flutter_app/features/auth/data/auth_provider.dart';
 import 'package:flutter_app/features/auth/presentation/manager/auth_controller.dart';
 import 'package:flutter_app/features/auth/presentation/pages/auth_gate.dart';
 // ❌ REMOVE THIS: You don't need to import SignInPage anymore
 // import 'package:flutter_app/features/auth/presentation/pages/sign_in_page.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_controller.dart';
+import 'package:flutter_app/features/calendar/presentation/managers/calendar_provider.dart';
+import 'package:flutter_app/features/settings/presentation/managers/settings_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart'; 
 import '../../../../../core/theme/theme_notifier.dart';
@@ -127,7 +130,13 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                       // even if this widget dies/closes.
                       final navigator = Navigator.of(context);
                       final authController = ref.read(authControllerProvider.notifier);
+                      final dbProvider = ref.read(localStorageServiceProvider);
+                      final taskSyncService = ref.read(taskSyncServiceProvider);
+                      final userPrefsSyncService = ref.read(userPrefSyncServiceProvider);
 
+                      await taskSyncService.pushLocalChanges();
+                      await userPrefsSyncService.pushLocalChanges();
+                      await dbProvider.clearDatabase();
                       // 2. PERFORM SIGN OUT
                       await authController.signOut();
 
