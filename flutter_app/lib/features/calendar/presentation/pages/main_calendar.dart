@@ -218,6 +218,7 @@ void _handleViewChanged(ViewChangedDetails details) {
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
+      resizeToAvoidBottomInset: false,
       // --- PASS CALLBACK TO SIDEBAR ---
       drawer: AppSidebar(
       currentView: _currentView, // ADD THIS: Pass the current view state

@@ -69,6 +69,7 @@ void initState() {
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         backgroundColor: colorScheme.surface,
         elevation: 0,

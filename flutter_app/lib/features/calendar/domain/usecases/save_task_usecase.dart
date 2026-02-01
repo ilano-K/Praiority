@@ -47,7 +47,6 @@ class SaveTaskUseCase {
         if (taskCurr.id == task.id) continue;
 
         // Skip non-blocking tasks (like Birthdays or Completed tasks)
-        // ✅ FIX: Changed 'return false' to 'continue'
         if (taskCurr.type == TaskType.birthday || taskCurr.status == TaskStatus.completed || !taskCurr.isConflicting ) {
           continue; 
         }
