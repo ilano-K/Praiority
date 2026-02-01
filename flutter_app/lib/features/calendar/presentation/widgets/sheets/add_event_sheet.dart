@@ -43,6 +43,10 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
   List<String> _selectedTags = [];
   CalendarColor _selectedColor = appEventColors[0];
   List<String> _tagsList = [];
+  // --- COLLAPSIBLE AI OPTIONS ---
+  bool _advancedExpanded = false;
+  bool _movableByAI = false;
+  bool _setNonConfliction = true;
   
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
@@ -73,6 +77,8 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
     _selectedTags = event.tags;
     _location = event.location ?? "None";
     _repeat = rruleToRepeat(event.recurrenceRule);
+    _movableByAI = event.isAiMovable;
+    _setNonConfliction = event.isConflicting;
 
     if (event.colorValue != null) {
       _selectedColor = appEventColors.firstWhere(
@@ -115,6 +121,8 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
       status: TaskStatus.scheduled,
       recurrenceRule: repeatToRRule(_repeat, start: startTimeForRule),
       colorValue: colorValue,
+      isAiMovable: _movableByAI,
+      isConflicting: _setNonConfliction
     );
 
     return widget.task != null ? widget.task!.copyWith(
@@ -128,6 +136,8 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
       recurrenceRule: baseTask.recurrenceRule,
       colorValue: baseTask.colorValue,
       deadline: null,
+      isAiMovable: baseTask.isAiMovable,
+      isConflicting: baseTask.isConflicting
     ) : baseTask;
   }
 
@@ -254,6 +264,61 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                       );
                     },
                   ),
+
+                  // --- COLLAPSIBLE AI OPTIONS ---
+                  Theme(
+                      // Removes the top/bottom borders that ExpansionTile usually has
+                      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                      child: ExpansionTile(
+                        // Removes default padding so it aligns with the rest of the text
+                        tilePadding: EdgeInsets.zero, 
+                        childrenPadding: EdgeInsets.zero,
+                        title: Text(
+                          'Advanced Options', // Changed from "AI Options" to "Advanced"
+                          style: TextStyle(
+                            fontSize: 16, 
+                            fontWeight: FontWeight.bold, 
+                            color: colorScheme.onSurface
+                          ),
+                        ),
+                        initiallyExpanded: _advancedExpanded,
+                        onExpansionChanged: (val) => setState(() => _advancedExpanded = val),
+                        children: [
+                          // Option 1: Movable
+                          ListTile(
+                            contentPadding: EdgeInsets.zero, // Align text to left
+                            visualDensity: VisualDensity.compact, // Reduce vertical height
+                            title: Text('Auto-Reschedule', style: TextStyle(color: colorScheme.onSurface.withOpacity(0.8), fontSize: 15)),
+                            subtitle: Text("Allow AI to move this task if missed", style: TextStyle(color: colorScheme.onSurface.withOpacity(0.5), fontSize: 12)),
+                            trailing: Transform.scale(
+                              scale: 0.8,
+                              child: Switch(
+                                value: _movableByAI,
+                                activeColor: Colors.white,
+                                activeTrackColor: colorScheme.primary,
+                                onChanged: (v) => setState(() => _movableByAI = v),
+                              ),
+                            ),
+                          ),
+                          // Option 2: Confliction
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            visualDensity: VisualDensity.compact,
+                            title: Text('Strict Mode', style: TextStyle(color: colorScheme.onSurface.withOpacity(0.8), fontSize: 15)),
+                            subtitle: Text("Ensure absolutely no overlaps", style: TextStyle(color: colorScheme.onSurface.withOpacity(0.5), fontSize: 12)),
+                            trailing: Transform.scale(
+                              scale: 0.8,
+                              child: Switch(
+                                value: _setNonConfliction,
+                                activeColor: Colors.white,
+                                activeTrackColor: colorScheme.primary,
+                                onChanged: (v) => setState(() => _setNonConfliction = v),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
 
                   _buildInteractiveRow(
                     label: "Location", 

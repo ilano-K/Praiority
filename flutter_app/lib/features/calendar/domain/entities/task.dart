@@ -6,158 +6,138 @@ const unset = Object();
 // Equatable--useful for editing a task. 
 class Task extends Equatable{
   final String id;
-
-  // Type and Category
   final TaskType type;
-  final TaskCategory category;
-  final List<String>tags;
+  final int? colorValue;
+  final bool isAllDay;
 
   final String title; // change to a default name like task_1
-  // optional fields
   final String? description;
-  final String? location;
-  final int? colorValue;
 
-  // time
+  final bool isSmartSchedule;
   final DateTime? startTime; //may be null if smart scheduled
   final DateTime? endTime; // may be null if smart scheduled
   final DateTime? deadline; // if none, will be defaulted to today
-  final Duration? duration;
-  final bool isAllDay;
-  //priority
+  
   final TaskPriority priority;
-
-  // Ai shit
-  final bool isAiMovable; // can be moved automatically by AI
-  final bool isSmartSchedule;
-
-  // Reminders
-  final List<Duration> reminderOffsets; // (e.g., 1 hour before, 30 mins before, 10 mins before)
-
-  // Recurrence
+  final TaskCategory category;
+  final List<String>tags;
   final String?recurrenceRule; // using RRULE
+  final String? location;
 
-  final TaskStatus status;
-
+  // advanced
+  final bool isAiMovable; // can be moved automatically by AI
   final bool isConflicting;
+ 
+  //flags
+  final TaskStatus status;
   final bool isSynced; 
 
   const Task({
     required this.id,
-    required this.title,
     this.type = TaskType.task,
-    this.category = TaskCategory.none,
-    this.tags = const [],
-    this.description,
-    this.location,
     this.colorValue,
+    this.isAllDay = false,
+    required this.title,
+    this.description,
+    this.isSmartSchedule = false, // default: user schedules manually
     this.startTime,
     this.endTime,
     this.deadline,
-    this.duration,
-    this.isAllDay = false,
     this.priority = TaskPriority.medium,
-    this.isAiMovable = true,
-    this.isSmartSchedule = false, // default: user schedules manually
-    this.reminderOffsets = const [],
+    this.category = TaskCategory.none,
+    this.tags = const [],
     this.recurrenceRule,
-    this.status = TaskStatus.unscheduled,
+    this.location,
+    this.isAiMovable = true,
     this.isConflicting = true ,
+    this.status = TaskStatus.unscheduled,
     this.isSynced = false,
   });
 
   factory Task.create({
-    required String title,
     TaskType type = TaskType.task,
-    TaskCategory category = TaskCategory.none,
-    List<String> tags = const [],
-    String? description,
-    String? location,
     int? colorValue,
+    bool isAllDay = false,
+    required String title,
+    String? description,
+    bool isSmartSchedule = false,
     DateTime? startTime,
     DateTime? endTime,
     DateTime? deadline,
-    Duration? duration,
-    bool isAllDay = false,
     TaskPriority priority = TaskPriority.medium,
-    bool isAiMovable = true,
-    bool isSmartSchedule = false,
-    List<Duration> reminderOffsets = const [],
+    TaskCategory category = TaskCategory.none,
+    List<String> tags = const [],
     String? recurrenceRule,
+    String? location,
+    bool isAiMovable = true,
     bool isConflicting = true,
     TaskStatus status = TaskStatus.unscheduled,
-  
+    bool isSynced = false
   }) {
     return Task(
       id: const Uuid().v4(), // AUTOMATIC ID GENERATION
-      title: title,
       type: type,
-      category: category,
-      tags: tags,
-      description: description,
-      location: location,
       colorValue: colorValue,
+      isAllDay: isAllDay,
+      title: title,
+      description: description,
+      isSmartSchedule: isSmartSchedule,
       startTime: startTime,
       endTime: endTime,
       deadline: deadline,
-      duration: duration,
-      isAllDay: isAllDay,
       priority: priority,
-      isAiMovable: isAiMovable,
-      isSmartSchedule: isSmartSchedule,
-      reminderOffsets: reminderOffsets,
+      category: category,
+      tags: tags,
       recurrenceRule: recurrenceRule,
-      status: status,
+      location: location,
+      isAiMovable: isAiMovable,
       isConflicting: true,
+      status: status,
       isSynced: false,
     );
   }
   Task copyWith({
     String? id,
     TaskType? type,
-    TaskCategory? category,
-    List<String>? tags,
+    int? colorValue,
+    bool? isAllDay,
     String? title,
     String? description,
-    String? location,
-    int? colorValue,
+    bool? isSmartSchedule,
     DateTime? startTime,
     DateTime? endTime,
     DateTime? deadline,
-    Duration? duration,
-    bool? isAllDay,
     TaskPriority? priority,
-    bool? isAiMovable,
-    bool? isSmartSchedule, // Add to copyWith
-    List<Duration>? reminderOffsets,
+    TaskCategory? category,
+    List<String>? tags,
     Object? recurrenceRule = unset,
+    String? location,
+    bool? isAiMovable,
+    bool? isConflicting, 
     TaskStatus? status,
-    bool? isConflicting,
     bool? isSynced,
   }){
     return Task(
       id: id ?? this.id,
       type: type ?? this.type,
-      category: category ?? this.category,
-      tags: tags ?? this.tags,
+      colorValue: colorValue ?? this.colorValue,
+      isAllDay: isAllDay ?? this.isAllDay,
       title: title ?? this.title,
       description: description ?? this.description,
-      location: location ?? this.location,
-      colorValue: colorValue ?? this.colorValue,
+      isSmartSchedule: isSmartSchedule ?? this.isSmartSchedule,
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,
       deadline: deadline ?? this.deadline,
-      duration: duration ?? this.duration,
-      isAllDay: isAllDay ?? this.isAllDay,
       priority: priority ?? this.priority,
-      isAiMovable: isAiMovable ?? this.isAiMovable,
-      isSmartSchedule: isSmartSchedule ?? this.isSmartSchedule,
-      reminderOffsets: reminderOffsets ?? this.reminderOffsets,
+      category: category ?? this.category,
+      tags: tags ?? this.tags,
       recurrenceRule: recurrenceRule == unset
         ? this.recurrenceRule
         : recurrenceRule as String?, 
-      status: status ?? this.status,
+      location: location ?? this.location,
+      isAiMovable: isAiMovable ?? this.isAiMovable,
       isConflicting: isConflicting ?? this.isConflicting,
+      status: status ?? this.status,
       isSynced: isSynced ?? this.isSynced,
     );
   }
@@ -166,24 +146,22 @@ class Task extends Equatable{
   List<Object?> get props => [
         id,
         type,
-        category,
-        tags,
+        colorValue,
+        isAllDay,
         title,
         description,
-        location,
-        colorValue,
+        isSmartSchedule,
         startTime,
         endTime,
         deadline,
-        duration,
-        isAllDay,
         priority,
-        isAiMovable,
-        isSmartSchedule, // Add to props
-        reminderOffsets,
+        category,
+        tags,
         recurrenceRule,
-        status,
+        location,
+        isAiMovable,
         isConflicting,
+        status,
         isSynced,
       ];
   

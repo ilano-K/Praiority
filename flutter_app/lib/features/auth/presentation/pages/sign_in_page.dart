@@ -50,15 +50,7 @@ class _SignInPageState extends ConsumerState<SignInPage> {
 
     final taskSyncService = ref.read(taskSyncServiceProvider);
     // sync tasks 
-    unawaited(taskSyncService.syncAll());
-
-    // --- UPDATED: Navigate to WorkHours first ---
-    if (mounted && !ref.read(authControllerProvider).hasError) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const WorkHours()),
-      );
-    }
+    unawaited(taskSyncService.syncAllTasks());
   }
 
   // --- LOGIC: GOOGLE SIGN IN ---
@@ -68,15 +60,7 @@ class _SignInPageState extends ConsumerState<SignInPage> {
 
     final taskSyncService = ref.read(taskSyncServiceProvider);
     // sync tasks 
-    unawaited(taskSyncService.syncAll());
-
-    // --- UPDATED: Navigate to WorkHours first ---
-    if (mounted && !ref.read(authControllerProvider).hasError) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const WorkHours()),
-      );
-    }
+    unawaited(taskSyncService.syncAllTasks());
   }
 
   // --- LOGIC: SHOW FORGOT PASSWORD POPUP ---

@@ -1,14 +1,17 @@
 // File: lib/features/calendar/presentation/widgets/app_sidebar.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_app/features/auth/data/auth_provider.dart';
 import 'package:flutter_app/features/auth/presentation/manager/auth_controller.dart';
-import 'package:flutter_app/features/auth/presentation/pages/sign_in_page.dart';
+import 'package:flutter_app/features/auth/presentation/pages/auth_gate.dart';
+// ❌ REMOVE THIS: You don't need to import SignInPage anymore
+// import 'package:flutter_app/features/auth/presentation/pages/sign_in_page.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart'; 
 import '../../../../../core/theme/theme_notifier.dart';
 
 class AppSidebar extends ConsumerStatefulWidget {
-  final CalendarView currentView; // Required to know the current active view
+  final CalendarView currentView; 
   final Function(CalendarView) onViewSelected;
 
   const AppSidebar({
@@ -22,19 +25,14 @@ class AppSidebar extends ConsumerStatefulWidget {
 }
 
 class _AppSidebarState extends ConsumerState<AppSidebar> {
-  bool _isExpanded = false; // Internal state to track if the View menu is open
+  bool _isExpanded = false;
 
-  // Helper to get the correct string for the label
   String _getViewLabel(CalendarView view) {
     switch (view) {
-      case CalendarView.month:
-        return "Month View";
-      case CalendarView.week:
-        return "Week View";
-      case CalendarView.day:
-        return "Day View";
-      default:
-        return "View";
+      case CalendarView.month: return "Month View";
+      case CalendarView.week: return "Week View";
+      case CalendarView.day: return "Day View";
+      default: return "View";
     }
   }
 
@@ -93,13 +91,16 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                     context, 
                     icon: Icons.access_time_outlined, 
                     label: "Working Hours",
+                    // TODO: Add navigation to WorkHours page if needed
+                    onTap: () => Navigator.pop(context), 
                   ),
-                  // UPDATED: Replaced IconData with an Image.asset for the Google logo
+                  
+                  // Google Sync Item
                   ListTile(
                     leading: Padding(
-                      padding: const EdgeInsets.only(left: 2.0), // Aligning with other icons
+                      padding: const EdgeInsets.only(left: 2.0),
                       child: Image.asset(
-                        'assets/images/G.png', // Ensure you have this asset in your project
+                        'assets/images/G.png', 
                         width: 24, 
                         height: 24
                       ),
@@ -114,40 +115,31 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                     ),
                     onTap: () => Navigator.pop(context),
                   ),
-                  _buildDrawerItem(
+
+                  // ✅ FIXED LOG OUT LOGIC
+            _buildDrawerItem(
                     context, 
                     icon: Icons.logout_outlined, 
                     label: "Log Out",
                     onTap: () async {
-                      // 1. Close the sidebar first
-                      Navigator.pop(context);
-
-                      // 2. Perform the sign out
+                      // 1. CAPTURE THE NAVIGATOR BEFORE AWAIT
+                      // We save the navigator into a variable so we can use it 
+                      // even if this widget dies/closes.
+                      final navigator = Navigator.of(context);
                       final authController = ref.read(authControllerProvider.notifier);
+
+                      // 2. PERFORM SIGN OUT
                       await authController.signOut();
 
-                      if (context.mounted) {
-                        // 3. Show the success notification
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("Successfully signed out"),
-                            duration: Duration(seconds: 2),
-                          ),
-                        );
-
-                        // 4. Navigate back to SignInPage
-                        Navigator.pushAndRemoveUntil(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => SignInPage(
-                              onSwitch: () {
-                                debugPrint("Switching to Sign Up from Sign In");
-                              },
-                            ),
-                          ),
-                          (route) => false, // Clears the navigation stack
-                        );
-                      }
+                      // 3. FORCE NAVIGATION USING THE CAPTURED VARIABLE
+                      // We use 'navigator' instead of 'Navigator.of(context)'
+                      // because 'context' might be dead now.
+                      navigator.pushAndRemoveUntil(
+                        MaterialPageRoute(
+                          builder: (context) => const AuthGate(), 
+                        ),
+                        (route) => false, // Clears all history
+                      );
                     } 
                   ),
                 ],
@@ -168,6 +160,8 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
     );
   }
 
+  // ... (Keep your helper widgets: _buildDrawerItem, _buildExpandableItem, _buildSubItem, _buildThemeToggle exactly as they are) ...
+  
   Widget _buildDrawerItem(BuildContext context, {required IconData icon, required String label, VoidCallback? onTap}) {
     final colorScheme = Theme.of(context).colorScheme;
     return ListTile(
@@ -199,24 +193,21 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
     );
   }
 
-Widget _buildSubItem(BuildContext context, String label, String lightIcon, String darkIcon, bool isDark, CalendarView view) {
-  final colorScheme = Theme.of(context).colorScheme;
-  return ListTile(
-    leading: Image.asset(isDark ? darkIcon : lightIcon, width: 24, height: 24),
-    title: Text(label, style: TextStyle(fontWeight: FontWeight.w500, color: colorScheme.onSurface)),
-    onTap: () {
-      // --- THE FIX ---
-      // If we are switching to Month View, we must clear the current date range filter
-      // so the dots show up for the entire month, not just the previously selected day/week.
-      if (view == CalendarView.month) {
-        ref.read(calendarControllerProvider.notifier).getTasksByCondition();
-      }
+  Widget _buildSubItem(BuildContext context, String label, String lightIcon, String darkIcon, bool isDark, CalendarView view) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return ListTile(
+      leading: Image.asset(isDark ? darkIcon : lightIcon, width: 24, height: 24),
+      title: Text(label, style: TextStyle(fontWeight: FontWeight.w500, color: colorScheme.onSurface)),
+      onTap: () {
+        if (view == CalendarView.month) {
+          ref.read(calendarControllerProvider.notifier).getTasksByCondition();
+        }
+        widget.onViewSelected(view); 
+        Navigator.pop(context); 
+      },
+    );
+  }
 
-      widget.onViewSelected(view); 
-      Navigator.pop(context); 
-    },
-  );
-}
   Widget _buildThemeToggle(BuildContext context, WidgetRef ref, bool isDark) {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(

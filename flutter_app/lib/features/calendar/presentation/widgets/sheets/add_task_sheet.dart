@@ -48,6 +48,10 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
 
   // 1. MASTER TAG LIST
   List<String> _tagsList = [];
+  // --- COLLAPSIBLE AI OPTIONS ---
+  bool _advancedExpanded = false;
+  bool _movableByAI = false;
+  bool _setNonConfliction = true;
   
   @override
   void initState() {
@@ -114,6 +118,8 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
     _selectedTags = task.tags;
     _priority = _enumToString(task.priority);
     _category = _enumToString(task.category);
+    _movableByAI = task.isAiMovable;
+    _setNonConfliction = task.isConflicting;
 
     if (task.colorValue != null) {
       _selectedColor = appEventColors.firstWhere(
@@ -150,6 +156,8 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
       colorValue: colorValue,
       isAllDay: false,
       recurrenceRule: null,
+      isAiMovable: _movableByAI,
+      isConflicting: _setNonConfliction
     );
 
     return widget.task != null ? widget.task!.copyWith(
@@ -165,7 +173,8 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
       colorValue: baseTask.colorValue,
       isAllDay: false,
       recurrenceRule: null,
-      
+      isAiMovable: baseTask.isAiMovable,
+      isConflicting: baseTask.isConflicting
     ) : baseTask;
   }
 
@@ -207,11 +216,12 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
           // ------------------------------------------------------------------
           
           // --- SCROLLABLE SETTINGS LIST (Task-specific content) ---
+        // --- SCROLLABLE SETTINGS LIST ---
           Expanded(
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  // 1. SMART SCHEDULE
+                  // 1. SMART SCHEDULE TOGGLE
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -229,6 +239,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                     ],
                   ),
                   
+                  // Description Text (Only visible when enabled)
                   if (_isSmartScheduleEnabled) ...[
                     Align(
                       alignment: Alignment.centerLeft,
@@ -237,141 +248,131 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                         style: TextStyle(color: colorScheme.onSurface.withOpacity(0.6), fontSize: 14),
                       ),
                     ),
-                    const SizedBox(height: 20),
-
-                    // Smart Priority
-                    _buildInteractiveRow(
-                      label: "Smart Priority", 
-                      value: _priority,
-                      colors: colorScheme,
-                      onTap: () {
-                        showModalBottomSheet(
-                          context: context,
-                          backgroundColor: Colors.transparent,
-                          builder: (context) => PrioritySelector(
-                            currentPriority: _priority,
-                            onPrioritySelected: (val) => setState(() => _priority = val),
-                          ),
-                        );
-                      }
-                    ),
-                  ] else ...[ 
-                    // --- ONLY SHOW THESE IF SMART SCHEDULE IS DISABLED ---
-                    const SizedBox(height: 10),
+                  ],
                   
-                  // 3. START TIME
+                  const SizedBox(height: 10),
+
+
+                  // 3. START & END TIME (HIDDEN IF SMART SCHEDULE IS ON)
+                  if (!_isSmartScheduleEnabled) ...[
+                    // START TIME
+                    _buildInteractiveRow(
+                      label: "Start Time", 
+                      value: DateFormat('MMMM d, y').format(_startDate),
+                      trailing: _startTime.format(context),
+                      colors: colorScheme,
+                      onTapValue: () async {
+                        final picked = await pickDate(context, initialDate: _startDate);
+                        if (picked != null) {
+                          setState(() {
+                            _startDate = picked;
+                            // (Recalculate deadline logic here if needed, keeping simple for snippet)
+                          });
+                        }
+                      },
+                      onTapTrailing: () async {
+                        final picked = await pickTime(context);
+                        if (picked != null) setState(() => _startTime = picked);
+                      },
+                    ),
+
+                    // END TIME
+                    _buildInteractiveRow(
+                      label: "End Time", 
+                      value: _endTime.format(context),
+                      colors: colorScheme,
+                      onTapValue: () async {
+                        final picked = await pickTime(context, initialTime: _endTime);
+                        if (picked != null) setState(() => _endTime = picked);
+                      },
+                    ),
+                  ],
+
+                  // 2. PRIORITY (ALWAYS VISIBLE)
+                  // Label changes based on mode, but the selector is always there
                   _buildInteractiveRow(
-                    label: "Start Time", 
-                    value: DateFormat('MMMM d, y').format(_startDate),
-                    trailing: _startTime.format(context),
+                    label:  "Priority", 
+                    value: _priority,
                     colors: colorScheme,
-                    onTapValue: () async {
-                      // Pick a new start date and ensure the deadline date/time
-                      // does not end up before the new start. Use the shared
-                      // helper so behavior is consistent across sheets.
-                      final picked = await pickDate(
-                        context,
-                        initialDate: _startDate,
+                    onTap: () {
+                      showModalBottomSheet(
+                        context: context,
+                        backgroundColor: Colors.transparent,
+                        builder: (context) => PrioritySelector(
+                          currentPriority: _priority,
+                          onPrioritySelected: (val) => setState(() => _priority = val),
+                        ),
                       );
-                      if (picked != null) {
-                        setState(() {
-                          _startDate = picked;
-
-                          // Compose reference = start date but at the current
-                          // deadline time; we want the deadline to be at least
-                          // this DateTime (preserving its time-of-day if possible).
-                          final reference = DateTime(
-                            picked.year,
-                            picked.month,
-                            picked.day,
-                            _deadlineTime.hour,
-                            _deadlineTime.minute,
-                          );
-
-                          final currentDeadline = DateTime(
-                            _deadlineDate.year,
-                            _deadlineDate.month,
-                            _deadlineDate.day,
-                            _deadlineTime.hour,
-                            _deadlineTime.minute,
-                          );
-
-                          final adjusted = ensureNotBefore(currentDeadline, reference);
-                          _deadlineDate = DateTime(adjusted.year, adjusted.month, adjusted.day);
-                          _deadlineTime = TimeOfDay(hour: adjusted.hour, minute: adjusted.minute);
-                        });
-                      }
-                    },
-                    onTapTrailing: () async {
-                      // Pick a new start time and ensure the deadline datetime
-                      // remains after the new start; if it would be before,
-                      // bump the deadline by one hour after the start.
-                      final picked = await pickTime(context);
-                      if (picked != null) {
-                        setState(() {
-                          _startTime = picked;
-
-                          final newStartDT = DateTime(
-                            _startDate.year,
-                            _startDate.month,
-                            _startDate.day,
-                            _startTime.hour,
-                            _startTime.minute,
-                          );
-
-                          final currentDeadlineDT = DateTime(
-                            _deadlineDate.year,
-                            _deadlineDate.month,
-                            _deadlineDate.day,
-                            _deadlineTime.hour,
-                            _deadlineTime.minute,
-                          );
-
-                          final adjusted = ensureNotBefore(currentDeadlineDT, newStartDT, bumpIfBefore: const Duration(hours: 1));
-                          _deadlineDate = DateTime(adjusted.year, adjusted.month, adjusted.day);
-                          _deadlineTime = TimeOfDay(hour: adjusted.hour, minute: adjusted.minute);
-                        });
-                      }
-                    },
+                    }
                   ),
 
-                  // 4. END TIME
-                  _buildInteractiveRow(
-                    label: "End Time", 
-                    value: _endTime.format(context),
-                    colors: colorScheme,
-                    onTapValue: () async {
-                      final picked = await pickTime(context, initialTime: _endTime);
-                      if (picked != null) {
-                        setState(() => _endTime = picked);
-                      }
-                    },
-                  ),
-                ],
-                  // 3. DEADLINE
+                  // 5. DEADLINE (ALWAYS VISIBLE)
                   _buildInteractiveRow(
                     label: "Deadline", 
                     value: DateFormat('MMMM d, y').format(_deadlineDate),
                     trailing: _deadlineTime.format(context),
                     colors: colorScheme,
                     onTapValue: () async {
-                      final picked = await pickDate(
-                        context,
-                        initialDate: _startDate,
-                      );
-                      if (picked != null) {
-                        setState(() => _deadlineDate = picked);
-                      }
+                      final picked = await pickDate(context, initialDate: _deadlineDate);
+                      if (picked != null) setState(() => _deadlineDate = picked);
                     },
                     onTapTrailing: () async {
                       final picked = await pickTime(context, initialTime: _deadlineTime);
-                      if (picked != null) {
-                        setState(() => _deadlineTime = picked);
-                      }
+                      if (picked != null) setState(() => _deadlineTime = picked);
                     },
                   ),
 
-                  // 5. CATEGORY
+                   // 4. ADVANCED OPTIONS (ALWAYS VISIBLE)
+                  Theme(
+                    data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                    child: ExpansionTile(
+                      tilePadding: EdgeInsets.zero, 
+                      childrenPadding: EdgeInsets.zero,
+                      title: Text(
+                        'Advanced Options',
+                        style: TextStyle(
+                          fontSize: 16, 
+                          fontWeight: FontWeight.bold, 
+                          color: colorScheme.onSurface
+                        ),
+                      ),
+                      initiallyExpanded: _advancedExpanded,
+                      onExpansionChanged: (val) => setState(() => _advancedExpanded = val),
+                      children: [
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          visualDensity: VisualDensity.compact,
+                          title: Text('Auto-Reschedule', style: TextStyle(color: colorScheme.onSurface.withOpacity(0.8), fontSize: 15)),
+                          subtitle: Text("Allow AI to move this task if missed", style: TextStyle(color: colorScheme.onSurface.withOpacity(0.5), fontSize: 12)),
+                          trailing: Transform.scale(
+                            scale: 0.8,
+                            child: Switch(
+                              value: _movableByAI,
+                              activeColor: Colors.white,
+                              activeTrackColor: colorScheme.primary,
+                              onChanged: (v) => setState(() => _movableByAI = v),
+                            ),
+                          ),
+                        ),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          visualDensity: VisualDensity.compact,
+                          title: Text('Strict Mode', style: TextStyle(color: colorScheme.onSurface.withOpacity(0.8), fontSize: 15)),
+                          subtitle: Text("Ensure absolutely no overlaps", style: TextStyle(color: colorScheme.onSurface.withOpacity(0.5), fontSize: 12)),
+                          trailing: Transform.scale(
+                            scale: 0.8,
+                            child: Switch(
+                              value: _setNonConfliction,
+                              activeColor: Colors.white,
+                              activeTrackColor: colorScheme.primary,
+                              onChanged: (v) => setState(() => _setNonConfliction = v),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // 6. CATEGORY (ALWAYS VISIBLE)
                   _buildInteractiveRow(
                     label: "Category", 
                     value: _category,
@@ -388,7 +389,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                     }
                   ),
 
-                  // 6. TAGS
+                  // 7. TAGS (ALWAYS VISIBLE)
                   _buildInteractiveRow(
                     label: "Tags", 
                     value: _selectedTags.isEmpty ? "None" : _selectedTags.join(", "), 
@@ -399,25 +400,20 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                         isScrollControlled: true,
                         backgroundColor: Colors.transparent,
                         builder: (context) {
-                          // StatefulBuilder allows the BottomSheet to refresh itself
                           return StatefulBuilder(
                             builder: (BuildContext context, StateSetter sheetSetState) {
                               return TagSelector(
                                 selectedTags: _selectedTags,
                                 availableTags: _tagsList, 
                                 onTagsChanged: (newList) {
-                                  // Update BOTH the parent and the sheet
                                   setState(() => _selectedTags = newList);
                                   sheetSetState(() {}); 
                                 },
                                 onTagAdded: (newTag) async {
                                   setState(() {
-                                    if (!_tagsList.contains(newTag)) {
-                                      _tagsList.add(newTag);
-                                    }
+                                    if (!_tagsList.contains(newTag)) _tagsList.add(newTag);
                                   });
                                   await ref.read(calendarControllerProvider.notifier).addTag(newTag);
-                                  // Update the sheet so the new tag appears immediately
                                   sheetSetState(() {});
                                 },
                                 onTagRemoved: (removedTag) async{

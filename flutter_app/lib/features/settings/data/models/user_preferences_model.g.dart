@@ -18,24 +18,39 @@ const UserPreferencesModelSchema = CollectionSchema(
   name: r'UserPreferencesModel',
   id: 3603656307210587948,
   properties: {
-    r'endWorkHours': PropertySchema(
+    r'cloudId': PropertySchema(
       id: 0,
+      name: r'cloudId',
+      type: IsarType.string,
+    ),
+    r'customPrompt': PropertySchema(
+      id: 1,
+      name: r'customPrompt',
+      type: IsarType.string,
+    ),
+    r'endWorkHours': PropertySchema(
+      id: 2,
       name: r'endWorkHours',
       type: IsarType.string,
     ),
+    r'isDarkMode': PropertySchema(
+      id: 3,
+      name: r'isDarkMode',
+      type: IsarType.bool,
+    ),
     r'isSetupComplete': PropertySchema(
-      id: 1,
+      id: 4,
       name: r'isSetupComplete',
       type: IsarType.bool,
     ),
-    r'startWorkHours': PropertySchema(
-      id: 2,
-      name: r'startWorkHours',
-      type: IsarType.string,
+    r'isSynced': PropertySchema(
+      id: 5,
+      name: r'isSynced',
+      type: IsarType.bool,
     ),
-    r'userId': PropertySchema(
-      id: 3,
-      name: r'userId',
+    r'startWorkHours': PropertySchema(
+      id: 6,
+      name: r'startWorkHours',
       type: IsarType.string,
     )
   },
@@ -44,21 +59,7 @@ const UserPreferencesModelSchema = CollectionSchema(
   deserialize: _userPreferencesModelDeserialize,
   deserializeProp: _userPreferencesModelDeserializeProp,
   idName: r'id',
-  indexes: {
-    r'userId': IndexSchema(
-      id: -2005826577402374815,
-      name: r'userId',
-      unique: true,
-      replace: true,
-      properties: [
-        IndexPropertySchema(
-          name: r'userId',
-          type: IndexType.hash,
-          caseSensitive: true,
-        )
-      ],
-    )
-  },
+  indexes: {},
   links: {},
   embeddedSchemas: {},
   getId: _userPreferencesModelGetId,
@@ -73,9 +74,30 @@ int _userPreferencesModelEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
-  bytesCount += 3 + object.endWorkHours.length * 3;
-  bytesCount += 3 + object.startWorkHours.length * 3;
-  bytesCount += 3 + object.userId.length * 3;
+  {
+    final value = object.cloudId;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.customPrompt;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.endWorkHours;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.startWorkHours;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   return bytesCount;
 }
 
@@ -85,10 +107,13 @@ void _userPreferencesModelSerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeString(offsets[0], object.endWorkHours);
-  writer.writeBool(offsets[1], object.isSetupComplete);
-  writer.writeString(offsets[2], object.startWorkHours);
-  writer.writeString(offsets[3], object.userId);
+  writer.writeString(offsets[0], object.cloudId);
+  writer.writeString(offsets[1], object.customPrompt);
+  writer.writeString(offsets[2], object.endWorkHours);
+  writer.writeBool(offsets[3], object.isDarkMode);
+  writer.writeBool(offsets[4], object.isSetupComplete);
+  writer.writeBool(offsets[5], object.isSynced);
+  writer.writeString(offsets[6], object.startWorkHours);
 }
 
 UserPreferencesModel _userPreferencesModelDeserialize(
@@ -98,11 +123,14 @@ UserPreferencesModel _userPreferencesModelDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = UserPreferencesModel();
-  object.endWorkHours = reader.readString(offsets[0]);
+  object.cloudId = reader.readStringOrNull(offsets[0]);
+  object.customPrompt = reader.readStringOrNull(offsets[1]);
+  object.endWorkHours = reader.readStringOrNull(offsets[2]);
   object.id = id;
-  object.isSetupComplete = reader.readBool(offsets[1]);
-  object.startWorkHours = reader.readString(offsets[2]);
-  object.userId = reader.readString(offsets[3]);
+  object.isDarkMode = reader.readBool(offsets[3]);
+  object.isSetupComplete = reader.readBool(offsets[4]);
+  object.isSynced = reader.readBool(offsets[5]);
+  object.startWorkHours = reader.readStringOrNull(offsets[6]);
   return object;
 }
 
@@ -114,13 +142,19 @@ P _userPreferencesModelDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 1:
-      return (reader.readBool(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 2:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 3:
-      return (reader.readString(offset)) as P;
+      return (reader.readBool(offset)) as P;
+    case 4:
+      return (reader.readBool(offset)) as P;
+    case 5:
+      return (reader.readBool(offset)) as P;
+    case 6:
+      return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -138,62 +172,6 @@ List<IsarLinkBase<dynamic>> _userPreferencesModelGetLinks(
 void _userPreferencesModelAttach(
     IsarCollection<dynamic> col, Id id, UserPreferencesModel object) {
   object.id = id;
-}
-
-extension UserPreferencesModelByIndex on IsarCollection<UserPreferencesModel> {
-  Future<UserPreferencesModel?> getByUserId(String userId) {
-    return getByIndex(r'userId', [userId]);
-  }
-
-  UserPreferencesModel? getByUserIdSync(String userId) {
-    return getByIndexSync(r'userId', [userId]);
-  }
-
-  Future<bool> deleteByUserId(String userId) {
-    return deleteByIndex(r'userId', [userId]);
-  }
-
-  bool deleteByUserIdSync(String userId) {
-    return deleteByIndexSync(r'userId', [userId]);
-  }
-
-  Future<List<UserPreferencesModel?>> getAllByUserId(
-      List<String> userIdValues) {
-    final values = userIdValues.map((e) => [e]).toList();
-    return getAllByIndex(r'userId', values);
-  }
-
-  List<UserPreferencesModel?> getAllByUserIdSync(List<String> userIdValues) {
-    final values = userIdValues.map((e) => [e]).toList();
-    return getAllByIndexSync(r'userId', values);
-  }
-
-  Future<int> deleteAllByUserId(List<String> userIdValues) {
-    final values = userIdValues.map((e) => [e]).toList();
-    return deleteAllByIndex(r'userId', values);
-  }
-
-  int deleteAllByUserIdSync(List<String> userIdValues) {
-    final values = userIdValues.map((e) => [e]).toList();
-    return deleteAllByIndexSync(r'userId', values);
-  }
-
-  Future<Id> putByUserId(UserPreferencesModel object) {
-    return putByIndex(r'userId', object);
-  }
-
-  Id putByUserIdSync(UserPreferencesModel object, {bool saveLinks = true}) {
-    return putByIndexSync(r'userId', object, saveLinks: saveLinks);
-  }
-
-  Future<List<Id>> putAllByUserId(List<UserPreferencesModel> objects) {
-    return putAllByIndex(r'userId', objects);
-  }
-
-  List<Id> putAllByUserIdSync(List<UserPreferencesModel> objects,
-      {bool saveLinks = true}) {
-    return putAllByIndexSync(r'userId', objects, saveLinks: saveLinks);
-  }
 }
 
 extension UserPreferencesModelQueryWhereSort
@@ -275,58 +253,343 @@ extension UserPreferencesModelQueryWhere
       ));
     });
   }
-
-  QueryBuilder<UserPreferencesModel, UserPreferencesModel, QAfterWhereClause>
-      userIdEqualTo(String userId) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.equalTo(
-        indexName: r'userId',
-        value: [userId],
-      ));
-    });
-  }
-
-  QueryBuilder<UserPreferencesModel, UserPreferencesModel, QAfterWhereClause>
-      userIdNotEqualTo(String userId) {
-    return QueryBuilder.apply(this, (query) {
-      if (query.whereSort == Sort.asc) {
-        return query
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'userId',
-              lower: [],
-              upper: [userId],
-              includeUpper: false,
-            ))
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'userId',
-              lower: [userId],
-              includeLower: false,
-              upper: [],
-            ));
-      } else {
-        return query
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'userId',
-              lower: [userId],
-              includeLower: false,
-              upper: [],
-            ))
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'userId',
-              lower: [],
-              upper: [userId],
-              includeUpper: false,
-            ));
-      }
-    });
-  }
 }
 
 extension UserPreferencesModelQueryFilter on QueryBuilder<UserPreferencesModel,
     UserPreferencesModel, QFilterCondition> {
   QueryBuilder<UserPreferencesModel, UserPreferencesModel,
-      QAfterFilterCondition> endWorkHoursEqualTo(
+      QAfterFilterCondition> cloudIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'cloudId',
+      ));
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel,
+      QAfterFilterCondition> cloudIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'cloudId',
+      ));
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel,
+      QAfterFilterCondition> cloudIdEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'cloudId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel,
+      QAfterFilterCondition> cloudIdGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'cloudId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel,
+      QAfterFilterCondition> cloudIdLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'cloudId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel,
+      QAfterFilterCondition> cloudIdBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'cloudId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel,
+      QAfterFilterCondition> cloudIdStartsWith(
     String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'cloudId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel,
+      QAfterFilterCondition> cloudIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'cloudId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel,
+          QAfterFilterCondition>
+      cloudIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'cloudId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel,
+          QAfterFilterCondition>
+      cloudIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'cloudId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel,
+      QAfterFilterCondition> cloudIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'cloudId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel,
+      QAfterFilterCondition> cloudIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'cloudId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel,
+      QAfterFilterCondition> customPromptIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'customPrompt',
+      ));
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel,
+      QAfterFilterCondition> customPromptIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'customPrompt',
+      ));
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel,
+      QAfterFilterCondition> customPromptEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'customPrompt',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel,
+      QAfterFilterCondition> customPromptGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'customPrompt',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel,
+      QAfterFilterCondition> customPromptLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'customPrompt',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel,
+      QAfterFilterCondition> customPromptBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'customPrompt',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel,
+      QAfterFilterCondition> customPromptStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'customPrompt',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel,
+      QAfterFilterCondition> customPromptEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'customPrompt',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel,
+          QAfterFilterCondition>
+      customPromptContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'customPrompt',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel,
+          QAfterFilterCondition>
+      customPromptMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'customPrompt',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel,
+      QAfterFilterCondition> customPromptIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'customPrompt',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel,
+      QAfterFilterCondition> customPromptIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'customPrompt',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel,
+      QAfterFilterCondition> endWorkHoursIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'endWorkHours',
+      ));
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel,
+      QAfterFilterCondition> endWorkHoursIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'endWorkHours',
+      ));
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel,
+      QAfterFilterCondition> endWorkHoursEqualTo(
+    String? value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -340,7 +603,7 @@ extension UserPreferencesModelQueryFilter on QueryBuilder<UserPreferencesModel,
 
   QueryBuilder<UserPreferencesModel, UserPreferencesModel,
       QAfterFilterCondition> endWorkHoursGreaterThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -356,7 +619,7 @@ extension UserPreferencesModelQueryFilter on QueryBuilder<UserPreferencesModel,
 
   QueryBuilder<UserPreferencesModel, UserPreferencesModel,
       QAfterFilterCondition> endWorkHoursLessThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -372,8 +635,8 @@ extension UserPreferencesModelQueryFilter on QueryBuilder<UserPreferencesModel,
 
   QueryBuilder<UserPreferencesModel, UserPreferencesModel,
       QAfterFilterCondition> endWorkHoursBetween(
-    String lower,
-    String upper, {
+    String? lower,
+    String? upper, {
     bool includeLower = true,
     bool includeUpper = true,
     bool caseSensitive = true,
@@ -519,6 +782,16 @@ extension UserPreferencesModelQueryFilter on QueryBuilder<UserPreferencesModel,
   }
 
   QueryBuilder<UserPreferencesModel, UserPreferencesModel,
+      QAfterFilterCondition> isDarkModeEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isDarkMode',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel,
       QAfterFilterCondition> isSetupCompleteEqualTo(bool value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -529,8 +802,36 @@ extension UserPreferencesModelQueryFilter on QueryBuilder<UserPreferencesModel,
   }
 
   QueryBuilder<UserPreferencesModel, UserPreferencesModel,
+      QAfterFilterCondition> isSyncedEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel,
+      QAfterFilterCondition> startWorkHoursIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'startWorkHours',
+      ));
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel,
+      QAfterFilterCondition> startWorkHoursIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'startWorkHours',
+      ));
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel,
       QAfterFilterCondition> startWorkHoursEqualTo(
-    String value, {
+    String? value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -544,7 +845,7 @@ extension UserPreferencesModelQueryFilter on QueryBuilder<UserPreferencesModel,
 
   QueryBuilder<UserPreferencesModel, UserPreferencesModel,
       QAfterFilterCondition> startWorkHoursGreaterThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -560,7 +861,7 @@ extension UserPreferencesModelQueryFilter on QueryBuilder<UserPreferencesModel,
 
   QueryBuilder<UserPreferencesModel, UserPreferencesModel,
       QAfterFilterCondition> startWorkHoursLessThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -576,8 +877,8 @@ extension UserPreferencesModelQueryFilter on QueryBuilder<UserPreferencesModel,
 
   QueryBuilder<UserPreferencesModel, UserPreferencesModel,
       QAfterFilterCondition> startWorkHoursBetween(
-    String lower,
-    String upper, {
+    String? lower,
+    String? upper, {
     bool includeLower = true,
     bool includeUpper = true,
     bool caseSensitive = true,
@@ -665,144 +966,6 @@ extension UserPreferencesModelQueryFilter on QueryBuilder<UserPreferencesModel,
       ));
     });
   }
-
-  QueryBuilder<UserPreferencesModel, UserPreferencesModel,
-      QAfterFilterCondition> userIdEqualTo(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'userId',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<UserPreferencesModel, UserPreferencesModel,
-      QAfterFilterCondition> userIdGreaterThan(
-    String value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'userId',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<UserPreferencesModel, UserPreferencesModel,
-      QAfterFilterCondition> userIdLessThan(
-    String value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'userId',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<UserPreferencesModel, UserPreferencesModel,
-      QAfterFilterCondition> userIdBetween(
-    String lower,
-    String upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'userId',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<UserPreferencesModel, UserPreferencesModel,
-      QAfterFilterCondition> userIdStartsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'userId',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<UserPreferencesModel, UserPreferencesModel,
-      QAfterFilterCondition> userIdEndsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'userId',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<UserPreferencesModel, UserPreferencesModel,
-          QAfterFilterCondition>
-      userIdContains(String value, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.contains(
-        property: r'userId',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<UserPreferencesModel, UserPreferencesModel,
-          QAfterFilterCondition>
-      userIdMatches(String pattern, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.matches(
-        property: r'userId',
-        wildcard: pattern,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<UserPreferencesModel, UserPreferencesModel,
-      QAfterFilterCondition> userIdIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'userId',
-        value: '',
-      ));
-    });
-  }
-
-  QueryBuilder<UserPreferencesModel, UserPreferencesModel,
-      QAfterFilterCondition> userIdIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'userId',
-        value: '',
-      ));
-    });
-  }
 }
 
 extension UserPreferencesModelQueryObject on QueryBuilder<UserPreferencesModel,
@@ -814,6 +977,34 @@ extension UserPreferencesModelQueryLinks on QueryBuilder<UserPreferencesModel,
 extension UserPreferencesModelQuerySortBy
     on QueryBuilder<UserPreferencesModel, UserPreferencesModel, QSortBy> {
   QueryBuilder<UserPreferencesModel, UserPreferencesModel, QAfterSortBy>
+      sortByCloudId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cloudId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel, QAfterSortBy>
+      sortByCloudIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cloudId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel, QAfterSortBy>
+      sortByCustomPrompt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'customPrompt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel, QAfterSortBy>
+      sortByCustomPromptDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'customPrompt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel, QAfterSortBy>
       sortByEndWorkHours() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'endWorkHours', Sort.asc);
@@ -824,6 +1015,20 @@ extension UserPreferencesModelQuerySortBy
       sortByEndWorkHoursDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'endWorkHours', Sort.desc);
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel, QAfterSortBy>
+      sortByIsDarkMode() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isDarkMode', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel, QAfterSortBy>
+      sortByIsDarkModeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isDarkMode', Sort.desc);
     });
   }
 
@@ -842,6 +1047,20 @@ extension UserPreferencesModelQuerySortBy
   }
 
   QueryBuilder<UserPreferencesModel, UserPreferencesModel, QAfterSortBy>
+      sortByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel, QAfterSortBy>
+      sortByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel, QAfterSortBy>
       sortByStartWorkHours() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'startWorkHours', Sort.asc);
@@ -854,24 +1073,38 @@ extension UserPreferencesModelQuerySortBy
       return query.addSortBy(r'startWorkHours', Sort.desc);
     });
   }
-
-  QueryBuilder<UserPreferencesModel, UserPreferencesModel, QAfterSortBy>
-      sortByUserId() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'userId', Sort.asc);
-    });
-  }
-
-  QueryBuilder<UserPreferencesModel, UserPreferencesModel, QAfterSortBy>
-      sortByUserIdDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'userId', Sort.desc);
-    });
-  }
 }
 
 extension UserPreferencesModelQuerySortThenBy
     on QueryBuilder<UserPreferencesModel, UserPreferencesModel, QSortThenBy> {
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel, QAfterSortBy>
+      thenByCloudId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cloudId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel, QAfterSortBy>
+      thenByCloudIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cloudId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel, QAfterSortBy>
+      thenByCustomPrompt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'customPrompt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel, QAfterSortBy>
+      thenByCustomPromptDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'customPrompt', Sort.desc);
+    });
+  }
+
   QueryBuilder<UserPreferencesModel, UserPreferencesModel, QAfterSortBy>
       thenByEndWorkHours() {
     return QueryBuilder.apply(this, (query) {
@@ -901,6 +1134,20 @@ extension UserPreferencesModelQuerySortThenBy
   }
 
   QueryBuilder<UserPreferencesModel, UserPreferencesModel, QAfterSortBy>
+      thenByIsDarkMode() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isDarkMode', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel, QAfterSortBy>
+      thenByIsDarkModeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isDarkMode', Sort.desc);
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel, QAfterSortBy>
       thenByIsSetupComplete() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isSetupComplete', Sort.asc);
@@ -911,6 +1158,20 @@ extension UserPreferencesModelQuerySortThenBy
       thenByIsSetupCompleteDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isSetupComplete', Sort.desc);
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel, QAfterSortBy>
+      thenByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel, QAfterSortBy>
+      thenByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
     });
   }
 
@@ -927,28 +1188,35 @@ extension UserPreferencesModelQuerySortThenBy
       return query.addSortBy(r'startWorkHours', Sort.desc);
     });
   }
-
-  QueryBuilder<UserPreferencesModel, UserPreferencesModel, QAfterSortBy>
-      thenByUserId() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'userId', Sort.asc);
-    });
-  }
-
-  QueryBuilder<UserPreferencesModel, UserPreferencesModel, QAfterSortBy>
-      thenByUserIdDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'userId', Sort.desc);
-    });
-  }
 }
 
 extension UserPreferencesModelQueryWhereDistinct
     on QueryBuilder<UserPreferencesModel, UserPreferencesModel, QDistinct> {
   QueryBuilder<UserPreferencesModel, UserPreferencesModel, QDistinct>
+      distinctByCloudId({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'cloudId', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel, QDistinct>
+      distinctByCustomPrompt({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'customPrompt', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel, QDistinct>
       distinctByEndWorkHours({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'endWorkHours', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, UserPreferencesModel, QDistinct>
+      distinctByIsDarkMode() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isDarkMode');
     });
   }
 
@@ -960,17 +1228,17 @@ extension UserPreferencesModelQueryWhereDistinct
   }
 
   QueryBuilder<UserPreferencesModel, UserPreferencesModel, QDistinct>
-      distinctByStartWorkHours({bool caseSensitive = true}) {
+      distinctByIsSynced() {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'startWorkHours',
-          caseSensitive: caseSensitive);
+      return query.addDistinctBy(r'isSynced');
     });
   }
 
   QueryBuilder<UserPreferencesModel, UserPreferencesModel, QDistinct>
-      distinctByUserId({bool caseSensitive = true}) {
+      distinctByStartWorkHours({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'userId', caseSensitive: caseSensitive);
+      return query.addDistinctBy(r'startWorkHours',
+          caseSensitive: caseSensitive);
     });
   }
 }
@@ -983,10 +1251,31 @@ extension UserPreferencesModelQueryProperty on QueryBuilder<
     });
   }
 
-  QueryBuilder<UserPreferencesModel, String, QQueryOperations>
+  QueryBuilder<UserPreferencesModel, String?, QQueryOperations>
+      cloudIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'cloudId');
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, String?, QQueryOperations>
+      customPromptProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'customPrompt');
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, String?, QQueryOperations>
       endWorkHoursProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'endWorkHours');
+    });
+  }
+
+  QueryBuilder<UserPreferencesModel, bool, QQueryOperations>
+      isDarkModeProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isDarkMode');
     });
   }
 
@@ -997,17 +1286,17 @@ extension UserPreferencesModelQueryProperty on QueryBuilder<
     });
   }
 
-  QueryBuilder<UserPreferencesModel, String, QQueryOperations>
-      startWorkHoursProperty() {
+  QueryBuilder<UserPreferencesModel, bool, QQueryOperations>
+      isSyncedProperty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'startWorkHours');
+      return query.addPropertyName(r'isSynced');
     });
   }
 
-  QueryBuilder<UserPreferencesModel, String, QQueryOperations>
-      userIdProperty() {
+  QueryBuilder<UserPreferencesModel, String?, QQueryOperations>
+      startWorkHoursProperty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'userId');
+      return query.addPropertyName(r'startWorkHours');
     });
   }
 }

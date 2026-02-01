@@ -72,7 +72,9 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
       location: _location,
       status: TaskStatus.scheduled,
       colorValue: colorValue,
-      recurrenceRule: repeatToRRule("Yearly")
+      recurrenceRule: repeatToRRule("Yearly"),
+      isAiMovable: false,
+      isConflicting: false,
     );
 
     return widget.task != null ? widget.task!.copyWith(

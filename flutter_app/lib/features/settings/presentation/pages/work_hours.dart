@@ -2,22 +2,24 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/selectors/pick_time.dart';
-import 'package:flutter_app/features/settings/presentation/pages/mode_option.dart'; // Import the next step
+import 'package:flutter_app/features/settings/presentation/managers/settings_notfier.dart';
+import 'package:flutter_app/features/settings/presentation/pages/mode_option.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class WorkHours extends StatefulWidget {
+class WorkHours extends ConsumerStatefulWidget {
   const WorkHours({super.key});
 
   @override
-  State<WorkHours> createState() => _WorkHoursState();
+  ConsumerState<WorkHours> createState() => _WorkHoursState();
 }
 
-class _WorkHoursState extends State<WorkHours> {
-  // Storing TimeOfDay to work with your custom pickTime function
-  TimeOfDay _fromTime = const TimeOfDay(hour: 0, minute: 0);
-  TimeOfDay _toTime = const TimeOfDay(hour: 0, minute: 0);
+class _WorkHoursState extends ConsumerState<WorkHours> {
+  // Defaults (9:00 AM to 5:00 PM)
+  TimeOfDay _fromTime = const TimeOfDay(hour: 9, minute: 0);
+  TimeOfDay _toTime = const TimeOfDay(hour: 17, minute: 0);
   bool _isLoading = false;
 
-  // Formats time to a readable 12-hour format with AM/PM (e.g., "09:00 AM")
+  // UI Format: "09:00 AM"
   String _formatTimeLabel(TimeOfDay time) {
     final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
     final minute = time.minute.toString().padLeft(2, '0');
@@ -25,60 +27,106 @@ class _WorkHoursState extends State<WorkHours> {
     return "$hour:$minute $period";
   }
 
-  // --- NAVIGATION LOGIC: Move to ModeOption next ---
-  Future<void> _handleNavigation() async {
-    setState(() => _isLoading = true);
+  // ✅ DATABASE FORMAT: "14:05" (24-hour)
+  String _to24HourFormat(TimeOfDay time) {
+    // time.hour is already 0-23 in Flutter
+    final hour = time.hour.toString().padLeft(2, '0');
+    final minute = time.minute.toString().padLeft(2, '0');
+    return "$hour:$minute";
+  }
+
+  // --- UPDATED NAVIGATION LOGIC ---
+  Future<void> _handleNavigation({bool waitForSave = false}) async {
     
-    // Brief delay to provide "Saving" visual feedback
-    await Future.delayed(const Duration(milliseconds: 800));
-    
-    if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const ModeOption()),
-      );
+    // 1. VALIDATION CHECKER
+    if (waitForSave) {
+      // Convert both to "minutes from midnight" to compare them easily
+      final int startMinutes = (_fromTime.hour * 60) + _fromTime.minute;
+      final int endMinutes = (_toTime.hour * 60) + _toTime.minute;
+
+      // Rule 1: Exact same time is invalid
+      if (startMinutes == endMinutes) {
+        _showError("Start time and End time cannot be the same.");
+        return;
+      }
+
+      // Rule 2: End time must be AFTER Start time (Prevent "Reverse" or Overnight)
+      // Example: Start 5 PM (1020 min) -> End 2 PM (840 min) = INVALID
+      if (endMinutes < startMinutes) {
+        _showError("End time must be later than Start time.");
+        return;
+      }
     }
+
+    setState(() => _isLoading = true);
+
+    // 2. SAVING
+    if (waitForSave == true) {
+      final String dbFrom = _to24HourFormat(_fromTime); // "09:00"
+      final String dbTo = _to24HourFormat(_toTime);     // "17:00"
+
+      print("[DEBUG]: SAVING... From: $dbFrom To: $dbTo");
+
+      final settingsController = ref.read(settingsControllerProvider.notifier);
+      await settingsController.saveSettings(dbFrom, dbTo);
+    }
+
+    // 3. NAVIGATION
+    await Future.delayed(const Duration(milliseconds: 300));
+    if (!mounted) return;
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const ModeOption()),
+    );
+
+    setState(() => _isLoading = false);
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Theme.of(context).colorScheme.error,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    // Accessing your themes.dart color scheme reactively
     final colorScheme = Theme.of(context).colorScheme;
 
     return Stack(
       children: [
         Scaffold(
-          backgroundColor: colorScheme.surface, // Reactive: White (Light) or 0x0C0C0C (Dark)
+          backgroundColor: colorScheme.surface, 
           body: SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 40.0),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // --- TITLE ---
                   Text(
                     "Work Hours",
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.w900,
-                      color: colorScheme.onSurface, // Black (Light) or White (Dark)
+                      color: colorScheme.onSurface, 
                     ),
                   ),
                   const SizedBox(height: 30),
-
-                  // --- DESCRIPTION ---
                   Text(
-                    "Please specify your preferred working hours. These will be used to optimize your smart scheduling.",
+                    "Please specify your preferred working hours.",
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: colorScheme.onSurface.withOpacity(0.6),
                       fontSize: 15,
-                      height: 1.4,
                     ),
                   ),
                   const SizedBox(height: 50),
 
-                  // --- FROM SECTION ---
+                  // --- FROM ---
                   _buildLabel("From", colorScheme),
                   const SizedBox(height: 10),
                   _buildTimeField(
@@ -92,7 +140,7 @@ class _WorkHoursState extends State<WorkHours> {
 
                   const SizedBox(height: 30),
 
-                  // --- TO SECTION ---
+                  // --- TO ---
                   _buildLabel("To", colorScheme),
                   const SizedBox(height: 10),
                   _buildTimeField(
@@ -106,14 +154,14 @@ class _WorkHoursState extends State<WorkHours> {
 
                   const SizedBox(height: 60),
 
-                  // --- ACTION BUTTONS ---
+                  // --- BUTTONS ---
                   Row(
                     children: [
                       Expanded(
                         child: _buildActionButton(
                           text: "Save",
                           colorScheme: colorScheme,
-                          onPressed: _isLoading ? null : _handleNavigation,
+                          onPressed: _isLoading ? null : () => _handleNavigation(waitForSave: true),
                         ),
                       ),
                       const SizedBox(width: 20),
@@ -132,36 +180,27 @@ class _WorkHoursState extends State<WorkHours> {
           ),
         ),
         
-        // --- LOADING OVERLAY ---
         if (_isLoading)
           Container(
             color: Colors.black.withOpacity(0.4),
             child: Center(
-              child: CircularProgressIndicator(
-                color: colorScheme.primary, // B0C8F5 (Light) or 333459 (Dark)
-              ),
+              child: CircularProgressIndicator(color: colorScheme.primary),
             ),
           ),
       ],
     );
   }
 
-  // Helper: Text Labels
   Widget _buildLabel(String text, ColorScheme colorScheme) {
     return Align(
       alignment: Alignment.centerLeft,
       child: Text(
         text,
-        style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.w900,
-          color: colorScheme.onSurface,
-        ),
+        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: colorScheme.onSurface),
       ),
     );
   }
 
-  // Helper: Time Input Fields
   Widget _buildTimeField({required String timeLabel, required VoidCallback onTap, required ColorScheme colorScheme}) {
     return InkWell(
       onTap: onTap,
@@ -175,17 +214,12 @@ class _WorkHoursState extends State<WorkHours> {
         ),
         child: Text(
           timeLabel,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w900,
-            color: colorScheme.onSurface.withOpacity(0.85),
-          ),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: colorScheme.onSurface.withOpacity(0.85)),
         ),
       ),
     );
   }
 
-  // Helper: Primary Action Buttons
   Widget _buildActionButton({required String text, required VoidCallback? onPressed, required ColorScheme colorScheme}) {
     return SizedBox(
       height: 56,
@@ -195,14 +229,9 @@ class _WorkHoursState extends State<WorkHours> {
           backgroundColor: colorScheme.onSurface,
           foregroundColor: colorScheme.surface,
           elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         ),
-        child: Text(
-          text,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
+        child: Text(text, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
       ),
     );
   }

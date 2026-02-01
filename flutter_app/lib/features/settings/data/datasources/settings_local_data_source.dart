@@ -1,35 +1,81 @@
-
-import 'package:flutter_app/core/services/local_database_service.dart';
 import 'package:flutter_app/features/settings/data/models/user_preferences_model.dart';
 import 'package:isar/isar.dart';
+import 'package:uuid/uuid.dart';
 
-abstract class SettingsLocalDataSource {
-  Future<UserPreferencesModel?> getPreferences(String userId);
-  Future<void> savePreferences(UserPreferencesModel model);
-}
 
-class SettingsLocalDataSourceImpl implements SettingsLocalDataSource {
-  final LocalDatabaseService db;
+class SettingsLocalDataSource{
+  final Isar isar;
 
-  SettingsLocalDataSourceImpl(this.db);
-
-  @override   
-  Future<UserPreferencesModel?> getPreferences(String userId) async {
-    return await db.isar.userPreferencesModels.filter().userIdEqualTo(userId).findFirst();
+  SettingsLocalDataSource(this.isar);
+   
+  Future<UserPreferencesModel> getPreferences() async {
+    final existing = await isar.userPreferencesModels.where().findFirst();
+    if(existing != null){
+      return existing;
+    }
+    // create a user preference 
+    final userPrefs = UserPreferencesModel();
+    userPrefs.cloudId = Uuid().v4();
+    await isar.writeTxn(() async {
+      await isar.userPreferencesModels.put(userPrefs);
+    });
+    return userPrefs;
   }
-
-  @override  
   Future<void> savePreferences(UserPreferencesModel model) async {
-    await db.isar.writeTxn(() async {
-      final existing = await db.isar.userPreferencesModels
+    await isar.writeTxn(() async {
+      final existing = await isar.userPreferencesModels
           .filter()
-          .userIdEqualTo(model.userId)
+          .idEqualTo(model.id)
           .findFirst();
 
       if (existing != null) {
         model.id = existing.id;
       }
-      await db.isar.userPreferencesModels.put(model);
+      await isar.userPreferencesModels.put(model);
     });
   }
+
+  Future<void> markPrefAsSynced(int id) async {
+    await isar.writeTxn(() async {
+      final existing = await isar.userPreferencesModels
+        .filter()
+        .idEqualTo(id)
+        .findFirst();
+      
+      if(existing == null){
+        return;
+      }
+      // set as synced
+      existing.isSynced = true;
+      await isar.userPreferencesModels.put(existing);
+    });
+  }
+
+  Future<void> updateUserPreferenceFromCloud(UserPreferencesModel model) async {
+    await isar.writeTxn(() async {
+      final existing = await isar.userPreferencesModels
+        .filter()
+        .cloudIdEqualTo(model.cloudId)
+        .findFirst();
+
+      // if there's an existing data, match the id 
+      if(existing != null){
+        model.id = existing.id;
+      }
+
+      // marked as synced 
+      model.isSynced = true;
+      model.isSetupComplete = true;
+
+      // save to isar 
+      await isar.userPreferencesModels.put(model);
+    });
+  }
+
+  Future<void> deleteUserPreferences() async {
+    await isar.writeTxn(() async {
+      await isar.clear();
+    });
+  }
+
 }

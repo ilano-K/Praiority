@@ -10,14 +10,14 @@ class TaskSyncService {
 
   TaskSyncService(this._supabase, this._localDb);
 
-  Future<void> syncAll() async {
+  Future<void> syncAllTasks() async {
     if(_supabase.auth.currentUser == null) return;
     await pushLocalChanges();
     await pullRemoteChanges();
   }
 
   Future<void> pushLocalChanges() async {
-    debugPrint("[DEBUG] PUSHING LOCAL CHANGES NOW!");
+    debugPrint("[DEBUG] PUSHING TASK LOCAL CHANGES NOW!");
     final unsyncedTasks = await _localDb.getUnsyncedTasks();
 
     for(final task in unsyncedTasks){
@@ -28,14 +28,14 @@ class TaskSyncService {
         await _supabase.from('tasks').upsert(taskMap);
         await _localDb.markTasksAsSynced(task.originalId);
       }catch(e){
-        print("[DEBUG]: Push failed for task ${task.id}: $e");
+        debugPrint("[DEBUG]: Push failed for task ${task.id}: $e");
       }
 
     }
   }
 
   Future<void> pullRemoteChanges() async {
-    debugPrint("[DEBUG] PULLING LOCAL CHANGES NOW!");
+    debugPrint("[DEBUG] PULLING TASK REMOTE CHANGES NOW!");
     try{
       final response = await _supabase
         .from("tasks")
@@ -49,7 +49,7 @@ class TaskSyncService {
       
       await _localDb.updateTasksFromCloud(models);
     }catch(e){
-      print("[DEBUG]: pull failed: $e");
+      debugPrint("[DEBUG]: PULLING OF TASK REMOTE CHANGES FAILED WITH ERROR: $e");
     }
   }
 }

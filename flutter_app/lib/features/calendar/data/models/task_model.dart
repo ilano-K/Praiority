@@ -68,7 +68,6 @@ class TaskModel {
       startTime: startTime,
       endTime: endTime,
       deadline: deadline,
-      duration: durationMinutes != null ? Duration(minutes: durationMinutes!) : null,
       isAllDay: isAllDay,
       priority: priority,
       isAiMovable: isAiMovable,
@@ -149,7 +148,6 @@ class TaskModel {
       ..startTime = task.startTime
       ..endTime = task.endTime
       ..deadline = task.deadline
-      ..durationMinutes = task.duration?.inMinutes
       ..isAllDay = task.isAllDay
       ..priority = task.priority
       ..isAiMovable = task.isAiMovable

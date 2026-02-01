@@ -69,8 +69,17 @@ class AuthService {
   }
   //sign out
   Future<void> signOut() async {
-    await _googleSignIn.signOut();
+    print("[DEBUG]: 1. AuthService - Starting Google SignOut"); 
+    try {
+      await _googleSignIn.signOut();
+      print("[DEBUG]: 2. AuthService - Google SignOut DONE"); 
+    } catch (e) {
+      print("[DEBUG]: 2. AuthService - Google SignOut FAILED: $e");
+    }
+
+    print("[DEBUG]: 3. AuthService - Starting Supabase SignOut");
     await _supabase.auth.signOut();
+    print("[DEBUG]: 4. AuthService - Supabase SignOut DONE");
   }
 
   User? get currentUser => _supabase.auth.currentUser;
