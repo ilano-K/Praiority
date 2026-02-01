@@ -47,7 +47,8 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
   bool _advancedExpanded = false;
   bool _movableByAI = false;
   bool _setNonConfliction = true;
-  
+  bool _hasManuallySetConflict = false;
+
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
 
@@ -183,7 +184,14 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                           value: _isAllDay,
                           activeThumbColor: Colors.white,
                           activeTrackColor: colorScheme.primary,
-                          onChanged: (val) => setState(() => _isAllDay = val),
+                          onChanged: (val){
+                            setState(() {
+                              _isAllDay = val;
+                              if(_isAllDay && !_hasManuallySetConflict){
+                                _setNonConfliction = false;
+                              }
+                            });
+                          }
                         ),
                       ),
                     ],
@@ -312,7 +320,14 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                                 value: _setNonConfliction,
                                 activeColor: Colors.white,
                                 activeTrackColor: colorScheme.primary,
-                                onChanged: (v) => setState(() => _setNonConfliction = v),
+                                onChanged: (val) {
+                                  setState(() {
+                                    _setNonConfliction = val;
+                                    _hasManuallySetConflict = true;
+
+    
+                                  });
+                                },
                               ),
                             ),
                           ),
