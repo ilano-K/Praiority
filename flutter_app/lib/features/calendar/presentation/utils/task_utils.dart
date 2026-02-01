@@ -9,15 +9,7 @@ import  'package:rrule/rrule.dart';
 // Purpose: Utility helpers related to task date/time and formatting.
 
 class TaskUtils{
-  static bool checkTaskConflict(List<Task> tasks, DateTime date, Task taskToSchedule){
-    for (final task in tasks) {
-      if (task.id == taskToSchedule.id) continue;
-      if(task.type == TaskType.birthday || task.status ==  TaskStatus.completed || task.isConflicting == false) return false;
-      if (timeConflict(task, taskToSchedule)) return true;
-    }
-    return false;
-  }
-
+  
   static bool timeConflict(Task a, Task b){
     if (a.startTime == null || a.endTime == null || b.startTime == null || b.endTime == null) {
       return false;

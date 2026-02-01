@@ -69,8 +69,8 @@ class Task extends Equatable{
     List<String> tags = const [],
     String? recurrenceRule,
     String? location,
-    bool isAiMovable = true,
-    bool isConflicting = true,
+    bool? isAiMovable,
+    bool? isConflicting,
     TaskStatus status = TaskStatus.unscheduled,
     bool isSynced = false
   }) {
@@ -90,8 +90,8 @@ class Task extends Equatable{
       tags: tags,
       recurrenceRule: recurrenceRule,
       location: location,
-      isAiMovable: isAiMovable,
-      isConflicting: true,
+      isAiMovable: isAiMovable ?? false,
+      isConflicting: isConflicting ?? true,
       status: status,
       isSynced: false,
     );

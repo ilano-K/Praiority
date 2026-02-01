@@ -22,27 +22,50 @@ class SaveTaskUseCase {
   SaveTaskUseCase(this.repository, this.scheduleTaskNotification);
 
   Future<void> execute(Task task) async {
-    final checkStart = startOfDay(task.startTime!);
-    final checkEnd = RRuleUtils.getCheckEnd(task);
+    // 1. VALIDATION FIRST (Fail fast)
+    // Check if start is before end, etc.
+    if (!validDateTime(task.startTime!, task.endTime!, task.deadline) && task.isAllDay != true) {
+      throw TaskInvalidTimeException();
+    }
 
-    // 1. Fetch existing tasks for conflict checking
-    final tasksInRange = await repository.getTasksByRange(checkStart, checkEnd);
-    // 2. Conflict Validation
-    if (task.type != TaskType.birthday) {
-      for (var d = checkStart; !d.isAfter(checkEnd); d = d.add(const Duration(days: 1))) {
-        if (TaskUtils.checkTaskConflict(tasksInRange, dateOnly(d), task)) {
+    // 2. CONFLICT CHECKING
+    // We only check for conflicts if:
+    // A. It is NOT a Birthday/Holiday (TaskType.task)
+    // B. The user enabled "Strict Mode" (task.isConflicting == true)
+    if (task.type != TaskType.birthday && task.isConflicting) {
+      
+      final checkStart = startOfDay(task.startTime!);
+      final checkEnd = RRuleUtils.getCheckEnd(task);
+
+      print("[DEBUG] CHECKING CONFLICTS FOR: ${task.title}");
+
+      // Fetch potential conflicts
+      final tasksInRange = await repository.getTasksByRange(checkStart, checkEnd);
+
+      for (final taskCurr in tasksInRange) {
+        // Skip comparing to itself
+        if (taskCurr.id == task.id) continue;
+
+        // Skip non-blocking tasks (like Birthdays or Completed tasks)
+        // ✅ FIX: Changed 'return false' to 'continue'
+        if (taskCurr.type == TaskType.birthday || taskCurr.status == TaskStatus.completed || !taskCurr.isConflicting ) {
+          continue; 
+        }
+
+        // Check for actual time overlap
+        if (TaskUtils.timeConflict(taskCurr, task)) {
+          print("[DEBUG] CONFLICT FOUND WITH: ${taskCurr.title}");
           throw TaskConflictException();
         }
       }
+    } else {
+      print("[DEBUG] SKIPPING CONFLICT CHECK: ${task.title}");
     }
 
-    if(!validDateTime(task.startTime!, task.endTime!, task.deadline) && task.isAllDay != true){
-      throw TaskInvalidTimeException();
-    }
-    // 3. Database Transaction
+    // 3. DATABASE TRANSACTION
     await repository.saveAndUpdateTask(task);
 
+    // 4. NOTIFICATION
     await scheduleTaskNotification.execute(task);
-
   }
 }

@@ -129,7 +129,7 @@ class TaskModel {
       ..recurrenceRule = json["recurrence_rule"] as String?
       ..status = TaskStatus.values.byName(json["status"] as String) 
       ..isConflicting = json["is_conflicting"] as bool? ?? false
-      ..isDeleted = json["deleted"] as bool? ?? false;  
+      ..isDeleted = json["is_deleted"] as bool? ?? false;  
   }
 
 

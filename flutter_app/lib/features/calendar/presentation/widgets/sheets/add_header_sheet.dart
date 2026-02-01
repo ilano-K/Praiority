@@ -12,7 +12,6 @@ import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_controller.dart';
 
-
 // --- LOCAL WIDGETS ---
 import '../selectors/color_selector.dart';
 import 'add_task_sheet.dart'; 
@@ -39,16 +38,25 @@ class HeaderData {
   });
 }
 
-class AddSheetHeader extends ConsumerWidget {
+// ✅ CHANGED TO STATEFUL WIDGET (To handle loading state)
+class AddSheetHeader extends ConsumerStatefulWidget {
   final HeaderData data;
 
   const AddSheetHeader({super.key, required this.data});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AddSheetHeader> createState() => _AddSheetHeaderState();
+}
+
+class _AddSheetHeaderState extends ConsumerState<AddSheetHeader> {
+  // 🔒 Local state to track saving process
+  bool _isSaving = false;
+
+  @override
+  Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final Color displayColor = isDark ? data.selectedColor.dark : data.selectedColor.light;
+    final Color displayColor = isDark ? widget.data.selectedColor.dark : widget.data.selectedColor.light;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -62,12 +70,11 @@ class AddSheetHeader extends ConsumerWidget {
               icon: Icon(Icons.delete_outline, size: 28, color: colorScheme.onSurface),
               onPressed: () => AppDialogs.showConfirmation(
                 context,
-                title: "Delete ${data.selectedType}",
+                title: "Delete ${widget.data.selectedType}",
                 message: "Are you sure? This cannot be undone.",
                 onConfirm: () async {
-                  final task = data.saveTemplate();
+                  final task = widget.data.saveTemplate();
                   final controller = ref.read(calendarControllerProvider.notifier);
-                  // Call the controller's delete method
                   await controller.deleteTask(task);
                   
                   if (context.mounted) Navigator.pop(context); 
@@ -75,48 +82,76 @@ class AddSheetHeader extends ConsumerWidget {
               ),
             ),
 
-            // SAVE BUTTON
+            // ✅ OPTIMIZED SAVE BUTTON
             ElevatedButton(
-             onPressed: () async {
-              final task = data.saveTemplate();
-              
-              // 1. Get the controller
-              final controller = ref.read(calendarControllerProvider.notifier);
+              // Disable button if already saving (Prevents Double Tap)
+              onPressed: _isSaving ? null : () async {
+                setState(() => _isSaving = true); // Start Spinner
 
-              try {
-                // 2. Call the controller (which calls the Use Case + Notification Logic)
-                await controller.addTask(task);
-                debugPrint("IS IT WORKING PLEASE");
-                
-                if (context.mounted) Navigator.pop(context);
-              } on TaskConflictException {
-                AppDialogs.showWarning(
-                  context, 
-                  title: "Schedule Conflict", 
-                  message: "This task overlaps with an existing schedule. Please adjust the time."
-                );
-              } on TaskInvalidTimeException {
-                AppDialogs.showWarning(
-                  context, 
-                  title: "Invalid Time", 
-                  message: "The end time must be after the start time."
-                );
-              } catch (e) {
-                AppDialogs.showWarning(
-                  context, 
-                  title: "Error", 
-                  message: "An unexpected error occurred: $e"
-                );
-              }
-            },
+                final task = widget.data.saveTemplate();
+                final controller = ref.read(calendarControllerProvider.notifier);
+
+                try {
+                  // This runs fast now, but we show spinner just in case
+                  await controller.addTask(task);
+                  
+                  if (context.mounted) Navigator.pop(context);
+                } 
+                on TaskConflictException {
+                  // Keep sheet open so user can fix it
+                  if (context.mounted) {
+                    AppDialogs.showWarning(
+                      context, 
+                      title: "Schedule Conflict", 
+                      message: "This task overlaps with an existing schedule. Please adjust the time."
+                    );
+                  }
+                } 
+                on TaskInvalidTimeException {
+                  if (context.mounted) {
+                    AppDialogs.showWarning(
+                      context, 
+                      title: "Invalid Time", 
+                      message: "The end time must be after the start time."
+                    );
+                  }
+                } 
+                catch (e) {
+                  if (context.mounted) {
+                    AppDialogs.showWarning(
+                      context, 
+                      title: "Error", 
+                      message: "An unexpected error occurred: $e"
+                    );
+                  }
+                } 
+                finally {
+                  // Always stop spinner if we are still on this screen
+                  if (mounted) {
+                    setState(() => _isSaving = false);
+                  }
+                }
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: colorScheme.primary,
                 foregroundColor: colorScheme.onSurface,
+                disabledBackgroundColor: colorScheme.primary.withOpacity(0.6), // Dim when loading
                 elevation: 0,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                // Ensure minimum size keeps button stable when switching to spinner
+                minimumSize: const Size(88, 48), 
               ),
-              child: const Text("Save", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              child: _isSaving 
+                ? SizedBox(
+                    width: 20, 
+                    height: 20, 
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5, 
+                      color: colorScheme.onSurface
+                    )
+                  )
+                : const Text("Save", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             ),
           ],
         ),
@@ -125,7 +160,7 @@ class AddSheetHeader extends ConsumerWidget {
 
         // --- TITLE INPUT ---
         TextField(
-          controller: data.titleController,
+          controller: widget.data.titleController,
           cursorColor: colorScheme.onSurface,
           style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: colorScheme.onSurface),
           decoration: InputDecoration(
@@ -138,7 +173,7 @@ class AddSheetHeader extends ConsumerWidget {
 
         // --- DESCRIPTION INPUT ---
         TextField(
-          controller: data.descController,
+          controller: widget.data.descController,
           cursorColor: colorScheme.onSurface,
           style: TextStyle(fontSize: 16, color: colorScheme.onSurface.withOpacity(0.8)),
           decoration: InputDecoration(
@@ -171,9 +206,9 @@ class AddSheetHeader extends ConsumerWidget {
               context: context,
               backgroundColor: Colors.transparent,
               builder: (context) => ColorSelector(
-                selectedColor: data.selectedColor,
+                selectedColor: widget.data.selectedColor,
                 onColorSelected: (newColor) {
-                  data.onColorSelected(newColor);
+                  widget.data.onColorSelected(newColor);
                   Navigator.pop(context);
                 },
               ),
@@ -187,7 +222,7 @@ class AddSheetHeader extends ConsumerWidget {
               ),
               const SizedBox(width: 10),
               Text(
-                data.selectedColor.name,
+                widget.data.selectedColor.name,
                 style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16, color: colorScheme.onSurface),
               ),
             ],
@@ -204,13 +239,13 @@ class AddSheetHeader extends ConsumerWidget {
   // --- HELPERS ---
 
   Widget _buildTypeButton(String label, ColorScheme colors, BuildContext context) {
-    final bool isSelected = data.selectedType == label;
+    final bool isSelected = widget.data.selectedType == label;
 
     return GestureDetector(
       onTap: () {
         if (isSelected) return;
 
-        final currentDraft = data.saveTemplate();
+        final currentDraft = widget.data.saveTemplate();
         TaskType newType = label == 'Event' ? TaskType.event : (label == 'Birthday' ? TaskType.birthday : TaskType.task);
         final updatedDraft = currentDraft.copyWith(type: newType);
 
