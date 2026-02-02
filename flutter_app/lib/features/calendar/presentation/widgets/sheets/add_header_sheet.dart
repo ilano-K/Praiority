@@ -238,41 +238,61 @@ class _AddSheetHeaderState extends ConsumerState<AddSheetHeader> {
 
   // --- HELPERS ---
 
-  Widget _buildTypeButton(String label, ColorScheme colors, BuildContext context) {
-    final bool isSelected = widget.data.selectedType == label;
+    Widget _buildTypeButton(String label, ColorScheme colors, BuildContext context) {
+  final bool isSelected = widget.data.selectedType == label;
 
-    return GestureDetector(
-      onTap: () {
-        if (isSelected) return;
+  return GestureDetector(
+    onTap: () {
+      if (isSelected) return;
 
-        final currentDraft = widget.data.saveTemplate();
-        TaskType newType = label == 'Event' ? TaskType.event : (label == 'Birthday' ? TaskType.birthday : TaskType.task);
-        final updatedDraft = currentDraft.copyWith(type: newType);
+      final currentDraft = widget.data.saveTemplate();
+      TaskType newType = label == 'Event' 
+          ? TaskType.event 
+          : (label == 'Birthday' ? TaskType.birthday : TaskType.task);
+      final updatedDraft = currentDraft.copyWith(type: newType);
 
-        Navigator.pop(context); 
-        showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (context) {
-            if (label == 'Task') return AddTaskSheet(task: updatedDraft);
-            if (label == 'Event') return AddEventSheet(task: updatedDraft);
-            return AddBirthdaySheet(task: updatedDraft);
-          },
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? colors.primary : Colors.transparent,
-          border: Border.all(color: colors.onSurface, width: 1.2),
-          borderRadius: BorderRadius.circular(8),
+      // Close current sheet instantly
+      Navigator.pop(context); 
+
+      // Open new sheet with NO slide-up animation for a "flat" feel
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        transitionAnimationController: AnimationController(
+          vsync: Navigator.of(context), 
+          duration: Duration.zero, 
+        )..forward(), 
+        builder: (context) {
+          if (label == 'Task') return AddTaskSheet(task: updatedDraft);
+          if (label == 'Event') return AddEventSheet(task: updatedDraft);
+          return AddBirthdaySheet(task: updatedDraft);
+        },
+      );
+    },
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+      decoration: BoxDecoration(
+        // --- 1. BACKGROUND: Uses colorScheme.primary as defined in your themes.dart ---
+        color: isSelected ? colors.primary : Colors.transparent,
+        
+        // --- 2. BORDER: White when selected, onSurface otherwise ---
+        border: Border.all(
+          color: isSelected ? Colors.white : colors.onSurface, 
+          width: 1.2,
         ),
-        child: Text(
-          label,
-          style: TextStyle(fontWeight: FontWeight.bold, color: colors.onSurface, fontSize: 14),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontWeight: FontWeight.bold, 
+          // --- 3. TEXT: Stays onSurface as requested ---
+          color: colors.onSurface, 
+          fontSize: 14,
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

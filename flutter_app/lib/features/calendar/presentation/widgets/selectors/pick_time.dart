@@ -29,7 +29,7 @@ Future<TimeOfDay?> pickTime(BuildContext context, {TimeOfDay? initialTime}) asyn
           // --- TARGETING OK AND CANCEL BUTTONS ---
           textButtonTheme: TextButtonThemeData(
             style: TextButton.styleFrom(
-              foregroundColor: Colors.black, // Set to Black
+              foregroundColor: colorScheme.onSurface,
             ),
           ),
         ),
