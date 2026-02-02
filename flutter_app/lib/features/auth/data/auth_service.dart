@@ -64,6 +64,7 @@ class AuthService {
         accessToken: accessToken
       ); 
     }catch (e){
+      print("[DEBUG]: 1. AuthService - SIGN IN FAILED WITH ERROR: $e");
       rethrow;
     }
   }
