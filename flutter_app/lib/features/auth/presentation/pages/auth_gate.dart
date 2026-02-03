@@ -1,3 +1,5 @@
+// File: lib/features/auth/presentation/pages/auth_gate.dart
+
 import 'dart:async'; 
 import 'package:flutter/material.dart';
 import 'package:flutter_app/core/providers/global_providers.dart';
@@ -17,7 +19,13 @@ import 'package:flutter_app/features/settings/presentation/pages/work_hours.dart
 final _isLoadingUIProvider = StateProvider<bool>((ref) => false);
 
 class AuthGate extends ConsumerStatefulWidget {
-  const AuthGate({super.key});
+  // Flag to show logout success message
+  final bool showLogoutMessage;
+
+  const AuthGate({
+    super.key,
+    this.showLogoutMessage = false, // Default to false
+  });
 
   @override
   ConsumerState<AuthGate> createState() => _AuthGateState();
@@ -31,6 +39,30 @@ class _AuthGateState extends ConsumerState<AuthGate> {
   @override
   void initState() {
     super.initState();
+
+    // ✅ SUCCESS LOGOUT MESSAGE
+    if (widget.showLogoutMessage) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final colorScheme = Theme.of(context).colorScheme; // Extract scheme for easy access
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              "Successfully logged out",
+              textAlign: TextAlign.left,
+              style: TextStyle(
+                color: colorScheme.surface, // Sets text color to onSurface
+              ),
+            ),
+            behavior: SnackBarBehavior.fixed, 
+            backgroundColor: colorScheme.onSurface, // Sets background to surface
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      });
+    }
+
+    // Existing sync logic
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final user = Supabase.instance.client.auth.currentUser;
       if (user != null) {
@@ -111,7 +143,6 @@ class _AuthGateState extends ConsumerState<AuthGate> {
     final isLoading = ref.watch(_isLoadingUIProvider);
 
     // ✅ PRIORITY 1: LOADING SPINNER
-    // If we are performing the initial sync, show spinner above everything
     if (isLoading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator())
@@ -122,17 +153,14 @@ class _AuthGateState extends ConsumerState<AuthGate> {
     return authState.when(
       data: (state) {
         if (state.session != null) {
-            // If syncing is happening, keep the spinner up
             if (isLoading) {
               return const Scaffold(body: Center(child: CircularProgressIndicator()));
             }
 
-            // Logic Check: Should we go to setup or calendar?
-            // You can read the current settings state here
             final userPrefs = ref.watch(settingsControllerProvider).valueOrNull;
 
             if (userPrefs == null || userPrefs.startWorkHours == null) {
-              return const WorkHours(); // Show this directly, don't PUSH it.
+              return const WorkHours(); 
             }
 
             return const MainCalendar(); 

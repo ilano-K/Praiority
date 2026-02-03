@@ -8,6 +8,7 @@ import 'package:flutter_app/features/auth/presentation/pages/auth_gate.dart';
 // import 'package:flutter_app/features/auth/presentation/pages/sign_in_page.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_controller.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_provider.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/dialogs/app_confirmation_dialog.dart';
 import 'package:flutter_app/features/settings/presentation/managers/settings_provider.dart';
 import 'package:flutter_app/features/settings/presentation/pages/work_hours.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -30,6 +31,8 @@ class AppSidebar extends ConsumerStatefulWidget {
 
 class _AppSidebarState extends ConsumerState<AppSidebar> {
   bool _isExpanded = false;
+  bool _isLoggingOut = false;
+  
 
   String _getViewLabel(CalendarView view) {
     switch (view) {
@@ -37,6 +40,62 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
       case CalendarView.week: return "Week View";
       case CalendarView.day: return "Day View";
       default: return "View";
+    }
+  }
+
+  Future<void> _handleLogout() async {
+    // 1. Prevent multiple clicks if sync is already in progress
+    if (_isLoggingOut) return;
+
+    // 2. Show the centered loading overlay
+    setState(() => _isLoggingOut = true);
+
+    // Capture the navigator and scaffoldMessenger before the async gap
+    final navigator = Navigator.of(context);
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    try {
+      final authController = ref.read(authControllerProvider.notifier);
+      final dbProvider = ref.read(localStorageServiceProvider);
+      final taskSyncService = ref.read(taskSyncServiceProvider);
+      final userPrefsSyncService = ref.read(userPrefSyncServiceProvider);
+
+      // 3. Perform background sync and cleanup
+      // We await these to ensure data is saved to Supabase before the local DB is wiped
+      await taskSyncService.pushLocalChanges();
+      await userPrefsSyncService.pushLocalChanges();
+      await dbProvider.clearDatabase();
+      await authController.signOut();
+
+      // 4. Navigate to AuthGate and trigger the success Snackbar
+      if (!mounted) return;
+      navigator.pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (context) => const AuthGate(showLogoutMessage: true),
+        ),
+        (route) => false, // Clears the entire navigation stack
+      );
+    } catch (e) {
+      debugPrint("[Logout Error]: $e");
+      
+      if (mounted) {
+        // 5. Hide the loading screen so user can try again
+        setState(() => _isLoggingOut = false);
+
+        // Notify the user that something went wrong during sync
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: const Text("Logout sync failed. Please check your connection."),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      // Safety check to ensure state is reset if navigation didn't happen
+      if (mounted) {
+        setState(() => _isLoggingOut = false);
+      }
     }
   }
 
@@ -131,36 +190,22 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                   ),
 
                   // ✅ FIXED LOG OUT LOGIC
-            _buildDrawerItem(
+                _buildDrawerItem(
                     context, 
                     icon: Icons.logout_outlined, 
                     label: "Log Out",
-                    onTap: () async {
-                      // 1. CAPTURE THE NAVIGATOR BEFORE AWAIT
-                      // We save the navigator into a variable so we can use it 
-                      // even if this widget dies/closes.
-                      final navigator = Navigator.of(context);
-                      final authController = ref.read(authControllerProvider.notifier);
-                      final dbProvider = ref.read(localStorageServiceProvider);
-                      final taskSyncService = ref.read(taskSyncServiceProvider);
-                      final userPrefsSyncService = ref.read(userPrefSyncServiceProvider);
-
-                      await taskSyncService.pushLocalChanges();
-                      await userPrefsSyncService.pushLocalChanges();
-                      await dbProvider.clearDatabase();
-                      // 2. PERFORM SIGN OUT
-                      await authController.signOut();
-
-                      // 3. FORCE NAVIGATION USING THE CAPTURED VARIABLE
-                      // We use 'navigator' instead of 'Navigator.of(context)'
-                      // because 'context' might be dead now.
-                      navigator.pushAndRemoveUntil(
-                        MaterialPageRoute(
-                          builder: (context) => const AuthGate(), 
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => AppConfirmationDialog(
+                          title: "Log Out",
+                          message: "Are you sure you want to log out?",
+                          confirmLabel: "Log Out",
+                          isDestructive: true,
+                          onConfirm: _handleLogout, // Calls the method above
                         ),
-                        (route) => false, // Clears all history
                       );
-                    } 
+                    }, 
                   ),
                 ],
               ),

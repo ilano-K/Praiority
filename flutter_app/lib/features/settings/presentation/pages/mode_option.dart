@@ -5,98 +5,143 @@ import 'package:flutter_app/core/theme/theme_notifier.dart';
 import 'package:flutter_app/features/calendar/presentation/pages/main_calendar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class ModeOption extends ConsumerWidget {
+class ModeOption extends ConsumerStatefulWidget { // Changed to Stateful for the loading logic
   const ModeOption({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ModeOption> createState() => _ModeOptionState();
+}
+
+class _ModeOptionState extends ConsumerState<ModeOption> {
+  bool _isLoading = false; // Loading flag
+
+  Future<void> _handleContinue() async {
+    setState(() => _isLoading = true);
+
+    // Optional: Add a small delay to show the loading state/process logic
+    await Future.delayed(const Duration(milliseconds: 800));
+
+    if (!mounted) return;
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const MainCalendar()),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 40.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                "What do you prefer?",
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w500,
-                  color: colorScheme.onSurface,
-                ),
-              ),
-              const SizedBox(height: 50),
-
-              Row(
+      body: Stack( // Use Stack to overlay the loader
+        children: [
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 40.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // --- LIGHT MODE CARD ---
-                  Expanded(
-                    child: _ModeCard(
-                      label: "Light Mode",
-                      iconPath: 'assets/images/LightLogo.png', 
-                      isSelected: !isDark,
-                      backgroundColor: Colors.white,
-                      contentColor: Colors.black, // Text and icon color
-                      onTap: () {
-                        if (isDark) ref.read(themeProvider.notifier).toggleTheme();
-                      },
+                  Text(
+                    "What do you prefer?",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w500,
+                      color: colorScheme.onSurface,
                     ),
                   ),
-                  const SizedBox(width: 25),
-                  // --- DARK MODE CARD ---
-                  Expanded(
-                    child: _ModeCard(
-                      label: "Dark Mode",
-                      iconPath: 'assets/images/DarkLogo.png',
-                      isSelected: isDark,
-                      backgroundColor: Colors.black,
-                      contentColor: Colors.white, // Text and icon color
-                      onTap: () {
-                        if (!isDark) ref.read(themeProvider.notifier).toggleTheme();
-                      },
+                  const SizedBox(height: 50),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _ModeCard(
+                          label: "Light Mode",
+                          iconPath: 'assets/images/LightLogo.png', 
+                          isSelected: !isDark,
+                          backgroundColor: Colors.white,
+                          contentColor: Colors.black,
+                          onTap: () {
+                            if (isDark) ref.read(themeProvider.notifier).toggleTheme();
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 25),
+                      Expanded(
+                        child: _ModeCard(
+                          label: "Dark Mode",
+                          iconPath: 'assets/images/DarkLogo.png',
+                          isSelected: isDark,
+                          backgroundColor: Colors.black,
+                          contentColor: Colors.white,
+                          onTap: () {
+                            if (!isDark) ref.read(themeProvider.notifier).toggleTheme();
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 80),
+
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _handleContinue,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: colorScheme.onSurface, 
+                        foregroundColor: colorScheme.surface,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                      ),
+                      child: _isLoading 
+                        ? SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(
+                              color: colorScheme.surface,
+                              strokeWidth: 3,
+                            ),
+                          )
+                        : const Text(
+                            "Continue",
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 80),
-
-              // --- DYNAMIC CONTINUE BUTTON ---
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => const MainCalendar()),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: colorScheme.onSurface, 
-                    foregroundColor: colorScheme.surface,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                  ),
-                  child: const Text(
-                    "Continue",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ),
+          
+          // --- FULL SCREEN OVERLAY ---
+          if (_isLoading)
+            AnimatedOpacity(
+              opacity: _isLoading ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 300),
+              child: Container(
+                color: colorScheme.surface.withOpacity(0.8),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircularProgressIndicator(color: colorScheme.primary),
+                    ],
                   ),
                 ),
               ),
-            ],
-          ),
-        ),
+            ),
+        ],
       ),
     );
   }
 }
 
+// --- KEEP _ModeCard exactly as you had it ---
 class _ModeCard extends StatelessWidget {
   final String label;
   final String iconPath;
@@ -119,11 +164,10 @@ class _ModeCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 280, // Taller to accommodate the text inside
+        height: 280,
         decoration: BoxDecoration(
           color: backgroundColor,
           borderRadius: BorderRadius.circular(40),
-          // Selection border uses your tertiary/clicked color for consistency
           border: isSelected 
               ? Border.all(color: Theme.of(context).colorScheme.tertiary, width: 4) 
               : null,
@@ -141,7 +185,6 @@ class _ModeCard extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // --- ICON ---
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -149,7 +192,6 @@ class _ModeCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 10),
-              // --- TEXT INSIDE THE CARD ---
               Text(
                 label,
                 style: TextStyle(
