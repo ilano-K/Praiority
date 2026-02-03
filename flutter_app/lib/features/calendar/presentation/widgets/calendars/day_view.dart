@@ -69,9 +69,9 @@ class DayView extends ConsumerWidget {
             headerHeight: 0,
             viewHeaderHeight: 0,
             backgroundColor: colorScheme.surface,
-            cellBorderColor: Colors.transparent,
+            // Cell borders are transparent to highlight the rounded regionBuilder blocks
+            cellBorderColor: Colors.transparent, 
             
-            // Filters data for non-all-day tasks with valid times
             dataSource: TaskDataSource(
               tasks.where((t) => 
                 !t.isAllDay && 
@@ -81,17 +81,34 @@ class DayView extends ConsumerWidget {
               context,
             ),
 
-            // Custom appointment UI
+            // --- APPOINTMENT UI ---
             appointmentBuilder: (context, details) {
-              return AppointmentCard(appointment: details.appointments.first);
+              return Padding(
+                // Tiny padding ensures tasks don't flush against the rounded slot edges
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                child: AppointmentCard(appointment: details.appointments.first),
+              );
             },
 
+            // --- BACKGROUND SLOTS (Rounded Grey Blocks) ---
             specialRegions: greyBlocks,
-            
-            // This event is sent back to MainCalendar's _handleViewChanged
-            onViewChanged: onViewChanged,
+            timeRegionBuilder: (BuildContext context, TimeRegionDetails details) {
+              return Container(
+                margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: details.region.color,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isDark 
+                        ? Colors.white.withOpacity(0.05) 
+                        : Colors.black.withOpacity(0.05),
+                    width: 1,
+                  ),
+                ),
+              );
+            },
 
-            // Handle Task Taps
+            onViewChanged: onViewChanged,
             onTap: (CalendarTapDetails details) {
               if (details.targetElement == CalendarElement.appointment && details.appointments != null) {
                 final Appointment selectedAppt = details.appointments!.first;
@@ -100,7 +117,7 @@ class DayView extends ConsumerWidget {
               }
             },
 
-            // Grid Styling
+            // --- GRID VIEW SETTINGS ---
             timeSlotViewSettings: TimeSlotViewSettings(
               timeRulerSize: 60,
               timeTextStyle: TextStyle(
@@ -108,7 +125,10 @@ class DayView extends ConsumerWidget {
                 fontWeight: FontWeight.w600,
                 fontSize: 11,
               ),
-              timeIntervalHeight: 80,
+              // Height set to 120 for optimal text readability on short tasks
+              timeIntervalHeight: 120, 
+              // Helps stack overlapping stretched tasks side-by-side
+              timelineAppointmentHeight: 50, 
             ),
           ),
         ),
@@ -123,24 +143,34 @@ class TaskDataSource extends CalendarDataSource {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     appointments = tasks.map((task) {
-      final Color displayColor = _resolveColor(task.colorValue, isDark);
+        final Color displayColor = _resolveColor(task.colorValue, isDark);
+        
+        // --- VISUAL STRETCHING LOGIC ---
+        // We calculate a visual end time so small tasks always have 
+        // room for title and description.
+        DateTime visualEndTime = task.endTime!;
+        final duration = task.endTime!.difference(task.startTime!);
+        
+        // Minimum 20 mins of vertical space for every task
+        if (duration.inMinutes < 20) {
+          visualEndTime = task.startTime!.add(const Duration(minutes: 20));
+        }
 
-      return Appointment(
-        id: task.id,
-        subject: task.title,
-        startTime: task.startTime!,
-        endTime: task.endTime!,
-        notes: task.status == TaskStatus.completed 
-            ? "[COMPLETED]${task.description ?? ''}" 
-            : task.description,
-        color: displayColor,
-        isAllDay: task.isAllDay,
-        recurrenceRule: task.recurrenceRule,
-      );
-    }).toList();
+        return Appointment(
+          id: task.id,
+          subject: task.title,
+          startTime: task.startTime!,
+          endTime: visualEndTime, 
+          notes: task.status == TaskStatus.completed 
+              ? "[COMPLETED]${task.description ?? ''}" 
+              : task.description,
+          color: displayColor,
+          isAllDay: task.isAllDay,
+          recurrenceRule: task.recurrenceRule,
+        );
+      }).toList();
   }
 
-  /// Resolves the color based on saved value or theme defaults
   Color _resolveColor(int? savedHex, bool isDark) {
     if (savedHex == null) {
       return isDark ? appEventColors[0].dark : appEventColors[0].light;

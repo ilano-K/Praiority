@@ -202,7 +202,7 @@ void _handleViewChanged(ViewChangedDetails details) {
     for (int i = 0; i < 24; i++) {
       regions.add(TimeRegion(
         startTime: anchorDate.copyWith(hour: i, minute: 0),
-        endTime: anchorDate.copyWith(hour: i, minute: 52), 
+        endTime: anchorDate.copyWith(hour: i, minute: 59), 
         color: color, 
          recurrenceRule: 'FREQ=DAILY;INTERVAL=1',
       ));
