@@ -322,56 +322,6 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                     },
                   ),
 
-                   // 4. ADVANCED OPTIONS (ALWAYS VISIBLE)
-                  Theme(
-                    data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                    child: ExpansionTile(
-                      tilePadding: EdgeInsets.zero, 
-                      childrenPadding: EdgeInsets.zero,
-                      title: Text(
-                        'Advanced Options',
-                        style: TextStyle(
-                          fontSize: 16, 
-                          fontWeight: FontWeight.bold, 
-                          color: colorScheme.onSurface
-                        ),
-                      ),
-                      initiallyExpanded: _advancedExpanded,
-                      onExpansionChanged: (val) => setState(() => _advancedExpanded = val),
-                      children: [
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          visualDensity: VisualDensity.compact,
-                          title: Text('Auto-Reschedule', style: TextStyle(color: colorScheme.onSurface.withOpacity(0.8), fontSize: 15)),
-                          subtitle: Text("Allow AI to move this task if missed", style: TextStyle(color: colorScheme.onSurface.withOpacity(0.5), fontSize: 12)),
-                          trailing: Transform.scale(
-                            scale: 0.8,
-                            child: Switch(
-                              value: _movableByAI,
-                              activeColor: Colors.white,
-                              activeTrackColor: colorScheme.primary,
-                              onChanged: (v) => setState(() => _movableByAI = v),
-                            ),
-                          ),
-                        ),
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          visualDensity: VisualDensity.compact,
-                          title: Text('Strict Mode', style: TextStyle(color: colorScheme.onSurface.withOpacity(0.8), fontSize: 15)),
-                          subtitle: Text("Ensure absolutely no overlaps", style: TextStyle(color: colorScheme.onSurface.withOpacity(0.5), fontSize: 12)),
-                          trailing: Transform.scale(
-                            scale: 0.8,
-                            child: Switch(
-                              value: _setNonConfliction,
-                              activeColor: Colors.white,
-                              activeTrackColor: colorScheme.primary,
-                              onChanged: (v) => setState(() => _setNonConfliction = v),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                   // 6. CATEGORY (ALWAYS VISIBLE)
                   _buildInteractiveRow(
                     label: "Category", 
@@ -432,6 +382,56 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                     }
                   ),
                   
+                  // 4. ADVANCED OPTIONS (ALWAYS VISIBLE)
+                  Theme(
+                    data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                    child: ExpansionTile(
+                      tilePadding: EdgeInsets.zero, 
+                      childrenPadding: EdgeInsets.zero,
+                      title: Text(
+                        'Advanced Options',
+                        style: TextStyle(
+                          fontSize: 16, 
+                          fontWeight: FontWeight.bold, 
+                          color: colorScheme.onSurface
+                        ),
+                      ),
+                      initiallyExpanded: _advancedExpanded,
+                      onExpansionChanged: (val) => setState(() => _advancedExpanded = val),
+                      children: [
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          visualDensity: VisualDensity.compact,
+                          title: Text('Auto-Reschedule', style: TextStyle(color: colorScheme.onSurface.withOpacity(0.8), fontSize: 15)),
+                          subtitle: Text("Allow AI to move this task if missed", style: TextStyle(color: colorScheme.onSurface.withOpacity(0.5), fontSize: 12)),
+                          trailing: Transform.scale(
+                            scale: 0.8,
+                            child: Switch(
+                              value: _movableByAI,
+                              activeColor: Colors.white,
+                              activeTrackColor: colorScheme.primary,
+                              onChanged: (v) => setState(() => _movableByAI = v),
+                            ),
+                          ),
+                        ),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          visualDensity: VisualDensity.compact,
+                          title: Text('Strict Mode', style: TextStyle(color: colorScheme.onSurface.withOpacity(0.8), fontSize: 15)),
+                          subtitle: Text("Ensure absolutely no overlaps", style: TextStyle(color: colorScheme.onSurface.withOpacity(0.5), fontSize: 12)),
+                          trailing: Transform.scale(
+                            scale: 0.8,
+                            child: Switch(
+                              value: _setNonConfliction,
+                              activeColor: Colors.white,
+                              activeTrackColor: colorScheme.primary,
+                              onChanged: (v) => setState(() => _setNonConfliction = v),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 40),
                 ],
               ),
