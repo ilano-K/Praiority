@@ -9,6 +9,7 @@ import 'package:flutter_app/features/auth/presentation/pages/auth_gate.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_controller.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_provider.dart';
 import 'package:flutter_app/features/settings/presentation/managers/settings_provider.dart';
+import 'package:flutter_app/features/settings/presentation/pages/work_hours.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart'; 
 import '../../../../../core/theme/theme_notifier.dart';
@@ -91,12 +92,22 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                     isDark: isDark,
                   ),
                   _buildDrawerItem(
-                    context, 
-                    icon: Icons.access_time_outlined, 
-                    label: "Working Hours",
-                    // TODO: Add navigation to WorkHours page if needed
-                    onTap: () => Navigator.pop(context), 
-                  ),
+                  context, 
+                  icon: Icons.access_time_outlined, 
+                  label: "Working Hours",
+                  onTap: () {
+                    // 1. Close the drawer first to prevent UI overlap
+                    Navigator.pop(context); 
+                    
+                    // 2. Navigate to WorkHours with the isFromSidebar flag set to true
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const WorkHours(isFromSidebar: true),
+                      ),
+                    );
+                  }, 
+                ),
                   
                   // Google Sync Item
                   ListTile(
@@ -202,54 +213,110 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
     );
   }
 
-  Widget _buildSubItem(BuildContext context, String label, String lightIcon, String darkIcon, bool isDark, CalendarView view) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return ListTile(
-      leading: Image.asset(isDark ? darkIcon : lightIcon, width: 24, height: 24),
-      title: Text(label, style: TextStyle(fontWeight: FontWeight.w500, color: colorScheme.onSurface)),
-      onTap: () {
-        if (view == CalendarView.month) {
-          ref.read(calendarControllerProvider.notifier).getTasksByCondition();
-        }
-        widget.onViewSelected(view); 
-        Navigator.pop(context); 
-      },
-    );
-  }
+Widget _buildSubItem(BuildContext context, String label, String lightIcon, String darkIcon, bool isDark, CalendarView view) {
+  final colorScheme = Theme.of(context).colorScheme;
+  final isSelected = widget.currentView == view;
 
-  Widget _buildThemeToggle(BuildContext context, WidgetRef ref, bool isDark) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Container(
-      width: 80, height: 40,
-      decoration: BoxDecoration(
-        border: Border.all(color: colorScheme.onSurface.withOpacity(0.1)),
-        borderRadius: BorderRadius.circular(25),
-      ),
-      child: Row(
-        children: [
-          _buildToggleSide(context, isActive: !isDark, icon: Icons.wb_sunny_outlined, 
-            onTap: () => isDark ? ref.read(themeProvider.notifier).toggleTheme() : null),
-          _buildToggleSide(context, isActive: isDark, icon: Icons.nightlight_outlined, 
-            onTap: () => !isDark ? ref.read(themeProvider.notifier).toggleTheme() : null),
-        ],
-      ),
-    );
-  }
+  return ListTile(
+    tileColor: isSelected ? colorScheme.primary.withOpacity(0.08) : null,
+    leading: Image.asset(
+      isDark ? darkIcon : lightIcon, 
+      width: 24, 
+      height: 24,
+      color: isSelected ? colorScheme.primary : null,
+    ),
+    title: Text(
+      label, 
+      style: TextStyle(
+        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500, 
+        color: isSelected ? colorScheme.primary : colorScheme.onSurface
+      )
+    ),
+    onTap: () async {
+      // 1. If it's already selected, just close the drawer immediately
+      if (isSelected) {
+        Navigator.pop(context);
+        return;
+      }
 
-  Widget _buildToggleSide(BuildContext context, {required bool isActive, required IconData icon, required VoidCallback onTap}) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          margin: const EdgeInsets.all(2),
-          decoration: BoxDecoration(
-            color: isActive ? colorScheme.primary.withOpacity(0.2) : Colors.transparent,
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, size: 18, color: isActive ? colorScheme.onSurface : colorScheme.onSurface.withOpacity(0.4)),
+      // 2. Fetch data if moving to Month view
+      if (view == CalendarView.month) {
+        ref.read(calendarControllerProvider.notifier).getTasksByCondition();
+      }
+
+      // 3. TRIGGER THE VIEW CHANGE
+      widget.onViewSelected(view); 
+
+      // 4. THE MAGIC DELAY: 
+      // We wait 250ms-300ms. This is the "sweet spot" where the calendar 
+      // performs its heavy layout logic behind the drawer while the 
+      // drawer is still opaque, hiding the "jumpy" update.
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      // 5. Finally, slide the drawer away
+      if (context.mounted) {
+        Navigator.pop(context);
+      }
+    },
+  );
+}
+
+Widget _buildThemeToggle(BuildContext context, WidgetRef ref, bool isDark) {
+  final colorScheme = Theme.of(context).colorScheme;
+
+  return Container(
+    width: 90, // Compact but accessible
+    height: 44,
+    decoration: BoxDecoration(
+      color: colorScheme.surface,
+      borderRadius: BorderRadius.circular(22),
+      border: Border.all(
+        color: colorScheme.onSurface.withOpacity(0.1),
+        width: 1,
+      ),
+    ),
+    child: Row(
+      children: [
+        _buildToggleSide(
+          context,
+          isActive: !isDark,
+          icon: Icons.wb_sunny_rounded,
+          onTap: () => isDark ? ref.read(themeProvider.notifier).toggleTheme() : null,
+        ),
+        _buildToggleSide(
+          context,
+          isActive: isDark,
+          icon: Icons.nightlight_round,
+          onTap: () => !isDark ? ref.read(themeProvider.notifier).toggleTheme() : null,
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _buildToggleSide(BuildContext context, {required bool isActive, required IconData icon, required VoidCallback onTap}) {
+  final colorScheme = Theme.of(context).colorScheme;
+
+  return Expanded(
+    child: GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedDefaultTextStyle(
+        duration: const Duration(milliseconds: 200),
+        style: TextStyle(
+          color: isActive 
+              ? colorScheme.primary 
+              : colorScheme.onSurface.withOpacity(0.3),
+        ),
+        child: Icon(
+          icon,
+          size: 24, // Standard "comfortable" size
+          color: isActive 
+              ? colorScheme.primary 
+              : colorScheme.onSurface.withOpacity(0.3),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

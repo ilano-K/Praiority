@@ -7,19 +7,23 @@ import 'package:flutter_app/features/settings/presentation/pages/mode_option.dar
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class WorkHours extends ConsumerStatefulWidget {
-  const WorkHours({super.key});
+  // Flag to determine navigation path
+  final bool isFromSidebar;
+  
+  const WorkHours({
+    super.key, 
+    this.isFromSidebar = false, // Defaults to false for onboarding
+  });
 
   @override
   ConsumerState<WorkHours> createState() => _WorkHoursState();
 }
 
 class _WorkHoursState extends ConsumerState<WorkHours> {
-  // Defaults (9:00 AM to 5:00 PM)
   TimeOfDay _fromTime = const TimeOfDay(hour: 9, minute: 0);
   TimeOfDay _toTime = const TimeOfDay(hour: 17, minute: 0);
   bool _isLoading = false;
 
-  // UI Format: "09:00 AM"
   String _formatTimeLabel(TimeOfDay time) {
     final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
     final minute = time.minute.toString().padLeft(2, '0');
@@ -27,31 +31,23 @@ class _WorkHoursState extends ConsumerState<WorkHours> {
     return "$hour:$minute $period";
   }
 
-  // ✅ DATABASE FORMAT: "14:05" (24-hour)
   String _to24HourFormat(TimeOfDay time) {
-    // time.hour is already 0-23 in Flutter
     final hour = time.hour.toString().padLeft(2, '0');
     final minute = time.minute.toString().padLeft(2, '0');
     return "$hour:$minute";
   }
 
-  // --- UPDATED NAVIGATION LOGIC ---
   Future<void> _handleNavigation({bool waitForSave = false}) async {
-    
-    // 1. VALIDATION CHECKER
+    // 1. VALIDATION
     if (waitForSave) {
-      // Convert both to "minutes from midnight" to compare them easily
       final int startMinutes = (_fromTime.hour * 60) + _fromTime.minute;
       final int endMinutes = (_toTime.hour * 60) + _toTime.minute;
 
-      // Rule 1: Exact same time is invalid
       if (startMinutes == endMinutes) {
         _showError("Start time and End time cannot be the same.");
         return;
       }
 
-      // Rule 2: End time must be AFTER Start time (Prevent "Reverse" or Overnight)
-      // Example: Start 5 PM (1020 min) -> End 2 PM (840 min) = INVALID
       if (endMinutes < startMinutes) {
         _showError("End time must be later than Start time.");
         return;
@@ -62,23 +58,26 @@ class _WorkHoursState extends ConsumerState<WorkHours> {
 
     // 2. SAVING
     if (waitForSave == true) {
-      final String dbFrom = _to24HourFormat(_fromTime); // "09:00"
-      final String dbTo = _to24HourFormat(_toTime);     // "17:00"
-
-      print("[DEBUG]: SAVING... From: $dbFrom To: $dbTo");
-
+      final String dbFrom = _to24HourFormat(_fromTime);
+      final String dbTo = _to24HourFormat(_toTime);
       final settingsController = ref.read(settingsControllerProvider.notifier);
       await settingsController.saveSettings(dbFrom, dbTo);
     }
 
-    // 3. NAVIGATION
+    // 3. SMART NAVIGATION
     await Future.delayed(const Duration(milliseconds: 300));
     if (!mounted) return;
 
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const ModeOption()),
-    );
+    if (widget.isFromSidebar) {
+      // If opened from Sidebar, just return to the Calendar
+      Navigator.pop(context);
+    } else {
+      // If Onboarding, move to the next step
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const ModeOption()),
+      );
+    }
 
     setState(() => _isLoading = false);
   }
@@ -100,7 +99,18 @@ class _WorkHoursState extends ConsumerState<WorkHours> {
     return Stack(
       children: [
         Scaffold(
-          backgroundColor: colorScheme.surface, 
+          backgroundColor: colorScheme.surface,
+          // Added a back button for sidebar users
+          appBar: widget.isFromSidebar 
+            ? AppBar(
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                leading: IconButton(
+                  icon: Icon(Icons.arrow_back_ios_new, color: colorScheme.onSurface),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              )
+            : null,
           body: SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 40.0),
@@ -126,7 +136,6 @@ class _WorkHoursState extends ConsumerState<WorkHours> {
                   ),
                   const SizedBox(height: 50),
 
-                  // --- FROM ---
                   _buildLabel("From", colorScheme),
                   const SizedBox(height: 10),
                   _buildTimeField(
@@ -140,7 +149,6 @@ class _WorkHoursState extends ConsumerState<WorkHours> {
 
                   const SizedBox(height: 30),
 
-                  // --- TO ---
                   _buildLabel("To", colorScheme),
                   const SizedBox(height: 10),
                   _buildTimeField(
@@ -154,7 +162,6 @@ class _WorkHoursState extends ConsumerState<WorkHours> {
 
                   const SizedBox(height: 60),
 
-                  // --- BUTTONS ---
                   Row(
                     children: [
                       Expanded(
@@ -191,6 +198,7 @@ class _WorkHoursState extends ConsumerState<WorkHours> {
     );
   }
 
+  // --- Helpers ---
   Widget _buildLabel(String text, ColorScheme colorScheme) {
     return Align(
       alignment: Alignment.centerLeft,
