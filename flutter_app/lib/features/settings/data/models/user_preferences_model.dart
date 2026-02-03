@@ -1,4 +1,5 @@
 
+import 'package:flutter_app/features/calendar/presentation/utils/time_utils.dart';
 import 'package:flutter_app/features/settings/domain/entities/user_preferences.dart';
 import 'package:isar/isar.dart';
 import 'package:uuid/uuid.dart';
@@ -51,8 +52,8 @@ extension UserPreferencesModelJson on UserPreferencesModel {
   Map<String, dynamic> toJson() {
     return {
       'id': cloudId ?? const Uuid().v4(),
-      'start_work_hours': startWorkHours,
-      'end_work_hours': endWorkHours,
+      'start_work_hours': toUtcHourMinute(startWorkHours!),
+      'end_work_hours': toUtcHourMinute(endWorkHours!),
       'custom_prompt': customPrompt,
       'is_dark_mode' : isDarkMode,
     };

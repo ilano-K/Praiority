@@ -42,3 +42,27 @@ bool validDateTime(DateTime startTime, DateTime endTime, DateTime? deadline){
   }
   return true;
 }
+String toUtcHourMinute(String hourMinute) {
+  final now = DateTime.now();
+
+  // Parse "HH:mm"
+  final parts = hourMinute.split(':');
+  final localTime = DateTime(
+    now.year,
+    now.month,
+    now.day,
+    int.parse(parts[0]),
+    int.parse(parts[1]),
+  );
+
+  // Convert to UTC
+  final utcTime = localTime.toUtc();
+
+  // Return HH:mm only
+  final hh = utcTime.hour.toString().padLeft(2, '0');
+  final mm = utcTime.minute.toString().padLeft(2, '0');
+
+  return '$hh:$mm';
+}
+
+
