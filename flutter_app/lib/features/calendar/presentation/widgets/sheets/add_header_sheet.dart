@@ -238,7 +238,7 @@ class _AddSheetHeaderState extends ConsumerState<AddSheetHeader> {
 
   // --- HELPERS ---
 
-    Widget _buildTypeButton(String label, ColorScheme colors, BuildContext context) {
+  Widget _buildTypeButton(String label, ColorScheme colors, BuildContext context) {
   final bool isSelected = widget.data.selectedType == label;
 
   return GestureDetector(
@@ -273,12 +273,12 @@ class _AddSheetHeaderState extends ConsumerState<AddSheetHeader> {
     child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
       decoration: BoxDecoration(
-        // --- 1. BACKGROUND: Uses colorScheme.primary as defined in your themes.dart ---
+        // --- 1. BACKGROUND: Now uses surface when selected ---
         color: isSelected ? colors.primary : Colors.transparent,
         
-        // --- 2. BORDER: White when selected, onSurface otherwise ---
+        // --- 2. BORDER: Stays onSurface for high contrast ---
         border: Border.all(
-          color: isSelected ? Colors.white : colors.onSurface, 
+          color: isSelected ? colors.onSurface : colors.onSurface, 
           width: 1.2,
         ),
         borderRadius: BorderRadius.circular(8),
@@ -287,7 +287,7 @@ class _AddSheetHeaderState extends ConsumerState<AddSheetHeader> {
         label,
         style: TextStyle(
           fontWeight: FontWeight.bold, 
-          // --- 3. TEXT: Stays onSurface as requested ---
+          // --- 3. TEXT: Stays onSurface ---
           color: colors.onSurface, 
           fontSize: 14,
         ),
