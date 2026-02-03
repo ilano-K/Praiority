@@ -72,23 +72,35 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
   void initState() {
     super.initState();
 
-    // 1. SET INITIAL DATES
-    // Priority: Existing Task > Scrolled Date (initialDate) > Current Time
-    final baseDate = widget.task?.startTime ?? widget.initialDate ?? DateTime.now();
-    
-    _startDate = baseDate;
-    _startTime = TimeOfDay.fromDateTime(baseDate);
-    
-    _endTime = TimeOfDay.fromDateTime(
-      baseDate.add(const Duration(hours: 1))
-    );
+    // 1. DYNAMIC INITIALIZATION
+      final DateTime baseDate;
+      
+      if (widget.task != null) {
+        // Priority 1: Use the time already saved in your DB
+        baseDate = widget.task!.startTime ?? DateTime.now();
+      } else if (widget.initialDate != null) {
+        // Priority 2: Use the exact time of the grey block you clicked
+        // SfCalendar passes the hour/minute of the slot automatically.
+        baseDate = widget.initialDate!;
+      } else {
+        // Priority 3: Fallback to phone time if opened via FAB without a date
+        baseDate = DateTime.now();
+      }
+      
+      _startDate = baseDate;
+      _startTime = TimeOfDay.fromDateTime(baseDate);
+      
+      // Set end time to 1 hour after the clicked slot
+      _endTime = TimeOfDay.fromDateTime(
+        baseDate.add(const Duration(hours: 1))
+      );
 
-    _deadlineDate = widget.task?.deadline ?? baseDate;
-    _deadlineTime = const TimeOfDay(hour: 23, minute: 59);
+      _deadlineDate = widget.task?.deadline ?? baseDate;
+      _deadlineTime = const TimeOfDay(hour: 23, minute: 59);
 
-    if (widget.task != null) {
-      _prefillFromTask(widget.task!);
-    }
+      if (widget.task != null) {
+        _prefillFromTask(widget.task!);
+      }
 
     // Fetch tags
     ref.read(calendarRepositoryProvider).getAllTagNames().then((tags) {
@@ -249,7 +261,8 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                         if (picked != null) setState(() => _startDate = picked);
                       },
                       onTapTrailing: () async {
-                        final picked = await pickTime(context);
+                        // Pass the CURRENTLY saved _startTime as the initial value
+                        final picked = await pickTime(context, initialTime: _startTime); 
                         if (picked != null) setState(() => _startTime = picked);
                       },
                     ),
@@ -259,7 +272,8 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                       value: _endTime.format(context),
                       colors: colorScheme,
                       onTapValue: () async {
-                        final picked = await pickTime(context, initialTime: _endTime);
+                        // Pass the CURRENTLY saved _endTime
+                        final picked = await pickTime(context, initialTime: _endTime); 
                         if (picked != null) setState(() => _endTime = picked);
                       },
                     ),
