@@ -34,6 +34,7 @@ class DayView extends ConsumerWidget {
 
     return Column(
       children: [
+        // --- HEADER SECTION (Date Sidebar & All Day Tasks) ---
         Container(
           color: colorScheme.surface,
           width: double.infinity,
@@ -60,6 +61,7 @@ class DayView extends ConsumerWidget {
           ),
         ),
 
+        // --- CALENDAR GRID SECTION ---
         Expanded(
           child: SfCalendar(
             view: CalendarView.day,
@@ -68,15 +70,28 @@ class DayView extends ConsumerWidget {
             viewHeaderHeight: 0,
             backgroundColor: colorScheme.surface,
             cellBorderColor: Colors.transparent,
+            
+            // Filters data for non-all-day tasks with valid times
             dataSource: TaskDataSource(
-              tasks.where((t) => !t.isAllDay && t.type != TaskType.birthday && t.startTime != null).toList(),
+              tasks.where((t) => 
+                !t.isAllDay && 
+                t.type != TaskType.birthday && 
+                t.startTime != null
+              ).toList(),
               context,
             ),
+
+            // Custom appointment UI
             appointmentBuilder: (context, details) {
               return AppointmentCard(appointment: details.appointments.first);
             },
+
             specialRegions: greyBlocks,
+            
+            // This event is sent back to MainCalendar's _handleViewChanged
             onViewChanged: onViewChanged,
+
+            // Handle Task Taps
             onTap: (CalendarTapDetails details) {
               if (details.targetElement == CalendarElement.appointment && details.appointments != null) {
                 final Appointment selectedAppt = details.appointments!.first;
@@ -84,6 +99,8 @@ class DayView extends ConsumerWidget {
                 onTaskTap(tappedTask);
               }
             },
+
+            // Grid Styling
             timeSlotViewSettings: TimeSlotViewSettings(
               timeRulerSize: 60,
               timeTextStyle: TextStyle(
@@ -100,7 +117,7 @@ class DayView extends ConsumerWidget {
   }
 }
 
-/// Extracted DataSource so it can be reused by Week/Month views later
+/// TaskDataSource: Maps your domain Task entity to Syncfusion Appointment objects
 class TaskDataSource extends CalendarDataSource {
   TaskDataSource(List<Task> tasks, BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
@@ -123,6 +140,7 @@ class TaskDataSource extends CalendarDataSource {
     }).toList();
   }
 
+  /// Resolves the color based on saved value or theme defaults
   Color _resolveColor(int? savedHex, bool isDark) {
     if (savedHex == null) {
       return isDark ? appEventColors[0].dark : appEventColors[0].light;

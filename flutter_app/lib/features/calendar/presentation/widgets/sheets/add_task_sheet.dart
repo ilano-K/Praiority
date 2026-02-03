@@ -1,8 +1,4 @@
 // File: lib/features/calendar/presentation/widgets/add_task_sheet.dart
-// Purpose: Bottom sheet for creating/editing tasks with fields for title,
-// time, tags, and category. Comments added only for clarity.
-// File: lib/features/calendar/presentation/widgets/add_task_sheet.dart
-// Purpose: UI sheet for creating or editing a task from the calendar.
 import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
@@ -11,23 +7,24 @@ import 'package:flutter_app/features/calendar/presentation/managers/calendar_pro
 import 'package:flutter_app/features/calendar/presentation/widgets/selectors/date_picker.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/selectors/pick_time.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../utils/time_adjust.dart';
 import 'package:intl/intl.dart';
 
-// Import your separate widgets
+// UI Components
 import '../selectors/priority_selector.dart';
 import '../selectors/category_selector.dart';
 import '../selectors/tag_selector.dart';
-import '../selectors/color_selector.dart'; // Ensure this is imported for CalendarColor
-
-// IMPORTANT: Import the new Reusable Header (You must create this file)
-import 'add_header_sheet.dart'; // Assuming the file is named '_add_sheet_header.dart'
-
-// IMPORT THE EVENT & BIRTHDAY SHEETS
+import '../selectors/color_selector.dart'; 
+import 'add_header_sheet.dart'; 
 
 class AddTaskSheet extends ConsumerStatefulWidget {
-  final Task? task;   
-  const AddTaskSheet({super.key, this.task});
+  final Task? task;
+  final DateTime? initialDate; // Accepts the date from your DayView scroll
+
+  const AddTaskSheet({
+    super.key, 
+    this.task, 
+    this.initialDate,
+  });
 
   @override
   ConsumerState<AddTaskSheet> createState() => _AddTaskSheetState();
@@ -37,56 +34,27 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
   // --- STATE VARIABLES ---
   String _selectedType = 'Task'; 
   bool _isSmartScheduleEnabled = true;
-
-  // Dynamic Fields
   String _priority = "Medium";
   String _category = "None";
   List<String> _selectedTags = [];
-  
-  // --- SELECTED COLOR STATE ---
   CalendarColor _selectedColor = appEventColors[0];
-
-  // 1. MASTER TAG LIST
   List<String> _tagsList = [];
-  // --- COLLAPSIBLE AI OPTIONS ---
   bool _advancedExpanded = false;
   bool _movableByAI = false;
   bool _setNonConfliction = true;
-  
-  @override
-  void initState() {
-    super.initState();
-
-    if (widget.task != null) {
-      _prefillFromTask(widget.task!);
-    }
-
-    // Fetch tags from repository
-    ref.read(calendarRepositoryProvider).getAllTagNames().then((tags) {
-      setState(() {
-        _tagsList = tags.toList();
-      });
-    });
-  }
-  
-  // Date/Time
-  DateTime _startDate = DateTime.now();
-  TimeOfDay _startTime = TimeOfDay.now();
-
-  // Endtime
-  TimeOfDay _endTime = TimeOfDay.fromDateTime(
-    DateTime.now().add(const Duration(hours: 1))
-  );
-
-  // Deadline data and time
-  DateTime _deadlineDate = DateTime.now();
-  TimeOfDay _deadlineTime = const TimeOfDay(hour: 23, minute: 59);
 
   // Controllers
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
 
-  // map for data conversion
+  // Date & Time (Initialized as late because we set them in initState)
+  late DateTime _startDate;
+  late TimeOfDay _startTime;
+  late TimeOfDay _endTime;
+  late DateTime _deadlineDate;
+  late TimeOfDay _deadlineTime;
+
+  // Conversion Maps
   final priorityMap = {
     "Low": TaskPriority.low,
     "Medium": TaskPriority.medium,
@@ -99,6 +67,36 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
     "Hard": TaskCategory.hard,
     "None" : TaskCategory.none
   };
+
+  @override
+  void initState() {
+    super.initState();
+
+    // 1. SET INITIAL DATES
+    // Priority: Existing Task > Scrolled Date (initialDate) > Current Time
+    final baseDate = widget.task?.startTime ?? widget.initialDate ?? DateTime.now();
+    
+    _startDate = baseDate;
+    _startTime = TimeOfDay.fromDateTime(baseDate);
+    
+    _endTime = TimeOfDay.fromDateTime(
+      baseDate.add(const Duration(hours: 1))
+    );
+
+    _deadlineDate = widget.task?.deadline ?? baseDate;
+    _deadlineTime = const TimeOfDay(hour: 23, minute: 59);
+
+    if (widget.task != null) {
+      _prefillFromTask(widget.task!);
+    }
+
+    // Fetch tags
+    ref.read(calendarRepositoryProvider).getAllTagNames().then((tags) {
+      setState(() {
+        _tagsList = tags.toList();
+      });
+    });
+  }
 
   // --- HELPERS ---
   String _enumToString(dynamic enumValue) {
@@ -133,7 +131,6 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
     return DateTime(date.year, date.month, date.day, time.hour, time.minute);
   }
 
-  // --- SAVE CALLBACK ---
   Task createTaskSaveTemplate(bool isDark) {
     final colorValue = isDark ? _selectedColor.dark.value : _selectedColor.light.value;
     final title = _titleController.text.trim().isEmpty ? "Untitled Task" : _titleController.text.trim();
@@ -180,21 +177,15 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
 
   @override
   Widget build(BuildContext context) {
-    // 1. ACCESS THEME
     final colorScheme = Theme.of(context).colorScheme;
-    
-    // 2. USE THEME COLOR
     final Color sheetBackground = colorScheme.inversePrimary; 
-
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // --- Create Header Data Object ---
     final headerData = HeaderData(
       selectedType: _selectedType,
       selectedColor: _selectedColor,
       titleController: _titleController,
       descController: _descController,
-      // Update local state when user selects a different type/color
       onTypeSelected: (type) => setState(() => _selectedType = type),
       onColorSelected: (color) => setState(() => _selectedColor = color),
       saveTemplate: () => createTaskSaveTemplate(isDark),
@@ -210,13 +201,8 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          
-          // --- REPLACED: HEADER, TEXT FIELDS, TYPE BUTTONS, COLOR PICKER ---
           AddSheetHeader(data: headerData), 
-          // ------------------------------------------------------------------
           
-          // --- SCROLLABLE SETTINGS LIST (Task-specific content) ---
-        // --- SCROLLABLE SETTINGS LIST ---
           Expanded(
             child: SingleChildScrollView(
               child: Column(
@@ -239,7 +225,6 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                     ],
                   ),
                   
-                  // Description Text (Only visible when enabled)
                   if (_isSmartScheduleEnabled) ...[
                     Align(
                       alignment: Alignment.centerLeft,
@@ -252,10 +237,8 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                   
                   const SizedBox(height: 10),
 
-
-                  // 3. START & END TIME (HIDDEN IF SMART SCHEDULE IS ON)
+                  // 2. START & END TIME
                   if (!_isSmartScheduleEnabled) ...[
-                    // START TIME
                     _buildInteractiveRow(
                       label: "Start Time", 
                       value: DateFormat('MMMM d, y').format(_startDate),
@@ -263,12 +246,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                       colors: colorScheme,
                       onTapValue: () async {
                         final picked = await pickDate(context, initialDate: _startDate);
-                        if (picked != null) {
-                          setState(() {
-                            _startDate = picked;
-                            // (Recalculate deadline logic here if needed, keeping simple for snippet)
-                          });
-                        }
+                        if (picked != null) setState(() => _startDate = picked);
                       },
                       onTapTrailing: () async {
                         final picked = await pickTime(context);
@@ -276,7 +254,6 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                       },
                     ),
 
-                    // END TIME
                     _buildInteractiveRow(
                       label: "End Time", 
                       value: _endTime.format(context),
@@ -288,10 +265,9 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                     ),
                   ],
 
-                  // 2. PRIORITY (ALWAYS VISIBLE)
-                  // Label changes based on mode, but the selector is always there
+                  // 3. PRIORITY
                   _buildInteractiveRow(
-                    label:  "Priority", 
+                    label: "Priority", 
                     value: _priority,
                     colors: colorScheme,
                     onTap: () {
@@ -306,7 +282,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                     }
                   ),
 
-                  // 5. DEADLINE (ALWAYS VISIBLE)
+                  // 4. DEADLINE
                   _buildInteractiveRow(
                     label: "Deadline", 
                     value: DateFormat('MMMM d, y').format(_deadlineDate),
@@ -322,7 +298,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                     },
                   ),
 
-                  // 6. CATEGORY (ALWAYS VISIBLE)
+                  // 5. CATEGORY
                   _buildInteractiveRow(
                     label: "Category", 
                     value: _category,
@@ -339,7 +315,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                     }
                   ),
 
-                  // 7. TAGS (ALWAYS VISIBLE)
+                  // 6. TAGS
                   _buildInteractiveRow(
                     label: "Tags", 
                     value: _selectedTags.isEmpty ? "None" : _selectedTags.join(", "), 
@@ -382,26 +358,19 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                     }
                   ),
                   
-                  // 4. ADVANCED OPTIONS (ALWAYS VISIBLE)
+                  // 7. ADVANCED OPTIONS
                   Theme(
                     data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
                     child: ExpansionTile(
                       tilePadding: EdgeInsets.zero, 
                       childrenPadding: EdgeInsets.zero,
-                      title: Text(
-                        'Advanced Options',
-                        style: TextStyle(
-                          fontSize: 16, 
-                          fontWeight: FontWeight.bold, 
-                          color: colorScheme.onSurface
-                        ),
-                      ),
+                      title: Text('Advanced Options',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
                       initiallyExpanded: _advancedExpanded,
                       onExpansionChanged: (val) => setState(() => _advancedExpanded = val),
                       children: [
                         ListTile(
                           contentPadding: EdgeInsets.zero,
-                          visualDensity: VisualDensity.compact,
                           title: Text('Auto-Reschedule', style: TextStyle(color: colorScheme.onSurface.withOpacity(0.8), fontSize: 15)),
                           subtitle: Text("Allow AI to move this task if missed", style: TextStyle(color: colorScheme.onSurface.withOpacity(0.5), fontSize: 12)),
                           trailing: Transform.scale(
@@ -416,7 +385,6 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                         ),
                         ListTile(
                           contentPadding: EdgeInsets.zero,
-                          visualDensity: VisualDensity.compact,
                           title: Text('Strict Mode', style: TextStyle(color: colorScheme.onSurface.withOpacity(0.8), fontSize: 15)),
                           subtitle: Text("Ensure absolutely no overlaps", style: TextStyle(color: colorScheme.onSurface.withOpacity(0.5), fontSize: 12)),
                           trailing: Transform.scale(
@@ -442,7 +410,6 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
     );
   }
 
-  // --- WIDGET HELPER: Interactive Rows ---
   Widget _buildInteractiveRow({
     required String label, 
     required String value, 
@@ -471,10 +438,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                   onTap: onTapValue ?? onTap,
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8.0),
-                    child: Text(
-                      value, 
-                      style: TextStyle(fontSize: 15, color: colors.onSurface.withOpacity(0.8)),
-                    ),
+                    child: Text(value, style: TextStyle(fontSize: 15, color: colors.onSurface.withOpacity(0.8))),
                   ),
                 ),
               ),
@@ -484,10 +448,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                   onTap: onTapTrailing ?? onTap,
                   child: Padding(
                     padding: const EdgeInsets.only(left: 20, top: 8, bottom: 8), 
-                    child: Text(
-                      trailing, 
-                      style: TextStyle(fontSize: 15, color: colors.onSurface.withOpacity(0.8)),
-                    ),
+                    child: Text(trailing, style: TextStyle(fontSize: 15, color: colors.onSurface.withOpacity(0.8))),
                   ),
                 ),
             ],

@@ -122,22 +122,23 @@ void _showAiTipBeforeEdit(Task task) {
     );
   }
 
-  void _openTaskSheet(Task task) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        if (task.type == TaskType.event) {
-          return AddEventSheet(task: task);
-        } else if (task.type == TaskType.birthday) {
-          return AddBirthdaySheet(task: task);
-        } else {
-          return AddTaskSheet(task: task);
-        }
-      },
-    );
-  }
+void _openTaskSheet(Task task) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (context) {
+      if (task.type == TaskType.event) {
+        return AddEventSheet(task: task);
+      } else if (task.type == TaskType.birthday) {
+        return AddBirthdaySheet(task: task);
+      } else {
+        // UPDATED: Pass the current calendar date as a fallback
+        return AddTaskSheet(task: task, initialDate: _selectedDate);
+      }
+    },
+  );
+}
 
   void _showErrorWarning(BuildContext context, String title, String message) {
     showDialog(
@@ -238,7 +239,13 @@ void _handleViewChanged(ViewChangedDetails details) {
         onOptionTap: (label) {
           _toggleFab();
           if (label == "Task") {
-             showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: Colors.transparent, builder: (context) => const AddTaskSheet());
+            showModalBottomSheet(
+              context: context, 
+              isScrollControlled: true, 
+              backgroundColor: Colors.transparent, 
+              // UPDATED: Pass _selectedDate so the sheet knows which day you scrolled to
+              builder: (context) => AddTaskSheet(initialDate: _selectedDate),
+            );
           }
         },
       ),
@@ -290,7 +297,7 @@ void _handleViewChanged(ViewChangedDetails details) {
       );
   }
     // Default to DayView
-      return DayView(
+        return DayView(
         tasks: tasks,
         calendarController: _calendarController,
         selectedDate: _selectedDate,
