@@ -122,13 +122,24 @@ class _AuthGateState extends ConsumerState<AuthGate> {
     return authState.when(
       data: (state) {
         if (state.session != null) {
-           return const MainCalendar(); 
+            // If syncing is happening, keep the spinner up
+            if (isLoading) {
+              return const Scaffold(body: Center(child: CircularProgressIndicator()));
+            }
+
+            // Logic Check: Should we go to setup or calendar?
+            // You can read the current settings state here
+            final userPrefs = ref.watch(settingsControllerProvider).valueOrNull;
+
+            if (userPrefs == null || userPrefs.startWorkHours == null) {
+              return const WorkHours(); // Show this directly, don't PUSH it.
+            }
+
+            return const MainCalendar(); 
         }
         return const AuthPage(); 
       },
-      // If Riverpod is initializing, show spinner
       loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
-      // If error, show Login
       error: (err, stack) => const AuthPage(), 
     );
   }

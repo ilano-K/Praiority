@@ -35,7 +35,7 @@ ThemeData darkMode = ThemeData(
     onSurface: const Color(0xFFFFFFFF), 
 
     // Button: 333459
-    primary: const Color(0xFF333459), 
+    primary: const Color(0xFF5068A3), 
 
     // Calendar Cells: 3A3A3A
     secondary: const Color(0xFF3A3A3A), 
