@@ -4,6 +4,7 @@ import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/components/appointment_card.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/selectors/color_selector.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/calendars/calendar_builder.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/sheets/add_task_sheet.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 
@@ -168,13 +169,20 @@ class DayView extends ConsumerWidget {
             },
 
             onViewChanged: onViewChanged,
+
             onTap: (CalendarTapDetails details) {
-              if (details.targetElement == CalendarElement.appointment && details.appointments != null) {
-                final Appointment selectedAppt = details.appointments!.first;
-                final tappedTask = tasks.firstWhere((t) => t.id == selectedAppt.id);
-                onTaskTap(tappedTask);
-              }
-            },
+            // 1. If an appointment is clicked, trigger the edit/view logic
+            if (details.targetElement == CalendarElement.appointment && details.appointments != null) {
+              final Appointment selectedAppt = details.appointments!.first;
+              final tappedTask = tasks.firstWhere((t) => t.id == selectedAppt.id);
+              onTaskTap(tappedTask);
+            } 
+            
+            // 2. If a grey block (calendar cell) is clicked, open AddTaskSheet
+            else if (details.targetElement == CalendarElement.calendarCell && details.date != null) {
+              _showAddTaskSheet(context, details.date!);
+            }
+          },
 
             timeSlotViewSettings: TimeSlotViewSettings(
             timeRulerSize: 60,
@@ -207,6 +215,18 @@ class DayView extends ConsumerWidget {
     default:
       return isDark ? Colors.white70 : Colors.black54;
   }
+}
+void _showAddTaskSheet(BuildContext context, DateTime tappedTime) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true, // Allows the sheet to take 85% height
+    backgroundColor: Colors.transparent,
+    builder: (context) => AddTaskSheet(
+      // We pass the tappedTime directly. 
+      // Your AddTaskSheet already handles this in its initState!
+      initialDate: tappedTime, 
+    ),
+  );
 }
 }
 
