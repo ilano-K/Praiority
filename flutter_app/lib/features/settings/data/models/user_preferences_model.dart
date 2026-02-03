@@ -55,6 +55,7 @@ extension UserPreferencesModelJson on UserPreferencesModel {
       'start_work_hours': toUtcHourMinute(startWorkHours!),
       'end_work_hours': toUtcHourMinute(endWorkHours!),
       'custom_prompt': customPrompt,
+      "timezone": getUtcOffsetString(),
       'is_dark_mode' : isDarkMode,
     };
   }

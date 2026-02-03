@@ -41,11 +41,12 @@ class CalendarRepositoryImpl implements CalendarRepository{
 
   @override
   Future<List<Task>> getTasksByCondition({DateTime? start, DateTime? end, TaskCategory? category,
-                                              TaskType? type, TaskStatus? status, String? tag,
+                                              TaskType? type, TaskStatus? status, String? tag, TaskPriority? priority,
                                               }) async {
     final models = await localDataSource.getTasksByCondition(start: start, end: end, 
-                                                            category: category, type: type, 
-                                                            status: status, tag: tag
+                                                            category: category, type: type,
+                                                            priority:  priority, 
+                                                            status: status, tag: tag,
                                                             );
     return models.map((model) => model.toEntity()).toList();
   }

@@ -1,8 +1,8 @@
-// File: lib/features/calendar/presentation/pages/task_view.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
-import 'package:flutter_app/features/calendar/presentation/managers/calendar_controller.dart';
+// CHANGE: Import the new controller
+import 'package:flutter_app/features/calendar/presentation/managers/task_view_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -11,7 +11,7 @@ import '../widgets/sheets/add_task_sheet.dart';
 import '../widgets/sheets/add_event_sheet.dart';
 import '../widgets/sheets/add_birthday_sheet.dart';
 import '../widgets/dialogs/app_dialog.dart';
-import '../widgets/selectors/sort_selector.dart'; // NEW IMPORT
+import '../widgets/selectors/sort_selector.dart'; 
 
 class TaskView extends ConsumerStatefulWidget {
   const TaskView({super.key});
@@ -25,17 +25,9 @@ class _TaskViewState extends ConsumerState<TaskView> {
   bool _isPendingExpanded = false;
   bool _isCompletedExpanded = false;
 
-  @override
-void initState() {
-  super.initState();
-  Future.microtask(() {
-    final currentState = ref.read(calendarControllerProvider);
-    // Only fetch "All" if we don't have any data yet
-    if (currentState.value == null || currentState.value!.isEmpty) {
-      ref.read(calendarControllerProvider.notifier).getTasksByCondition();
-    }
-  });
-}
+  // We don't need initState to fetch data anymore because 
+  // the taskViewControllerProvider does it automatically in build().
+
   void _openTaskSheet(Task task) {
     showModalBottomSheet(
       context: context,
@@ -58,14 +50,15 @@ void initState() {
       context: context, 
       backgroundColor: Colors.transparent, 
       isScrollControlled: true,
-      builder: (context) => const SortSelector(), // USING NEW CLASS
+      builder: (context) => const SortSelector(), 
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final tasksAsync = ref.watch(calendarControllerProvider);
+    // CHANGE: Watch the NEW provider
+    final tasksAsync = ref.watch(taskViewControllerProvider);
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -178,7 +171,7 @@ void initState() {
             child: Divider(
               color: colorScheme.onSurface.withOpacity(0.1), 
               thickness: 1,
-            )
+            ),
           ),
         ],
       ),
@@ -257,8 +250,8 @@ void initState() {
                     confirmLabel: "Delete", 
                     isDestructive: true,
                     onConfirm: () async {
-                      await ref.read(calendarControllerProvider.notifier).deleteTask(task);
-                      ref.invalidate(calendarControllerProvider);
+                      // CHANGE: Use new controller
+                      await ref.read(taskViewControllerProvider.notifier).deleteTask(task);
                     },
                   ),
                 ),
@@ -284,8 +277,7 @@ void initState() {
   }
 
   Future<void> _updateTaskStatus(Task task, TaskStatus newStatus) async {
-    await ref.read(calendarControllerProvider.notifier).addTask(task.copyWith(status: newStatus));
-    await Future.delayed(const Duration(milliseconds: 300));
-    if (mounted) ref.invalidate(calendarControllerProvider);
+    // CHANGE: Use new controller
+    await ref.read(taskViewControllerProvider.notifier).updateTask(task.copyWith(status: newStatus));
   }
 }

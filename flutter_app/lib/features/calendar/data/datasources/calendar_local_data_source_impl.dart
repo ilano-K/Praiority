@@ -134,6 +134,7 @@ class CalendarLocalDataSourceImpl implements CalendarLocalDataSource{
     TaskType? type,
     TaskStatus? status,
     String? tag,
+    TaskPriority? priority,
   }) async {
 
     var query = isar.taskModels.filter().originalIdIsNotEmpty();
@@ -142,6 +143,7 @@ class CalendarLocalDataSourceImpl implements CalendarLocalDataSource{
     if (type != null) query = query.typeEqualTo(type);
     if (status != null) query = query.statusEqualTo(status);
     if (tag != null) query = query.tagsElementEqualTo(tag);
+    if (priority != null) query = query.priorityEqualTo(priority);
 
     final tasks = await query.isDeletedEqualTo(false).findAll();
 

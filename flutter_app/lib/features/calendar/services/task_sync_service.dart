@@ -23,7 +23,6 @@ class TaskSyncService {
     for(final task in unsyncedTasks){
       try{
         final taskMap = task.toCloudJsonFormat();
-
         taskMap["user_id"] = _supabase.auth.currentUser!.id;
         await _supabase.from('tasks').upsert(taskMap);
         await _localDb.markTasksAsSynced(task.originalId);

@@ -14,7 +14,7 @@ abstract class CalendarLocalDataSource {
   Future<List<TaskModel>> getTasksByRange(DateTime start, DateTime end);
   Future<List<TaskTagModel>> getAllTagNames();
   Future<List<TaskModel>>getTasksByCondition({DateTime? start, DateTime? end, TaskCategory? category,
-                                              TaskType? type, TaskStatus? status, String? tag,
+                                              TaskType? type, TaskStatus? status, String? tag, TaskPriority? priority,
                                               });
 
   // cloud 

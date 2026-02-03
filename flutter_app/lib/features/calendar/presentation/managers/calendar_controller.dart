@@ -74,12 +74,12 @@ class CalendarStateController extends AsyncNotifier<List<Task>>{
   }
 
   Future<void>getTasksByCondition({DateTime? start, DateTime? end, TaskCategory? category,
-                                              TaskType? type, TaskStatus? status, String? tag,
+                                              TaskType? type, TaskStatus? status, String? tag, TaskPriority? priority,
                                               }) async {
     final repository = ref.read(calendarRepositoryProvider);
     final updatedList = await repository.getTasksByCondition(start: start, end: end, 
                                   category: category, type: type, 
-                                  status: status, tag: tag
+                                  status: status, tag: tag, priority: priority
                                   );
 
     state = AsyncData(updatedList);

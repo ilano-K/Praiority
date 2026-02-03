@@ -65,4 +65,23 @@ String toUtcHourMinute(String hourMinute) {
   return '$hh:$mm';
 }
 
+String getCurrentTimeZoneName() {
+  DateTime now = DateTime.now();
+  return now.timeZoneName;
+}
+
+String getUtcOffsetString() {
+  final now = DateTime.now();
+  final offset = now.timeZoneOffset;
+
+  // Determine the sign
+  final sign = offset.isNegative ? '-' : '+';
+
+  // Absolute hours and minutes
+  final hours = offset.inHours.abs().toString().padLeft(2, '0');
+  final minutes = (offset.inMinutes.abs() % 60).toString().padLeft(2, '0');
+
+  return '$sign$hours:$minutes';
+}
+
 
