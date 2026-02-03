@@ -1,50 +1,82 @@
-import 'package:flutter_app/features/calendar/presentation/utils/time_utils.dart';
+// File: lib/features/calendar/domain/entities/date_range_helper.dart
 
-enum CalendarScope {day, week, month}
+enum CalendarScope { day, week, month }
 
-class DateRange{
-  CalendarScope? scope;
-  final DateTime startTime;
-  DateTime? endTime;
+/// Immutable object holding a start and end DateTime
+class DateRange {
+  final DateTime start;
+  final DateTime end;
 
-  DateRange({
-    this.scope,
-    required this.startTime,
-    this.endTime
+  const DateRange({
+    required this.start,
+    required this.end,
   });
 
-  DateTime get start {
-    final map = {
-      CalendarScope.day: startOfDay(startTime),
-      CalendarScope.week: startOfWeek(startTime),
-      CalendarScope.month: startOfMonth(startTime)
-    };
-    return map[scope] ?? startTime;
-  }
-
-  DateTime get end {
-    final map = {
-      CalendarScope.day: endOfDay(startTime),
-      CalendarScope.week: endOfWeek(startTime),
-      CalendarScope.month: endOfMonth(startTime)
-    };
-    return map[scope] ?? endTime!;
-  }
-
   @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    if (other.runtimeType != runtimeType) return false;
-    return other is DateRange &&
-      other.scope == scope &&
-      other.startTime.isAtSameMomentAs(startTime) &&
-      ((other.endTime == null && endTime == null) || (other.endTime != null && endTime != null && other.endTime!.isAtSameMomentAs(endTime!)));
+  String toString() => 'DateRange(start: $start, end: $end)';
+}
+
+/// Helper class for generating standard DateRanges
+class DateRangeHelper {
+  static DateRange dayRange(DateTime date) {
+    final start = DateTime(date.year, date.month, date.day, 0, 0, 0);
+    final end = DateTime(date.year, date.month, date.day, 23, 59, 59);
+    return DateRange(start: start, end: end);
   }
 
-  @override
-  int get hashCode => Object.hash(
-    scope,
-    startTime.toUtc().millisecondsSinceEpoch,
-    endTime?.toUtc().millisecondsSinceEpoch ?? 0,
-  );
+  static DateRange weekRange(DateTime date) {
+    int daysToSubtract = date.weekday % 7; 
+    final start = DateTime(date.year, date.month, date.day - daysToSubtract, 0, 0, 0);
+    final end = start.add(const Duration(days: 6, hours: 23, minutes: 59, seconds: 59));
+    return DateRange(start: start, end: end);
+  }
+
+  static DateRange monthRange(DateTime date) {
+    final start = DateTime(date.year, date.month, 1, 0, 0, 0);
+    final lastDay = DateTime(date.year, date.month + 1, 0).day;
+    final end = DateTime(date.year, date.month, lastDay, 23, 59, 59);
+    return DateRange(start: start, end: end);
+  }
+}
+
+extension DateRangeExtension on DateTime {
+  DateRange range(CalendarScope scope) {
+    switch (scope) {
+      case CalendarScope.day: return DateRangeHelper.dayRange(this);
+      case CalendarScope.week: return DateRangeHelper.weekRange(this);
+      case CalendarScope.month: return DateRangeHelper.monthRange(this);
+    }
+  }
+
+  /// AGGRESSIVE BUFFER: Fetches huge chunks of data to ensure smooth scrolling.
+  DateRange buffered(CalendarScope scope) {
+    DateTime start;
+    DateTime end;
+
+    switch (scope) {
+      case CalendarScope.day:
+        // BUFFER: +/- 30 Days (2 Months total)
+        // This allows the user to swipe 30 times before we need to fetch again.
+        final base = DateRangeHelper.dayRange(this);
+        start = base.start.subtract(const Duration(days: 30)); 
+        end = base.end.add(const Duration(days: 30));          
+        break;
+
+      case CalendarScope.week:
+        // BUFFER: +/- 12 Weeks (3 Months total)
+        final base = DateRangeHelper.weekRange(this);
+        start = base.start.subtract(const Duration(days: 84)); 
+        end = base.end.add(const Duration(days: 84));          
+        break;
+
+      case CalendarScope.month:
+        // BUFFER: +/- 6 Months (1 Year total)
+        start = DateTime(year, month - 6, 1);
+        final endOfNextMonth = DateTime(year, month + 7, 0); 
+        end = DateTime(endOfNextMonth.year, endOfNextMonth.month, endOfNextMonth.day, 23, 59, 59);
+        break;
+    }
+
+    return DateRange(start: start, end: end);
+  }
 }

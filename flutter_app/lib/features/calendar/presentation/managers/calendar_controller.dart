@@ -15,8 +15,7 @@ class CalendarStateController extends AsyncNotifier<List<Task>>{
   DateRange? _currentRange;
   @override
   FutureOr<List<Task>> build() {
-    _currentRange ??=
-      DateRange(scope: CalendarScope.day, startTime: DateTime.now());
+    _currentRange ??= DateTime.now().range(CalendarScope.day);
     final repository = ref.watch(calendarRepositoryProvider);
     return repository.getTasksByRange(_currentRange!.start, _currentRange!.end);
   }
