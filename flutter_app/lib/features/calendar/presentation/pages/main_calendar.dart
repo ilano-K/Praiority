@@ -244,6 +244,7 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
         currentView: _currentView, 
         onViewSelected: _onViewSwitched, 
       ),
+
       floatingActionButton: CalendarBuilder.buildMainFab(
         colorScheme: colorScheme,
         fabController: _fabController,
@@ -252,11 +253,24 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
         onOptionTap: (label) {
           _toggleFab();
           if (label == "Task") {
+            // 1. Get the current phone time (hour and minute)
+            final now = DateTime.now();
+            
+            // 2. Merge the date the user is looking at with the ACTUAL current time
+            final dateWithCurrentTime = DateTime(
+              _selectedDate.year,
+              _selectedDate.month,
+              _selectedDate.day,
+              now.hour,
+              now.minute,
+            );
+
             showModalBottomSheet(
               context: context, 
               isScrollControlled: true, 
               backgroundColor: Colors.transparent, 
-              builder: (context) => AddTaskSheet(initialDate: _selectedDate),
+              // 3. Pass the combined time so AddTaskSheet sees "Now" instead of "Midnight"
+              builder: (context) => AddTaskSheet(initialDate: dateWithCurrentTime),
             );
           }
         },
