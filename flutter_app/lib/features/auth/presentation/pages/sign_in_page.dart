@@ -1,7 +1,7 @@
 // File: lib/features/auth/presentation/pages/sign_in_page.dart
 
 import 'package:flutter/material.dart';
-import 'package:flutter_app/core/utils/error_utils.dart';
+import 'package:flutter_app/core/errors/app_exceptions.dart';
 import 'package:flutter_app/features/auth/presentation/manager/auth_controller.dart';
 import 'package:flutter_app/features/auth/presentation/pages/forgot_pass_page.dart';
 import 'package:flutter_app/features/auth/presentation/widgets/auth_components.dart';
@@ -94,16 +94,38 @@ class _SignInPageState extends ConsumerState<SignInPage> {
     final colorScheme = Theme.of(context).colorScheme;
 
     // Error Listener
-    ref.listen<AsyncValue>(
-      authControllerProvider,
-      (_, state) {
-        if (!state.hasError) return;
-        final appException = parseError(state.error!);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(appException.message)),
-        );
-      },
-    );
+   ref.listen<AsyncValue>(
+    authControllerProvider,
+    (_, state) {
+      if (!state.hasError) return;
+
+      final error = parseError(state.error!); // <-- now defined
+      switch (error.type) {
+        case AppErrorType.invalidCredentials:
+        case AppErrorType.network:
+        case AppErrorType.validation:
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(error.message)),
+          );
+          break;
+
+        case AppErrorType.server:
+          showDialog(
+            context: context,
+            builder: (_) => AlertDialog(
+              title: Text(error.title),
+              content: Text(error.message),
+            ),
+          );
+          break;
+
+        default:
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Something went wrong.")),
+          );
+      }
+    },
+  );
 
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final String logoPath = isDarkMode ? 'assets/images/DarkLogo.png' : 'assets/images/LightLogo.png';

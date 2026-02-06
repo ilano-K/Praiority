@@ -1,11 +1,15 @@
-// File: lib/features/calendar/presentation/widgets/ai_tip_widget.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 
-class AiTipWidget extends StatefulWidget {
+// Import your Smart Features Controller
+import 'package:flutter_app/features/calendar/presentation/managers/smart_features_controller.dart';
+
+class AiTipWidget extends ConsumerStatefulWidget {
+  final String taskId; // 1. Added ID so we know what task to ask about
   final String title;
   final String description;
-  final String generatedTip;
+  final String generatedTip; // Initial tip (if any)
   final bool isCompleted;
   final VoidCallback onEdit;
   final VoidCallback? onComplete;
@@ -13,6 +17,7 @@ class AiTipWidget extends StatefulWidget {
 
   const AiTipWidget({
     super.key,
+    required this.taskId, 
     required this.title,
     required this.description,
     required this.generatedTip,
@@ -23,26 +28,41 @@ class AiTipWidget extends StatefulWidget {
   });
 
   @override
-  State<AiTipWidget> createState() => _AiTipWidgetState();
+  ConsumerState<AiTipWidget> createState() => _AiTipWidgetState();
 }
 
-class _AiTipWidgetState extends State<AiTipWidget> {
+class _AiTipWidgetState extends ConsumerState<AiTipWidget> {
   bool _isGenerating = false;
   bool _tipReceived = false;
   String _loadingDots = "";
   Timer? _timer;
+  
+  // 2. Local variable to hold the tip (starts with the one passed in)
+  late String _currentTip;
 
-  void _startLoadingAnimation() {
+  @override
+  void initState() {
+    super.initState();
+    _currentTip = widget.generatedTip;
+    // If we already have a tip passed in, mark it as received
+    if (_currentTip.isNotEmpty) {
+      _tipReceived = true;
+    }
+  }
+
+  // 3. THE REAL LOGIC
+  Future<void> _generateTip() async {
+    // Start Animation
     setState(() {
       _isGenerating = true;
-      _tipReceived = false;
       _loadingDots = "";
     });
 
+    // Start the "..." animation timer just for visuals
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(milliseconds: 400), (timer) {
       setState(() {
-        if (_loadingDots == "...") {
+        if (_loadingDots.length >= 3) {
           _loadingDots = "";
         } else {
           _loadingDots += ".";
@@ -50,15 +70,33 @@ class _AiTipWidgetState extends State<AiTipWidget> {
       });
     });
 
-    Future.delayed(const Duration(seconds: 2), () {
-      _timer?.cancel();
+    try {
+      // CALL THE CONTROLLER
+      // We pass the task ID and a default instruction
+      final newAdvice = await ref.read(smartFeaturesControllerProvider).executeSmartAdvice(
+        widget.taskId, 
+        "Give me a short, actionable tip on how to complete this task efficiently."
+      );
+
       if (mounted) {
         setState(() {
           _isGenerating = false;
           _tipReceived = true;
+          // Update the text with the real result
+          _currentTip = newAdvice ?? "Could not generate advice.";
         });
+        _timer?.cancel();
       }
-    });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isGenerating = false;
+          _currentTip = "Error: Failed to connect to AI.";
+          _tipReceived = true;
+        });
+        _timer?.cancel();   
+      }
+    }
   }
 
   @override
@@ -75,7 +113,6 @@ class _AiTipWidgetState extends State<AiTipWidget> {
       width: double.infinity,
       padding: const EdgeInsets.all(24.0),
       decoration: BoxDecoration(
-        // Uses Background color (Light: FFFFFF, Dark: 0C0C0C)
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(20.0),
       ),
@@ -88,7 +125,6 @@ class _AiTipWidgetState extends State<AiTipWidget> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               IconButton(
-                // Uses Icon color (Light: 000000, Dark: FFFFFF)
                 icon: Icon(Icons.delete_outline, size: 28, color: colorScheme.onSurface),
                 onPressed: widget.onDelete,
                 padding: EdgeInsets.zero,
@@ -110,23 +146,15 @@ class _AiTipWidgetState extends State<AiTipWidget> {
                         width: 28, 
                         height: 28,
                         decoration: BoxDecoration(
-                          // The fill uses the primary "action" color from your scheme
                           color: widget.isCompleted ? colorScheme.primary : Colors.transparent,
                           shape: BoxShape.circle,
                           border: Border.all(
-                            // Border uses onSurface (Light: 000000, Dark: FFFFFF)
                             color: colorScheme.onSurface, 
                             width: 1.5,
                           ),
                         ),
                         child: widget.isCompleted 
-                          ? Icon(
-                              Icons.check, 
-                              size: 18, 
-                              // Using onSurface ensures the checkmark matches your 
-                              // Icon/Text color (Black in Light, White in Dark)
-                              color: colorScheme.onSurface, 
-                            ) 
+                          ? Icon(Icons.check, size: 18, color: colorScheme.onSurface) 
                           : null,
                       ),
                     )
@@ -162,9 +190,9 @@ class _AiTipWidgetState extends State<AiTipWidget> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: _isGenerating ? null : _startLoadingAnimation,
+              // Connect the button to the real function
+              onPressed: _isGenerating ? null : _generateTip,
               style: ElevatedButton.styleFrom(
-                // Uses Button color (Light: B0C8F5, Dark: 333459)
                 backgroundColor: colorScheme.primary,
                 foregroundColor: colorScheme.onSurface,
                 elevation: 0,
@@ -193,9 +221,9 @@ class _AiTipWidgetState extends State<AiTipWidget> {
               ),
             ),
           
-          if (_tipReceived)
+          if (_tipReceived && !_isGenerating)
             Text(
-              widget.generatedTip,
+              _currentTip, // Display the dynamic variable
               style: TextStyle(
                 fontSize: 16,
                 color: colorScheme.onSurface,

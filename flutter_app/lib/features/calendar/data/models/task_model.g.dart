@@ -17,112 +17,117 @@ const TaskModelSchema = CollectionSchema(
   name: r'TaskModel',
   id: -1192054402460482572,
   properties: {
-    r'category': PropertySchema(
+    r'aiTip': PropertySchema(
       id: 0,
+      name: r'aiTip',
+      type: IsarType.string,
+    ),
+    r'category': PropertySchema(
+      id: 1,
       name: r'category',
       type: IsarType.string,
       enumMap: _TaskModelcategoryEnumValueMap,
     ),
     r'colorValue': PropertySchema(
-      id: 1,
+      id: 2,
       name: r'colorValue',
       type: IsarType.long,
     ),
     r'deadline': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'deadline',
       type: IsarType.dateTime,
     ),
     r'description': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'description',
       type: IsarType.string,
     ),
     r'durationMinutes': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'durationMinutes',
       type: IsarType.long,
     ),
     r'endTime': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'endTime',
       type: IsarType.dateTime,
     ),
     r'isAiMovable': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'isAiMovable',
       type: IsarType.bool,
     ),
     r'isAllDay': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'isAllDay',
       type: IsarType.bool,
     ),
     r'isConflicting': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'isConflicting',
       type: IsarType.bool,
     ),
     r'isDeleted': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
     r'isSynced': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'isSynced',
       type: IsarType.bool,
     ),
     r'location': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'location',
       type: IsarType.string,
     ),
     r'originalId': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'originalId',
       type: IsarType.string,
     ),
     r'priority': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'priority',
       type: IsarType.byte,
       enumMap: _TaskModelpriorityEnumValueMap,
     ),
     r'recurrenceRule': PropertySchema(
-      id: 14,
+      id: 15,
       name: r'recurrenceRule',
       type: IsarType.string,
     ),
     r'startTime': PropertySchema(
-      id: 15,
+      id: 16,
       name: r'startTime',
       type: IsarType.dateTime,
     ),
     r'status': PropertySchema(
-      id: 16,
+      id: 17,
       name: r'status',
       type: IsarType.string,
       enumMap: _TaskModelstatusEnumValueMap,
     ),
     r'tags': PropertySchema(
-      id: 17,
+      id: 18,
       name: r'tags',
       type: IsarType.stringList,
     ),
     r'title': PropertySchema(
-      id: 18,
+      id: 19,
       name: r'title',
       type: IsarType.string,
     ),
     r'type': PropertySchema(
-      id: 19,
+      id: 20,
       name: r'type',
       type: IsarType.string,
       enumMap: _TaskModeltypeEnumValueMap,
     ),
     r'updatedAt': PropertySchema(
-      id: 20,
+      id: 21,
       name: r'updatedAt',
       type: IsarType.dateTime,
     )
@@ -187,6 +192,12 @@ int _taskModelEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
+  {
+    final value = object.aiTip;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.category.name.length * 3;
   {
     final value = object.description;
@@ -226,27 +237,28 @@ void _taskModelSerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeString(offsets[0], object.category.name);
-  writer.writeLong(offsets[1], object.colorValue);
-  writer.writeDateTime(offsets[2], object.deadline);
-  writer.writeString(offsets[3], object.description);
-  writer.writeLong(offsets[4], object.durationMinutes);
-  writer.writeDateTime(offsets[5], object.endTime);
-  writer.writeBool(offsets[6], object.isAiMovable);
-  writer.writeBool(offsets[7], object.isAllDay);
-  writer.writeBool(offsets[8], object.isConflicting);
-  writer.writeBool(offsets[9], object.isDeleted);
-  writer.writeBool(offsets[10], object.isSynced);
-  writer.writeString(offsets[11], object.location);
-  writer.writeString(offsets[12], object.originalId);
-  writer.writeByte(offsets[13], object.priority.index);
-  writer.writeString(offsets[14], object.recurrenceRule);
-  writer.writeDateTime(offsets[15], object.startTime);
-  writer.writeString(offsets[16], object.status.name);
-  writer.writeStringList(offsets[17], object.tags);
-  writer.writeString(offsets[18], object.title);
-  writer.writeString(offsets[19], object.type.name);
-  writer.writeDateTime(offsets[20], object.updatedAt);
+  writer.writeString(offsets[0], object.aiTip);
+  writer.writeString(offsets[1], object.category.name);
+  writer.writeLong(offsets[2], object.colorValue);
+  writer.writeDateTime(offsets[3], object.deadline);
+  writer.writeString(offsets[4], object.description);
+  writer.writeLong(offsets[5], object.durationMinutes);
+  writer.writeDateTime(offsets[6], object.endTime);
+  writer.writeBool(offsets[7], object.isAiMovable);
+  writer.writeBool(offsets[8], object.isAllDay);
+  writer.writeBool(offsets[9], object.isConflicting);
+  writer.writeBool(offsets[10], object.isDeleted);
+  writer.writeBool(offsets[11], object.isSynced);
+  writer.writeString(offsets[12], object.location);
+  writer.writeString(offsets[13], object.originalId);
+  writer.writeByte(offsets[14], object.priority.index);
+  writer.writeString(offsets[15], object.recurrenceRule);
+  writer.writeDateTime(offsets[16], object.startTime);
+  writer.writeString(offsets[17], object.status.name);
+  writer.writeStringList(offsets[18], object.tags);
+  writer.writeString(offsets[19], object.title);
+  writer.writeString(offsets[20], object.type.name);
+  writer.writeDateTime(offsets[21], object.updatedAt);
 }
 
 TaskModel _taskModelDeserialize(
@@ -256,36 +268,37 @@ TaskModel _taskModelDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = TaskModel();
+  object.aiTip = reader.readStringOrNull(offsets[0]);
   object.category =
-      _TaskModelcategoryValueEnumMap[reader.readStringOrNull(offsets[0])] ??
+      _TaskModelcategoryValueEnumMap[reader.readStringOrNull(offsets[1])] ??
           TaskCategory.easy;
-  object.colorValue = reader.readLongOrNull(offsets[1]);
-  object.deadline = reader.readDateTimeOrNull(offsets[2]);
-  object.description = reader.readStringOrNull(offsets[3]);
-  object.durationMinutes = reader.readLongOrNull(offsets[4]);
-  object.endTime = reader.readDateTimeOrNull(offsets[5]);
+  object.colorValue = reader.readLongOrNull(offsets[2]);
+  object.deadline = reader.readDateTimeOrNull(offsets[3]);
+  object.description = reader.readStringOrNull(offsets[4]);
+  object.durationMinutes = reader.readLongOrNull(offsets[5]);
+  object.endTime = reader.readDateTimeOrNull(offsets[6]);
   object.id = id;
-  object.isAiMovable = reader.readBool(offsets[6]);
-  object.isAllDay = reader.readBool(offsets[7]);
-  object.isConflicting = reader.readBool(offsets[8]);
-  object.isDeleted = reader.readBool(offsets[9]);
-  object.isSynced = reader.readBool(offsets[10]);
-  object.location = reader.readStringOrNull(offsets[11]);
-  object.originalId = reader.readString(offsets[12]);
+  object.isAiMovable = reader.readBool(offsets[7]);
+  object.isAllDay = reader.readBool(offsets[8]);
+  object.isConflicting = reader.readBool(offsets[9]);
+  object.isDeleted = reader.readBool(offsets[10]);
+  object.isSynced = reader.readBool(offsets[11]);
+  object.location = reader.readStringOrNull(offsets[12]);
+  object.originalId = reader.readString(offsets[13]);
   object.priority =
-      _TaskModelpriorityValueEnumMap[reader.readByteOrNull(offsets[13])] ??
+      _TaskModelpriorityValueEnumMap[reader.readByteOrNull(offsets[14])] ??
           TaskPriority.low;
-  object.recurrenceRule = reader.readStringOrNull(offsets[14]);
-  object.startTime = reader.readDateTimeOrNull(offsets[15]);
+  object.recurrenceRule = reader.readStringOrNull(offsets[15]);
+  object.startTime = reader.readDateTimeOrNull(offsets[16]);
   object.status =
-      _TaskModelstatusValueEnumMap[reader.readStringOrNull(offsets[16])] ??
+      _TaskModelstatusValueEnumMap[reader.readStringOrNull(offsets[17])] ??
           TaskStatus.unscheduled;
-  object.tags = reader.readStringList(offsets[17]) ?? [];
-  object.title = reader.readString(offsets[18]);
+  object.tags = reader.readStringList(offsets[18]) ?? [];
+  object.title = reader.readString(offsets[19]);
   object.type =
-      _TaskModeltypeValueEnumMap[reader.readStringOrNull(offsets[19])] ??
+      _TaskModeltypeValueEnumMap[reader.readStringOrNull(offsets[20])] ??
           TaskType.task;
-  object.updatedAt = reader.readDateTimeOrNull(offsets[20]);
+  object.updatedAt = reader.readDateTimeOrNull(offsets[21]);
   return object;
 }
 
@@ -297,20 +310,20 @@ P _taskModelDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
+      return (reader.readStringOrNull(offset)) as P;
+    case 1:
       return (_TaskModelcategoryValueEnumMap[reader.readStringOrNull(offset)] ??
           TaskCategory.easy) as P;
-    case 1:
-      return (reader.readLongOrNull(offset)) as P;
     case 2:
-      return (reader.readDateTimeOrNull(offset)) as P;
-    case 3:
-      return (reader.readStringOrNull(offset)) as P;
-    case 4:
       return (reader.readLongOrNull(offset)) as P;
-    case 5:
+    case 3:
       return (reader.readDateTimeOrNull(offset)) as P;
+    case 4:
+      return (reader.readStringOrNull(offset)) as P;
+    case 5:
+      return (reader.readLongOrNull(offset)) as P;
     case 6:
-      return (reader.readBool(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 7:
       return (reader.readBool(offset)) as P;
     case 8:
@@ -320,27 +333,29 @@ P _taskModelDeserializeProp<P>(
     case 10:
       return (reader.readBool(offset)) as P;
     case 11:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 12:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 13:
+      return (reader.readString(offset)) as P;
+    case 14:
       return (_TaskModelpriorityValueEnumMap[reader.readByteOrNull(offset)] ??
           TaskPriority.low) as P;
-    case 14:
-      return (reader.readStringOrNull(offset)) as P;
     case 15:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 16:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 17:
       return (_TaskModelstatusValueEnumMap[reader.readStringOrNull(offset)] ??
           TaskStatus.unscheduled) as P;
-    case 17:
-      return (reader.readStringList(offset) ?? []) as P;
     case 18:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringList(offset) ?? []) as P;
     case 19:
+      return (reader.readString(offset)) as P;
+    case 20:
       return (_TaskModeltypeValueEnumMap[reader.readStringOrNull(offset)] ??
           TaskType.task) as P;
-    case 20:
+    case 21:
       return (reader.readDateTimeOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -373,11 +388,13 @@ const _TaskModelstatusEnumValueMap = {
   r'unscheduled': r'unscheduled',
   r'scheduled': r'scheduled',
   r'completed': r'completed',
+  r'pending': r'pending',
 };
 const _TaskModelstatusValueEnumMap = {
   r'unscheduled': TaskStatus.unscheduled,
   r'scheduled': TaskStatus.scheduled,
   r'completed': TaskStatus.completed,
+  r'pending': TaskStatus.pending,
 };
 const _TaskModeltypeEnumValueMap = {
   r'task': r'task',
@@ -687,6 +704,152 @@ extension TaskModelQueryWhere
 
 extension TaskModelQueryFilter
     on QueryBuilder<TaskModel, TaskModel, QFilterCondition> {
+  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> aiTipIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'aiTip',
+      ));
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> aiTipIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'aiTip',
+      ));
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> aiTipEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'aiTip',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> aiTipGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'aiTip',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> aiTipLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'aiTip',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> aiTipBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'aiTip',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> aiTipStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'aiTip',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> aiTipEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'aiTip',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> aiTipContains(
+      String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'aiTip',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> aiTipMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'aiTip',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> aiTipIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'aiTip',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> aiTipIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'aiTip',
+        value: '',
+      ));
+    });
+  }
+
   QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> categoryEqualTo(
     TaskCategory value, {
     bool caseSensitive = true,
@@ -2605,6 +2768,18 @@ extension TaskModelQueryLinks
     on QueryBuilder<TaskModel, TaskModel, QFilterCondition> {}
 
 extension TaskModelQuerySortBy on QueryBuilder<TaskModel, TaskModel, QSortBy> {
+  QueryBuilder<TaskModel, TaskModel, QAfterSortBy> sortByAiTip() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'aiTip', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterSortBy> sortByAiTipDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'aiTip', Sort.desc);
+    });
+  }
+
   QueryBuilder<TaskModel, TaskModel, QAfterSortBy> sortByCategory() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'category', Sort.asc);
@@ -2848,6 +3023,18 @@ extension TaskModelQuerySortBy on QueryBuilder<TaskModel, TaskModel, QSortBy> {
 
 extension TaskModelQuerySortThenBy
     on QueryBuilder<TaskModel, TaskModel, QSortThenBy> {
+  QueryBuilder<TaskModel, TaskModel, QAfterSortBy> thenByAiTip() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'aiTip', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterSortBy> thenByAiTipDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'aiTip', Sort.desc);
+    });
+  }
+
   QueryBuilder<TaskModel, TaskModel, QAfterSortBy> thenByCategory() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'category', Sort.asc);
@@ -3103,6 +3290,13 @@ extension TaskModelQuerySortThenBy
 
 extension TaskModelQueryWhereDistinct
     on QueryBuilder<TaskModel, TaskModel, QDistinct> {
+  QueryBuilder<TaskModel, TaskModel, QDistinct> distinctByAiTip(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'aiTip', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<TaskModel, TaskModel, QDistinct> distinctByCategory(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -3244,6 +3438,12 @@ extension TaskModelQueryProperty
   QueryBuilder<TaskModel, int, QQueryOperations> idProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'id');
+    });
+  }
+
+  QueryBuilder<TaskModel, String?, QQueryOperations> aiTipProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'aiTip');
     });
   }
 

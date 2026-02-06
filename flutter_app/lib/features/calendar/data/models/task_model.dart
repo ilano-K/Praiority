@@ -25,6 +25,7 @@ class TaskModel {
   late String title;
 
   String? description;
+  String? aiTip;
   String? location;
   int? colorValue;
 
@@ -63,6 +64,7 @@ class TaskModel {
       tags: tags,
       title: title,
       description: description,
+      aiTip: aiTip,
       location: location,
       colorValue: colorValue,
       startTime: startTime,
@@ -85,6 +87,7 @@ class TaskModel {
       "tags": tags,
       "title": title,
       "description": description,
+      "ai_tip" : aiTip,
       "location": location,
       "category": category.name,
       "status": status.name,
@@ -112,6 +115,7 @@ class TaskModel {
       ..tags = json["tags"] != null ? List<String>.from(json["tags"]) : []
       ..title = json["title"] as String
       ..description = json["description"] as String?
+      ..aiTip = json["ai_tip"] as String?
       ..location = json["location"] as String?
       ..colorValue = json["color_value"] as int?
       ..startTime = json["start_time"] != null

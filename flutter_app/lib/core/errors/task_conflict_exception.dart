@@ -1,7 +1,3 @@
-class TaskConflictException implements Exception{
-  final String message;
-  TaskConflictException([this.message = 'Task conflicts with another task']);
-
-  @override 
-  String toString() => message;
-}
+class EndBeforeStartException implements Exception {}
+class DeadlineConflictException implements Exception {}
+class TimeConflictException implements Exception {}

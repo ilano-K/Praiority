@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'package:flutter_app/features/calendar/presentation/utils/repeat_to_rrule.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/components/interactive_row.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/selectors/date_picker.dart';
 import 'package:intl/intl.dart';
 
@@ -122,10 +123,9 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
               child: Column(
                 children: [
                   // 1. ARRANGE A DAY (Updated to use your separate pickDate)
-                  _buildInteractiveRow(
+                  InteractiveInputRow(
                     label: "Arrange a Day", 
                     value: DateFormat('MMMM d, y').format(_birthdayDate),
-                    colors: colorScheme,
                     onTapValue: () async {
                       final picked = await pickDate(
                         context, 
@@ -140,10 +140,9 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
                   ),
 
                   // 2. LOCATION
-                  _buildInteractiveRow(
+                  InteractiveInputRow(
                     label: "Location", 
                     value: _location,
-                    colors: colorScheme,
                     onTap: () => _showLocationDialog(context, colorScheme),
                   ),
                   
@@ -192,47 +191,6 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
               foregroundColor: Colors.black,
             ),
             child: const Text("Set"),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // --- WIDGET HELPER: Interactive Rows ---
-  Widget _buildInteractiveRow({
-    required String label, 
-    required String value, 
-    required ColorScheme colors,
-    VoidCallback? onTap, 
-    VoidCallback? onTapValue, 
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          GestureDetector(
-            onTap: onTap,
-            child: Text(label, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: colors.onSurface)),
-          ),
-          const SizedBox(height: 6),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque, 
-                  onTap: onTapValue ?? onTap,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
-                    child: Text(
-                      value, 
-                      style: TextStyle(fontSize: 15, color: colors.onSurface.withOpacity(0.8)),
-                    ),
-                  ),
-                ),
-              ),
-            ],
           ),
         ],
       ),

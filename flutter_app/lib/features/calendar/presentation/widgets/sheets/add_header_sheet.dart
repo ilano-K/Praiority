@@ -97,7 +97,7 @@ class _AddSheetHeaderState extends ConsumerState<AddSheetHeader> {
                   
                   if (context.mounted) Navigator.pop(context);
                 } 
-                on TaskConflictException {
+                on TimeConflictException {
                   // Keep sheet open so user can fix it
                   if (context.mounted) {
                     AppDialogs.showWarning(
@@ -107,15 +107,25 @@ class _AddSheetHeaderState extends ConsumerState<AddSheetHeader> {
                     );
                   }
                 } 
-                on TaskInvalidTimeException {
+                on EndBeforeStartException {
                   if (context.mounted) {
                     AppDialogs.showWarning(
                       context, 
-                      title: "Invalid Time", 
-                      message: "The end time must be after the start time."
+                      title: "Oops! Check Time", 
+                      message: "The end time cannot be before the start time."
                     );
                   }
                 } 
+
+                on DeadlineConflictException{
+                  if (context.mounted){
+                    AppDialogs.showWarning(
+                      context, 
+                      title: "Invalid End Time", 
+                      message: "The task ends after its deadline. Please adjust the time."
+                    );
+                  }
+                }
                 catch (e) {
                   if (context.mounted) {
                     AppDialogs.showWarning(

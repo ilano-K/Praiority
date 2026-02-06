@@ -29,23 +29,54 @@ class CategorySelector extends StatelessWidget {
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 15),
-          _buildOption(context, "Easy"),
-          _buildOption(context, "Average"),
-          _buildOption(context, "Hard"),
+          CategoryOption(
+            label: "Easy",
+            isSelected: currentCategory == "Easy",
+            onTap: () {
+              onCategorySelected("Easy");
+              Navigator.pop(context);
+            },
+          ),
+          CategoryOption(
+            label: "Average",
+            isSelected: currentCategory == "Average",
+            onTap: () {
+              onCategorySelected("Average");
+              Navigator.pop(context);
+            },
+          ),
+          CategoryOption(
+            label: "Hard",
+            isSelected: currentCategory == "Hard",
+            onTap: () {
+              onCategorySelected("Hard");
+              Navigator.pop(context);
+            },
+          ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildOption(BuildContext context, String label) {
-    bool isSelected = currentCategory == label;
+class CategoryOption extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const CategoryOption({
+    super.key,
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return ListTile(
-      onTap: () {
-        onCategorySelected(label);
-        Navigator.pop(context);
-      },
+      onTap: onTap,
       title: Text(
         label,
         style: TextStyle(
@@ -56,8 +87,8 @@ class CategorySelector extends StatelessWidget {
         ),
       ),
       // Checkmark is also Black (onSurface) when selected
-      trailing: isSelected 
-          ? Icon(Icons.check, color: colorScheme.onSurface) 
+      trailing: isSelected
+          ? Icon(Icons.check, color: colorScheme.onSurface)
           : null,
     );
   }

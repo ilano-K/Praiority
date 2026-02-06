@@ -5,6 +5,7 @@ import 'package:flutter_app/features/calendar/presentation/managers/calendar_pro
 import 'package:flutter_app/features/calendar/presentation/utils/repeat_to_rrule.dart';
 import 'package:flutter_app/features/calendar/presentation/utils/time_adjust.dart';
 import 'package:flutter_app/features/calendar/presentation/utils/time_utils.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/components/interactive_row.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/selectors/date_picker.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/selectors/pick_time.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -127,6 +128,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
       description: _descController.text.trim(),
       startTime: startTime,
       endTime: endTime,
+      deadline: null,
       isAllDay: _isAllDay,
       tags: _selectedTags, 
       location: _location,
@@ -147,11 +149,15 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
       isConflicting: _setNonConfliction
     );
 
+    print("[DEBUG] EVENT START TIME: ${baseTask.startTime}");
+    print("[DEBUG] EVENT END TIME: ${baseTask.endTime}");
+    print("[DEBUG] EVENT DEADLINE TIME: ${baseTask.deadline}");
     return widget.task != null ? widget.task!.copyWith(
       title: baseTask.title,
       description: baseTask.description,
       startTime: baseTask.startTime,
       endTime: baseTask.endTime,
+      deadline: baseTask.deadline,
       isAllDay: baseTask.isAllDay,
       tags: baseTask.tags, 
       location: baseTask.location,
@@ -213,21 +219,21 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
 
                   // --- DATE/TIME PICKERS ---
                   if (_isAllDay) ...[
-                    _buildInteractiveRow(
+                    InteractiveInputRow(
                       label: "Date", 
                       value: DateFormat('MMMM d, y').format(_startDate),
-                      colors: colorScheme,
+                    
                       onTapValue: () async {
                         final date = await pickDate(context, initialDate: _startDate);
                         if (date != null) setState(() => _startDate = date);
                       },
                     ),
                   ] else ...[
-                    _buildInteractiveRow(
+                    InteractiveInputRow(
                       label: "From", 
                       value: DateFormat('MMMM d, y').format(_startDate),
                       trailing: _startTime.format(context), 
-                      colors: colorScheme,
+                    
                       onTapValue: () async {
                         final date = await pickDate(context, initialDate: _startDate);
                         if (date != null) setState(() => _startDate = date);
@@ -237,11 +243,11 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                         if (time != null) setState(() => _startTime = time);
                       },
                     ),
-                    _buildInteractiveRow(
+                    InteractiveInputRow(
                       label: "To", 
                       value: DateFormat('MMMM d, y').format(_endDate),
                       trailing: _endTime.format(context),
-                      colors: colorScheme,
+                    
                       onTapValue: () async {
                         final date = await pickDate(context, initialDate: _endDate);
                         if (date != null) setState(() => _endDate = date);
@@ -254,10 +260,10 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                   ],
 
                   // --- REPEAT ROW ---
-                  _buildInteractiveRow(
+                  InteractiveInputRow(
                     label: "Repeat",
                     value: _getRepeatDisplayValue(),
-                    colors: colorScheme,
+                  
                     onTap: () async {
                       final result = await showModalBottomSheet(
                         context: context,
@@ -290,12 +296,12 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                   ),
 
                   // --- LOCATION & TAGS ---
-                  _buildInteractiveRow(
-                    label: "Location", value: _location, colors: colorScheme,
+                  InteractiveInputRow(
+                    label: "Location", value: _location,
                     onTap: () => _showLocationDialog(context, colorScheme),
                   ),
-                  _buildInteractiveRow(
-                    label: "Tags", value: _selectedTags.isEmpty ? "None" : _selectedTags.join(", "), colors: colorScheme,
+                  InteractiveInputRow(
+                    label: "Tags", value: _selectedTags.isEmpty ? "None" : _selectedTags.join(", "),
                     onTap: () => _showTagSelector(context),
                   ),
 
@@ -358,23 +364,4 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
     ));
   }
 
-  Widget _buildInteractiveRow({required String label, required String value, required ColorScheme colors, String? trailing, VoidCallback? onTap, VoidCallback? onTapValue, VoidCallback? onTapTrailing}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          GestureDetector(onTap: onTap, child: Text(label, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: colors.onSurface))),
-          const SizedBox(height: 6),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(child: GestureDetector(behavior: HitTestBehavior.opaque, onTap: onTapValue ?? onTap, child: Text(value, style: TextStyle(fontSize: 15, color: colors.onSurface.withOpacity(0.8))))),
-              if (trailing != null) GestureDetector(behavior: HitTestBehavior.opaque, onTap: onTapTrailing ?? onTap, child: Text(trailing, style: TextStyle(fontSize: 15, color: colors.onSurface.withOpacity(0.8)))),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 }

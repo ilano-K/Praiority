@@ -4,6 +4,7 @@ import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_controller.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_provider.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/components/interactive_row.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/selectors/date_picker.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/selectors/pick_time.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -101,13 +102,6 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
       if (widget.task != null) {
         _prefillFromTask(widget.task!);
       }
-
-    // Fetch tags
-    ref.read(calendarRepositoryProvider).getAllTagNames().then((tags) {
-      setState(() {
-        _tagsList = tags.toList();
-      });
-    });
   }
 
   // --- HELPERS ---
@@ -189,9 +183,12 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
 
   @override
   Widget build(BuildContext context) {
+    print("rebuilding now");
     final colorScheme = Theme.of(context).colorScheme;
     final Color sheetBackground = colorScheme.inversePrimary; 
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final tagsAsync = ref.watch(tagsProvider);
+    _tagsList = tagsAsync.valueOrNull ?? [];
 
     final headerData = HeaderData(
       selectedType: _selectedType,
@@ -251,11 +248,10 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
 
                   // 2. START & END TIME
                   if (!_isSmartScheduleEnabled) ...[
-                    _buildInteractiveRow(
+                    InteractiveInputRow(
                       label: "Start Time", 
                       value: DateFormat('MMMM d, y').format(_startDate),
                       trailing: _startTime.format(context),
-                      colors: colorScheme,
                       onTapValue: () async {
                         final picked = await pickDate(context, initialDate: _startDate);
                         if (picked != null) setState(() => _startDate = picked);
@@ -267,10 +263,9 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                       },
                     ),
 
-                    _buildInteractiveRow(
+                    InteractiveInputRow(
                       label: "End Time", 
                       value: _endTime.format(context),
-                      colors: colorScheme,
                       onTapValue: () async {
                         // Pass the CURRENTLY saved _endTime
                         final picked = await pickTime(context, initialTime: _endTime); 
@@ -280,10 +275,9 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                   ],
 
                   // 3. PRIORITY
-                  _buildInteractiveRow(
+                  InteractiveInputRow(
                     label: "Priority", 
                     value: _priority,
-                    colors: colorScheme,
                     onTap: () {
                       showModalBottomSheet(
                         context: context,
@@ -297,11 +291,10 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                   ),
 
                   // 4. DEADLINE
-                  _buildInteractiveRow(
+                  InteractiveInputRow(
                     label: "Deadline", 
                     value: DateFormat('MMMM d, y').format(_deadlineDate),
                     trailing: _deadlineTime.format(context),
-                    colors: colorScheme,
                     onTapValue: () async {
                       final picked = await pickDate(context, initialDate: _deadlineDate);
                       if (picked != null) setState(() => _deadlineDate = picked);
@@ -313,10 +306,9 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                   ),
 
                   // 5. CATEGORY
-                  _buildInteractiveRow(
+                  InteractiveInputRow(
                     label: "Category", 
                     value: _category,
-                    colors: colorScheme,
                     onTap: () {
                       showModalBottomSheet(
                         context: context,
@@ -330,10 +322,9 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                   ),
 
                   // 6. TAGS
-                  _buildInteractiveRow(
+                  InteractiveInputRow(
                     label: "Tags", 
                     value: _selectedTags.isEmpty ? "None" : _selectedTags.join(", "), 
-                    colors: colorScheme,
                     onTap: () {
                       showModalBottomSheet(
                         context: context,
@@ -350,10 +341,10 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                                   sheetSetState(() {}); 
                                 },
                                 onTagAdded: (newTag) async {
+                                  await ref.read(tagsProvider.notifier).addTag(newTag);
                                   setState(() {
                                     if (!_tagsList.contains(newTag)) _tagsList.add(newTag);
                                   });
-                                  await ref.read(calendarControllerProvider.notifier).addTag(newTag);
                                   sheetSetState(() {});
                                 },
                                 onTagRemoved: (removedTag) async{
@@ -361,7 +352,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                                     _tagsList = List<String>.from(_tagsList)..remove(removedTag);
                                     _selectedTags = List<String>.from(_selectedTags)..remove(removedTag);
                                   });
-                                  await ref.read(calendarControllerProvider.notifier).deleteTag(removedTag);
+                                  await ref.read(tagsProvider.notifier).deleteTag(removedTag);
                                   sheetSetState(() {});
                                 },
                               );
@@ -418,54 +409,6 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                 ],
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInteractiveRow({
-    required String label, 
-    required String value, 
-    required ColorScheme colors,
-    String? trailing,
-    VoidCallback? onTap, 
-    VoidCallback? onTapValue, 
-    VoidCallback? onTapTrailing, 
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          GestureDetector(
-            onTap: onTap,
-            child: Text(label, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: colors.onSurface)),
-          ),
-          const SizedBox(height: 6),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque, 
-                  onTap: onTapValue ?? onTap,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
-                    child: Text(value, style: TextStyle(fontSize: 15, color: colors.onSurface.withOpacity(0.8))),
-                  ),
-                ),
-              ),
-              if (trailing != null)
-                GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: onTapTrailing ?? onTap,
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 20, top: 8, bottom: 8), 
-                    child: Text(trailing, style: TextStyle(fontSize: 15, color: colors.onSurface.withOpacity(0.8))),
-                  ),
-                ),
-            ],
           ),
         ],
       ),

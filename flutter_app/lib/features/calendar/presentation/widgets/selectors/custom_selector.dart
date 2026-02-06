@@ -36,7 +36,6 @@ class _CustomSelectorState extends State<CustomSelector> {
     final colors = Theme.of(context).colorScheme;
 
     // Logic for Monthly labels based on the selected start date
-    // For this example, we'll use today as the reference point
     final now = DateTime.now();
     final dayNum = now.day.toString();
     final dayName = DateFormat('EEEE').format(now);
@@ -60,6 +59,7 @@ class _CustomSelectorState extends State<CustomSelector> {
               IconButton(
                 onPressed: () {
                   Navigator.pop(context);
+                  // Your existing transition logic
                   Navigator.of(context).push(
                     PageRouteBuilder(
                       opaque: false,
@@ -121,51 +121,64 @@ class _CustomSelectorState extends State<CustomSelector> {
           const SizedBox(height: 25),
 
           // --- REPEATS EVERY ---
-          _buildSectionTitle("Repeats Every", colors),
+          const SectionTitle(title: "Repeats Every"),
           Row(
             children: [
-              _buildTypeableBox(_repeatController, 50, colors),
+              TypeableBox(controller: _repeatController, width: 50),
               const SizedBox(width: 12),
-              _buildDropdown(colors),
+              RepeatUnitDropdown(
+                currentUnit: _repeatUnit,
+                onUnitChanged: (val) => setState(() => _repeatUnit = val),
+              ),
             ],
           ),
           
-          // ✅ --- CONDITIONAL MONTHLY OPTION ---
+          // --- CONDITIONAL MONTHLY OPTION ---
           if (_repeatUnit == 'month') ...[
             const SizedBox(height: 20),
-            _buildMonthlyTypeSelector(colors, dayNum, ordinal, dayName),
+            MonthlyTypeSelector(
+              currentType: _monthlyType,
+              dayNum: dayNum,
+              ordinal: ordinal,
+              dayName: dayName,
+              onTypeChanged: (val) => setState(() => _monthlyType = val),
+            ),
           ],
           
           const SizedBox(height: 25),
 
           // --- CONDITIONAL REPEATS ON (WEEKLY) ---
           if (_repeatUnit == 'week') ...[
-            _buildSectionTitle("Repeats on", colors),
+            const SectionTitle(title: "Repeats on"),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: List.generate(_days.length, (index) {
                 final isSelected = _selectedDays.contains(index);
-                return _buildDayCircle(_days[index], isSelected, index, colors);
+                return DayCircle(
+                  label: _days[index],
+                  isSelected: isSelected,
+                  onTap: () => setState(() {
+                    isSelected ? _selectedDays.remove(index) : _selectedDays.add(index);
+                  }),
+                );
               }),
             ),
             const SizedBox(height: 25),
           ],
 
           // --- ENDS ---
-          _buildSectionTitle("Ends", colors),
+          const SectionTitle(title: "Ends"),
           
-          _buildEndRow(
+          EndRow(
+            label: "Never",
             isSelected: _endOption == 'never',
             onTap: () => setState(() => _endOption = 'never'),
-            label: "Never",
-            colors: colors,
           ),
 
-          _buildEndRow(
+          EndRow(
+            label: "On",
             isSelected: _endOption == 'on',
             onTap: () => setState(() => _endOption = 'on'),
-            label: "On",
-            colors: colors,
             trailing: GestureDetector(
               onTap: () async {
                 setState(() => _endOption = 'on');
@@ -174,21 +187,19 @@ class _CustomSelectorState extends State<CustomSelector> {
                   setState(() => _selectedEndDate = date);
                 }
               },
-              child: _buildStaticBox(
-                DateFormat('MMMM d, yyyy').format(_selectedEndDate), 
-                colors,
+              child: StaticBox(
+                text: DateFormat('MMMM d, yyyy').format(_selectedEndDate),
               ),
             ),
           ),
 
-          _buildEndRow(
+          EndRow(
+            label: "After",
             isSelected: _endOption == 'after',
             onTap: () => setState(() => _endOption = 'after'),
-            label: "After",
-            colors: colors,
             trailing: Row(
               children: [
-                _buildTypeableBox(_occurrenceController, 50, colors),
+                TypeableBox(controller: _occurrenceController, width: 50),
                 const SizedBox(width: 10),
                 Text("occurrence", style: TextStyle(fontWeight: FontWeight.bold, color: colors.onSurface)),
               ],
@@ -198,40 +209,19 @@ class _CustomSelectorState extends State<CustomSelector> {
       ),
     );
   }
+}
 
-  // --- HELPER UI WIDGETS ---
+// ==========================================
+//           REUSABLE WIDGET CLASSES
+// ==========================================
 
-  Widget _buildMonthlyTypeSelector(ColorScheme colors, String dayNum, String ordinal, String dayName) {
-    return PopupMenuButton<String>(
-      onSelected: (val) => setState(() => _monthlyType = val),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          border: Border.all(color: colors.onSurface, width: 1.2),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              _monthlyType == 'day' 
-                  ? "Monthly on day $dayNum" 
-                  : "Monthly on the $ordinal $dayName",
-              style: TextStyle(fontWeight: FontWeight.bold, color: colors.onSurface),
-            ),
-            const SizedBox(width: 8),
-            Icon(Icons.arrow_drop_down, color: colors.onSurface),
-          ],
-        ),
-      ),
-      itemBuilder: (context) => [
-        PopupMenuItem(value: 'day', child: Text("Monthly on day $dayNum")),
-        PopupMenuItem(value: 'position', child: Text("Monthly on the $ordinal $dayName")),
-      ],
-    );
-  }
+class SectionTitle extends StatelessWidget {
+  final String title;
+  const SectionTitle({super.key, required this.title});
 
-  Widget _buildSectionTitle(String title, ColorScheme colors) {
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Text(
@@ -240,8 +230,21 @@ class _CustomSelectorState extends State<CustomSelector> {
       ),
     );
   }
+}
 
-  Widget _buildTypeableBox(TextEditingController controller, double width, ColorScheme colors) {
+class TypeableBox extends StatelessWidget {
+  final TextEditingController controller;
+  final double width;
+
+  const TypeableBox({
+    super.key,
+    required this.controller,
+    required this.width,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Container(
       width: width,
       height: 45,
@@ -263,8 +266,15 @@ class _CustomSelectorState extends State<CustomSelector> {
       ),
     );
   }
+}
 
-  Widget _buildStaticBox(String text, ColorScheme colors) {
+class StaticBox extends StatelessWidget {
+  final String text;
+  const StaticBox({super.key, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
@@ -275,24 +285,34 @@ class _CustomSelectorState extends State<CustomSelector> {
       child: Text(text, style: TextStyle(fontWeight: FontWeight.bold, color: colors.onSurface)),
     );
   }
+}
 
-  Widget _buildDropdown(ColorScheme colors) {
+class RepeatUnitDropdown extends StatelessWidget {
+  final String currentUnit;
+  final ValueChanged<String> onUnitChanged;
+
+  const RepeatUnitDropdown({
+    super.key,
+    required this.currentUnit,
+    required this.onUnitChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    
     return PopupMenuButton<String>(
-      onSelected: (String value) {
-        setState(() {
-          _repeatUnit = value;
-        });
-      },
+      onSelected: onUnitChanged,
       color: colors.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(color: colors.onSurface, width: 1.2),
       ),
       itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-        _buildPopupItem("day", colors),
-        _buildPopupItem("week", colors),
-        _buildPopupItem("month", colors),
-        _buildPopupItem("year", colors),
+        _buildItem("day", colors),
+        _buildItem("week", colors),
+        _buildItem("month", colors),
+        _buildItem("year", colors),
       ],
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -303,7 +323,7 @@ class _CustomSelectorState extends State<CustomSelector> {
         child: Row(
           children: [
             Text(
-              _repeatUnit,
+              currentUnit,
               style: TextStyle(fontWeight: FontWeight.bold, color: colors.onSurface),
             ),
             const SizedBox(width: 4),
@@ -314,24 +334,87 @@ class _CustomSelectorState extends State<CustomSelector> {
     );
   }
 
-  PopupMenuItem<String> _buildPopupItem(String value, ColorScheme colors) {
+  PopupMenuItem<String> _buildItem(String value, ColorScheme colors) {
     return PopupMenuItem<String>(
       value: value,
       child: Text(
         value,
         style: TextStyle(
-          fontWeight: _repeatUnit == value ? FontWeight.bold : FontWeight.normal,
+          fontWeight: currentUnit == value ? FontWeight.bold : FontWeight.normal,
           color: colors.onSurface,
         ),
       ),
     );
   }
+}
 
-  Widget _buildDayCircle(String label, bool isSelected, int index, ColorScheme colors) {
+class MonthlyTypeSelector extends StatelessWidget {
+  final String currentType;
+  final String dayNum;
+  final String ordinal;
+  final String dayName;
+  final ValueChanged<String> onTypeChanged;
+
+  const MonthlyTypeSelector({
+    super.key,
+    required this.currentType,
+    required this.dayNum,
+    required this.ordinal,
+    required this.dayName,
+    required this.onTypeChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    
+    return PopupMenuButton<String>(
+      onSelected: onTypeChanged,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          border: Border.all(color: colors.onSurface, width: 1.2),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              currentType == 'day' 
+                  ? "Monthly on day $dayNum" 
+                  : "Monthly on the $ordinal $dayName",
+              style: TextStyle(fontWeight: FontWeight.bold, color: colors.onSurface),
+            ),
+            const SizedBox(width: 8),
+            Icon(Icons.arrow_drop_down, color: colors.onSurface),
+          ],
+        ),
+      ),
+      itemBuilder: (context) => [
+        PopupMenuItem(value: 'day', child: Text("Monthly on day $dayNum")),
+        PopupMenuItem(value: 'position', child: Text("Monthly on the $ordinal $dayName")),
+      ],
+    );
+  }
+}
+
+class DayCircle extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const DayCircle({
+    super.key,
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return GestureDetector(
-      onTap: () => setState(() {
-        isSelected ? _selectedDays.remove(index) : _selectedDays.add(index);
-      }),
+      onTap: onTap,
       child: Container(
         width: 42,
         height: 48,
@@ -348,14 +431,25 @@ class _CustomSelectorState extends State<CustomSelector> {
       ),
     );
   }
+}
 
-  Widget _buildEndRow({
-    required bool isSelected, 
-    required VoidCallback onTap, 
-    required String label, 
-    required ColorScheme colors, 
-    Widget? trailing
-  }) {
+class EndRow extends StatelessWidget {
+  final bool isSelected;
+  final VoidCallback onTap;
+  final String label;
+  final Widget? trailing;
+
+  const EndRow({
+    super.key,
+    required this.isSelected,
+    required this.onTap,
+    required this.label,
+    this.trailing,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
@@ -374,7 +468,7 @@ class _CustomSelectorState extends State<CustomSelector> {
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: colors.onSurface)
           ),
           const SizedBox(width: 12),
-          if (trailing != null) trailing,
+          if (trailing != null) trailing!,
         ],
       ),
     );

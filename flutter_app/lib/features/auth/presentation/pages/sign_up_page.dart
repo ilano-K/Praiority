@@ -1,6 +1,6 @@
 // File: lib/features/auth/presentation/pages/sign_up_page.dart
 import 'package:flutter/material.dart';
-import 'package:flutter_app/core/utils/error_utils.dart';
+import 'package:flutter_app/core/errors/app_exceptions.dart';
 import 'package:flutter_app/features/auth/presentation/manager/auth_controller.dart';
 import 'package:flutter_app/features/auth/presentation/widgets/auth_components.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -50,9 +50,15 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
       );
 
       final authController = ref.read(authControllerProvider.notifier);
-      await authController.signUp(username: username, email: email, password: password);
-      // 3. Proceed if valid
-      // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const MainCalendar()));
+      
+      try{
+        await authController.signUp(username: username, email: email, password: password);
+      } catch (error) {
+        final appException = parseError(error);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(appException.message)),
+        );
+      }
     }
 
   // --- LOGIC: HANDLE GOOGLE SIGN IN ---

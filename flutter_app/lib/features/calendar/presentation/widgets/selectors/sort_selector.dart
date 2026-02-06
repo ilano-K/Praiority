@@ -7,10 +7,9 @@ import 'package:flutter_app/features/calendar/presentation/widgets/selectors/lis
 import 'package:flutter_app/features/calendar/presentation/widgets/selectors/priority_selector.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
-import 'package:flutter_app/features/calendar/presentation/managers/calendar_controller.dart';
 import 'package:intl/intl.dart';
 import 'category_selector.dart';
-import 'date_picker.dart'; // This contains your custom pickDate(context)
+import 'date_picker.dart';
 
 class SortSelector extends ConsumerStatefulWidget {
   const SortSelector({super.key});
@@ -26,14 +25,12 @@ class _SortSelectorState extends ConsumerState<SortSelector> {
   DateTime? _selectedFromDate;
   DateTime? _selectedToDate;
 
-  // --- NEW: tags ---
   String _selectedTag = "None";
   List<String> _availableTags = [];
 
   @override
   void initState() {
     super.initState();
-    // Load available tags from your repository
     ref.read(calendarRepositoryProvider).getAllTagNames().then((tags) {
       setState(() {
         _availableTags = tags.toList();
@@ -55,7 +52,7 @@ class _SortSelectorState extends ConsumerState<SortSelector> {
       priority: taskPriorityFromString(_selectedPriority),
       start: start,
       end: end,
-      tag: _selectedTag, // pass selected tags to controller
+      tag: _selectedTag,
     );
 
     Navigator.pop(context);
@@ -70,9 +67,6 @@ class _SortSelectorState extends ConsumerState<SortSelector> {
         : "None";
     final toSubtitle = _selectedToDate != null
         ? DateFormat('MMMM d, y').format(_selectedToDate!)
-        : "None";
-    final tagsSubtitle = _selectedTag.isNotEmpty && _selectedTag != "None"
-        ? _selectedTag
         : "None";
 
     return Container(
@@ -117,8 +111,7 @@ class _SortSelectorState extends ConsumerState<SortSelector> {
           const SizedBox(height: 15),
 
           // FROM date
-          _buildSortOption(
-            context,
+          SortOption(
             title: "From",
             value: fromSubtitle,
             onTap: () async {
@@ -136,8 +129,7 @@ class _SortSelectorState extends ConsumerState<SortSelector> {
           ),
 
           // TO date
-          _buildSortOption(
-            context,
+          SortOption(
             title: "To",
             value: toSubtitle,
             onTap: () async {
@@ -155,8 +147,7 @@ class _SortSelectorState extends ConsumerState<SortSelector> {
           ),
 
           // CATEGORY
-          _buildSortOption(
-            context,
+          SortOption(
             title: "Category",
             value: _selectedCategory,
             onTap: () {
@@ -174,8 +165,7 @@ class _SortSelectorState extends ConsumerState<SortSelector> {
           ),
 
           // PRIORITY
-          _buildSortOption(
-            context,
+          SortOption(
             title: "Priority",
             value: _selectedPriority,
             onTap: () {
@@ -192,9 +182,8 @@ class _SortSelectorState extends ConsumerState<SortSelector> {
             },
           ),
 
-          // --- NEW TAGS PICKER ---
-          _buildSortOption(
-            context,
+          // TAGS
+          SortOption(
             title: "Tag",
             value: _selectedTag != "None" ? _selectedTag : "None",
             onTap: () {
@@ -217,26 +206,42 @@ class _SortSelectorState extends ConsumerState<SortSelector> {
       ),
     );
   }
+}
 
-  Widget _buildSortOption(
-      BuildContext context, {
-        required String title,
-        required String value,
-        required VoidCallback onTap,
-      }) {
+// --- NEW CLASS ---
+class SortOption extends StatelessWidget {
+  final String title;
+  final String value;
+  final VoidCallback onTap;
+
+  const SortOption({
+    super.key,
+    required this.title,
+    required this.value,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    
     return ListTile(
       contentPadding: EdgeInsets.zero,
       onTap: onTap,
-      title: Text(title,
-          style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: colorScheme.onSurface)),
+      title: Text(
+        title,
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: colorScheme.onSurface,
+        ),
+      ),
       subtitle: Text(
         value,
         style: TextStyle(
-            fontSize: 14, color: colorScheme.onSurface.withOpacity(0.5)),
+          fontSize: 14, 
+          color: colorScheme.onSurface.withOpacity(0.5),
+        ),
       ),
       trailing: const Icon(Icons.keyboard_arrow_down),
     );

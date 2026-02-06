@@ -1,5 +1,4 @@
-// File: lib/features/calendar/presentation/widgets/priority_selector.dart
-// Purpose: UI widget for choosing a task's priority level (low/med/high).
+// File: lib/features/calendar/presentation/widgets/selectors/priority_selector.dart
 import 'package:flutter/material.dart';
 
 class PrioritySelector extends StatelessWidget {
@@ -31,35 +30,78 @@ class PrioritySelector extends StatelessWidget {
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 15),
-          _buildOption(context, "High", Colors.redAccent),
-          _buildOption(context, "Medium", Colors.orangeAccent),
-          _buildOption(context, "Low", Colors.green),
+          PriorityOption(
+            label: "High",
+            color: Colors.redAccent,
+            isSelected: currentPriority == "High",
+            onTap: () {
+              onPrioritySelected("High");
+              Navigator.pop(context);
+            },
+          ),
+          PriorityOption(
+            label: "Medium",
+            color: Colors.orangeAccent,
+            isSelected: currentPriority == "Medium",
+            onTap: () {
+              onPrioritySelected("Medium");
+              Navigator.pop(context);
+            },
+          ),
+          PriorityOption(
+            label: "Low",
+            color: Colors.green,
+            isSelected: currentPriority == "Low",
+            onTap: () {
+              onPrioritySelected("Low");
+              Navigator.pop(context);
+            },
+          ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildOption(BuildContext context, String label, Color color) {
-    bool isSelected = currentPriority == label;
+// --- NEW CLASS ---
+class PriorityOption extends StatelessWidget {
+  final String label;
+  final Color color;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const PriorityOption({
+    super.key,
+    required this.label,
+    required this.color,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return ListTile(
-      onTap: () {
-        onPrioritySelected(label);
-        Navigator.pop(context);
-      },
-      leading: CircleAvatar(backgroundColor: color, radius: 6),
+      contentPadding: EdgeInsets.zero, // Aligns nicely with the title
+      onTap: onTap,
+      leading: CircleAvatar(
+        backgroundColor: color,
+        radius: 6,
+      ),
       title: Text(
         label,
         style: TextStyle(
           // Bold when selected
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          // Black (onSurface) when selected
-          color: isSelected ? colorScheme.onSurface : null,
+          // Explicitly define text color for visibility in both themes
+          color: colorScheme.onSurface,
         ),
       ),
-      // Checkmark is Black (onSurface) when selected
-      trailing: isSelected ? Icon(Icons.check, color: colorScheme.onSurface) : null,
+      // Checkmark matches theme text color
+      trailing: isSelected
+          ? Icon(Icons.check, color: colorScheme.onSurface)
+          : null,
     );
   }
 }

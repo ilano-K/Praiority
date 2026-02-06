@@ -33,8 +33,15 @@ class ListSelector extends StatelessWidget {
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 15),
-          // Dynamically create the list of options
-          ...options.map((option) => _buildOption(context, option)),
+          // Map options to the new SelectorOption class
+          ...options.map((option) => SelectorOption(
+            label: option,
+            isSelected: currentValue == option,
+            onTap: () {
+              onSelected(option);
+              Navigator.pop(context); // Close the sheet automatically
+            },
+          )),
           
           // Optional: Add bottom padding for safety
           SizedBox(height: MediaQuery.of(context).padding.bottom),
@@ -42,17 +49,28 @@ class ListSelector extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _buildOption(BuildContext context, String label) {
-    final bool isSelected = currentValue == label;
+// --- NEW CLASS ---
+class SelectorOption extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const SelectorOption({
+    super.key,
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return ListTile(
       contentPadding: EdgeInsets.zero, // Aligns nicely with the title
-      onTap: () {
-        onSelected(label);
-        Navigator.pop(context); // Close the sheet automatically
-      },
+      onTap: onTap,
       title: Text(
         label,
         style: TextStyle(

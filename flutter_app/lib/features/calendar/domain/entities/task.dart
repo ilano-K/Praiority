@@ -12,6 +12,7 @@ class Task extends Equatable{
 
   final String title; // change to a default name like task_1
   final String? description;
+  final String? aiTip;
 
   final bool isSmartSchedule;
   final DateTime? startTime; //may be null if smart scheduled
@@ -39,6 +40,7 @@ class Task extends Equatable{
     this.isAllDay = false,
     required this.title,
     this.description,
+    this.aiTip,
     this.isSmartSchedule = false, // default: user schedules manually
     this.startTime,
     this.endTime,
@@ -60,6 +62,7 @@ class Task extends Equatable{
     bool isAllDay = false,
     required String title,
     String? description,
+    String? aiTip,
     bool isSmartSchedule = false,
     DateTime? startTime,
     DateTime? endTime,
@@ -81,6 +84,7 @@ class Task extends Equatable{
       isAllDay: isAllDay,
       title: title,
       description: description,
+      aiTip: aiTip,
       isSmartSchedule: isSmartSchedule,
       startTime: startTime,
       endTime: endTime,
@@ -103,10 +107,11 @@ class Task extends Equatable{
     bool? isAllDay,
     String? title,
     String? description,
+    String? aiTip,
     bool? isSmartSchedule,
     DateTime? startTime,
     DateTime? endTime,
-    DateTime? deadline,
+    Object? deadline = unset,
     TaskPriority? priority,
     TaskCategory? category,
     List<String>? tags,
@@ -124,10 +129,11 @@ class Task extends Equatable{
       isAllDay: isAllDay ?? this.isAllDay,
       title: title ?? this.title,
       description: description ?? this.description,
+      aiTip: aiTip ?? this.aiTip,
       isSmartSchedule: isSmartSchedule ?? this.isSmartSchedule,
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,
-      deadline: deadline ?? this.deadline,
+      deadline: deadline == unset ? this.deadline: deadline as DateTime?,
       priority: priority ?? this.priority,
       category: category ?? this.category,
       tags: tags ?? this.tags,
@@ -150,6 +156,7 @@ class Task extends Equatable{
         isAllDay,
         title,
         description,
+        aiTip,
         isSmartSchedule,
         startTime,
         endTime,

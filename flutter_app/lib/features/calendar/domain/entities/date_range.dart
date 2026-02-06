@@ -70,13 +70,20 @@ extension DateRangeExtension on DateTime {
         break;
 
       case CalendarScope.month:
-        // BUFFER: +/- 6 Months (1 Year total)
-        start = DateTime(year, month - 6, 1);
-        final endOfNextMonth = DateTime(year, month + 7, 0); 
-        end = DateTime(endOfNextMonth.year, endOfNextMonth.month, endOfNextMonth.day, 23, 59, 59);
+        // BUFFER: +/- 1 Year (2 Years total)
+        start = DateTime(year - 1, month, 1);
+
+        final endOfTargetMonth = DateTime(year + 1, month + 1, 0);
+        end = DateTime(
+          endOfTargetMonth.year,
+          endOfTargetMonth.month,
+          endOfTargetMonth.day,
+          23,
+          59,
+          59,
+        );
         break;
     }
-
     return DateRange(start: start, end: end);
   }
 }
