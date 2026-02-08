@@ -6,6 +6,7 @@ import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'package:flutter_app/features/calendar/domain/usecases/delete_task_usecase.dart';
 import 'package:flutter_app/features/calendar/domain/usecases/save_task_usecase.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_provider.dart';
+import 'package:flutter_app/features/calendar/presentation/managers/smart_features_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final calendarControllerProvider = AsyncNotifierProvider<CalendarStateController, List<Task>>(CalendarStateController.new);
@@ -37,6 +38,26 @@ class CalendarStateController extends AsyncNotifier<List<Task>> {
     state = AsyncData(updatedList);
   }
 
+  Future<void> refresh() async {
+    if (_currentRange != null) {
+      print("DEBUG: Refreshing calendar data from database...");
+      // Re-fetch data for the currently visible dates
+      await setRange(_currentRange!);
+    } else {
+      // Fallback if no range is set yet (rare)
+      ref.invalidateSelf();
+    }
+  }
+
+  Future<String?> requestAiTip(String taskId) async {
+     return await AsyncValue.guard(() async {
+      final smartController = ref.read(smartFeaturesControllerProvider);
+      return await smartController.executeSmartAdvice(taskId);
+    }).then((value) {
+      // value.data or null
+      return value.valueOrNull;
+    });
+  }
   Future<void> addTask(Task task) async {
     final saveTask = ref.read(saveTaskUseCaseProvider);
     await saveTask.execute(task);
@@ -54,7 +75,21 @@ class CalendarStateController extends AsyncNotifier<List<Task>> {
     
     state = AsyncData(updatedList);
     final syncService = ref.read(taskSyncServiceProvider);
-    unawaited(syncService.pushLocalChanges());
+    await syncService.pushLocalChanges(); 
+    
+    if(task.isSmartSchedule){
+      final smartFeatureController = ref.read(smartFeaturesControllerProvider);
+      final targetDate = DateTime(
+        DateTime.now().year,
+        DateTime.now().month,
+        DateTime.now().day,
+      );
+
+      final currentTime = DateTime.now();
+      await smartFeatureController.executeSmartSchedule(task.id, targetDate, currentTime);
+      await refresh();
+    }
+
   }
 
   Future<void> deleteTask(Task task) async {
@@ -79,6 +114,8 @@ class CalendarStateController extends AsyncNotifier<List<Task>> {
     );
     state = AsyncData(updatedList);
   }
+
+
 }
 
 final tagsProvider = AsyncNotifierProvider<TagsController, List<String>>(TagsController.new);

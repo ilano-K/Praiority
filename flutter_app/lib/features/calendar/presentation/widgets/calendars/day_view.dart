@@ -324,7 +324,8 @@ class TaskDataSource extends CalendarDataSource {
     final visibleTasks = tasks.where((t) => 
         !t.isAllDay && 
         t.type != TaskType.birthday && 
-        t.startTime != null
+        t.startTime != null &&
+        t.status != TaskStatus.pending
     ).toList();
 
     appointments = visibleTasks.map((task) {

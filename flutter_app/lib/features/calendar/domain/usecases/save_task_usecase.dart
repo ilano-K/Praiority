@@ -23,6 +23,11 @@ class SaveTaskUseCase {
 
   Future<void> execute(Task task) async {
 
+    if(task.status == TaskStatus.pending){
+      await repository.saveAndUpdateTask(task);
+      return;
+    }
+
     if(task.endTime != null){
       final hasInvalidEndtime = !task.startTime!.isBefore(task.endTime!);
       if(hasInvalidEndtime) throw EndBeforeStartException();
@@ -36,7 +41,7 @@ class SaveTaskUseCase {
     // skip birthday in time checking
     // skip endtime if not provided
     // skip if task is marked as non conflicting task
-    if (task.type != TaskType.birthday && task.isConflicting && task.endTime != null) {
+    if (task.type != TaskType.birthday && task.isConflicting && task.endTime != null && task.status != TaskStatus.pending) {
       
       final checkStart = startOfDay(task.startTime!);
       final checkEnd = RRuleUtils.getCheckEnd(task);

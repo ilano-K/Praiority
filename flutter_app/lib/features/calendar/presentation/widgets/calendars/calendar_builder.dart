@@ -111,7 +111,10 @@ static Widget buildAllDayList({
     required DateTime selectedDate,
   }) {
     final selectedDateOnly = dateOnly(selectedDate);
-    final allDayTasks = tasks.where((t) {
+    final allDayTasks = tasks.where((t) { 
+      if (t.status == TaskStatus.pending){
+        return false;
+      }
       if ((t.isAllDay || t.type == TaskType.birthday) && t.startTime != null) {
         final taskDateOnly = dateOnly(t.startTime!);
         

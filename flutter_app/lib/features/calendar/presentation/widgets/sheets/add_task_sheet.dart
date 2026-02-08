@@ -146,14 +146,15 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
       type:  TaskType.task,
       title: title,
       description: description,
-      priority: priorityMap[_priority]!,
-      category: categoryMap[_category]!,
+        priority: priorityMap[_priority] ?? TaskPriority.none,
+        category: categoryMap[_category] ?? TaskCategory.none,
       tags: _selectedTags,
       colorValue: colorValue,
       isAllDay: false,
       recurrenceRule: null,
       isAiMovable: _movableByAI,
-      isConflicting: _setNonConfliction
+      isConflicting: _setNonConfliction,
+      isSmartSchedule: _isSmartScheduleEnabled,
     );
 
     final scheduleData = _isSmartScheduleEnabled

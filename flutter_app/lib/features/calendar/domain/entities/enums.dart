@@ -1,6 +1,6 @@
 enum TaskType { task, event, birthday }
 enum TaskCategory { easy, average, hard, none }
-enum TaskPriority { low, medium, high }
+enum TaskPriority { none, low, medium, high }
 enum TaskStatus { unscheduled, scheduled, completed, pending }
 
 /// Converts a string to TaskType. Returns null if not valid.
