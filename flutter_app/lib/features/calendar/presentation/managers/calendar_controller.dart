@@ -89,6 +89,7 @@ class CalendarStateController extends AsyncNotifier<List<Task>> {
       await smartFeatureController.executeSmartSchedule(task.id, targetDate, currentTime);
       await refresh();
     }
+    await refresh();
 
   }
 
