@@ -1,6 +1,6 @@
 import 'package:intl/intl.dart';
 
-/// Converts UI state into an RRule string
+/// Converts UI state into a standardized iCalendar RRule string.
 String? repeatToRRule(
   String repeat, {
   DateTime? start,
@@ -16,7 +16,7 @@ String? repeatToRRule(
 
   const dayCodes = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
 
-  // --- 1. HANDLE STANDARD OPTIONS ---
+  // --- 1. HANDLE STANDARD PRESETS ---
   if (repeat != "Custom") {
     String freq;
     String extra = "";
@@ -59,18 +59,32 @@ String? repeatToRRule(
     'year': 'YEARLY'
   };
 
-  String rrule = "FREQ=${freqMap[unit]};INTERVAL=${interval ?? 1}";
+  String freq = freqMap[unit] ?? 'DAILY';
+  int ivl = interval ?? 1;
+  String rrule = "FREQ=$freq;INTERVAL=$ivl";
 
+  // --- CUSTOM UNIT HANDLERS ---
+  
+  // Year: Pin to the start date's month and day
+  if (unit == 'year' && start != null) {
+    rrule += ";BYMONTH=${start.month};BYMONTHDAY=${start.day}";
+  }
+
+  // Month: Handle "Day 10" vs "Second Tuesday"
   if (unit == 'month' && start != null) {
     if (monthlyType == 'position') {
       final dayCode = dayCodes[start.weekday % 7];
-      final weekIndex = ((start.day - 1) / 7).floor() + 1;
+      // Calculate week index (1st, 2nd, 3rd, 4th)
+      int weekIndex = ((start.day - 1) / 7).floor() + 1;
+      // Use -1 for the 5th week to represent "Last [Day]"
+      if (weekIndex > 4) weekIndex = -1; 
       rrule += ";BYDAY=$weekIndex$dayCode";
     } else {
       rrule += ";BYMONTHDAY=${start.day}";
     }
   }
 
+  // Week: Handle multiple selected days
   if (unit == 'week' && selectedDays != null && selectedDays.isNotEmpty) {
     final sortedDays = selectedDays.toList()..sort();
     final byDay = sortedDays.map((i) => dayCodes[i]).join(',');
@@ -79,7 +93,9 @@ String? repeatToRRule(
 
   // --- 3. END CONDITIONS ---
   if (endOption == 'on' && endDate != null) {
-    final formattedDate = DateFormat('yyyyMMdd').format(endDate);
+    // iCalendar format: YYYYMMDDTHHMMSSZ (UTC)
+    final utcDate = endDate.toUtc();
+    final formattedDate = DateFormat("yyyyMMdd'T'HHmmss'Z'").format(utcDate);
     rrule += ";UNTIL=$formattedDate";
   } else if (endOption == 'after' && occurrences != null) {
     rrule += ";COUNT=$occurrences";
@@ -88,28 +104,33 @@ String? repeatToRRule(
   return rrule;
 }
 
-/// Converts an RRule string back into a UI label
+/// Converts an RRule string back into a UI label.
+/// Ensures that complex rules (Interval > 1 or End Dates) always return "Custom".
 String rruleToRepeat(String? rrule) {
   if (rrule == null || rrule.isEmpty) return "None";
 
-  // Check standard presets (must have INTERVAL=1 and no end conditions for basic presets)
-  if (rrule.contains("FREQ=DAILY;INTERVAL=1") && !rrule.contains("UNTIL") && !rrule.contains("COUNT")) {
-    return "Daily";
-  }
+  // Check for complexity first
+  bool hasEndCondition = rrule.contains("UNTIL") || rrule.contains("COUNT");
+  bool hasComplexInterval = rrule.contains("INTERVAL=") && !rrule.contains("INTERVAL=1");
+  bool hasMultipleDays = rrule.contains(",") && rrule.contains("BYDAY=");
+
+  if (hasEndCondition || hasComplexInterval || hasMultipleDays) return "Custom";
+
+  // Strict Preset Matching
+  if (rrule.contains("FREQ=DAILY")) return "Daily";
   
-  if (rrule.contains("FREQ=WEEKLY;INTERVAL=1") && !rrule.contains("UNTIL") && !rrule.contains("COUNT")) {
-    // If it only has one day (the standard preset logic)
-    if (rrule.contains("BYDAY=") && !rrule.contains(",")) return "Weekly";
+  if (rrule.contains("FREQ=WEEKLY")) {
+    return "Weekly";
   }
 
-  if (rrule.contains("FREQ=MONTHLY;INTERVAL=1") && !rrule.contains("UNTIL") && !rrule.contains("COUNT")) {
-    return "Monthly";
+  if (rrule.contains("FREQ=MONTHLY")) {
+    // If it's a relative position (BYDAY), we open it in the Custom menu for clarity
+    return rrule.contains("BYDAY") ? "Custom" : "Monthly";
   }
 
   if (rrule.contains("FREQ=YEARLY")) {
     return "Yearly";
   }
 
-  // If it doesn't match the simple presets, it's a Custom rule
   return "Custom";
 }

@@ -7,15 +7,34 @@ class RepeatSelector extends StatelessWidget {
   final String currentRepeat;
   final ValueChanged<String> onRepeatSelected;
 
+  // Variables passed from AddEventSheet to keep CustomSelector in sync
+  final DateTime eventStartDate;
+  final int? initialInterval;
+  final String? initialUnit;
+  final Set<int>? initialDays;
+  final String? initialEndOption;
+  final DateTime? initialEndDate;
+  final int? initialOccurrences;
+  final String? initialMonthlyType;
+
   const RepeatSelector({
     super.key,
     required this.currentRepeat,
     required this.onRepeatSelected,
+    required this.eventStartDate,
+    this.initialInterval,
+    this.initialUnit,
+    this.initialDays,
+    this.initialEndOption,
+    this.initialEndDate,
+    this.initialOccurrences,
+    this.initialMonthlyType,
   });
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 20),
@@ -58,26 +77,29 @@ Widget _buildOption(BuildContext context, String label) {
     return ListTile(
       onTap: () async {
         if (label == "Custom") {
-          // 1. Wait for the custom data
-          final customData = await Navigator.of(context).push(
-            PageRouteBuilder(
-              // ... your existing PageRouteBuilder logic ...
-              pageBuilder: (context, _, __) => const Scaffold(
-                backgroundColor: Colors.transparent,
-                body: Align(
-                  alignment: Alignment.bottomCenter,
-                  child: CustomSelector(),
-                ),
-              ),
+          // Open the CustomSelector as a bottom sheet
+          final customData = await showModalBottomSheet(
+            context: context,
+            isScrollControlled: true, // Necessary for the selector's height
+            backgroundColor: Colors.transparent,
+            builder: (context) => CustomSelector(
+              eventStartDate: eventStartDate,
+              initialInterval: initialInterval,
+              initialUnit: initialUnit,
+              initialDays: initialDays,
+              initialEndOption: initialEndOption,
+              initialEndDate: initialEndDate,
+              initialOccurrences: initialOccurrences,
+              initialMonthlyType: initialMonthlyType,
             ),
           );
 
-          // 2. If data was saved, pass it back to the AddEventSheet
+          // If the user pressed "Save" in CustomSelector, it returns a Map
           if (customData != null && context.mounted) {
             Navigator.pop(context, customData);
           }
         } else {
-          // Standard preset: just pass the string
+          // Standard preset: just pass the string (e.g., "Daily")
           Navigator.pop(context, label);
         }
       },

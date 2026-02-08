@@ -304,27 +304,39 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
 
                   // --- REPEAT ROW ---
 
+                  // lib/features/calendar/presentation/widgets/sheets/add_event_sheet.dart
+
                   InteractiveInputRow(
                     label: "Repeat",
                     value: _getRepeatDisplayValue(), 
                     onTapValue: () async {
                       final dynamic result = await showModalBottomSheet(
                         context: context,
+                        isScrollControlled: true, // Necessary if CustomSelector gets tall
                         backgroundColor: Colors.transparent,
                         builder: (context) => RepeatSelector(
                           currentRepeat: _repeat,
-                          onRepeatSelected: (val) {}, // Still required by the class signature
+                          onRepeatSelected: (val) {}, 
+                          // --- PASS ALL CUSTOM STATE HERE ---
+                          eventStartDate: _startDate, 
+                          initialInterval: _customInterval,
+                          initialUnit: _customUnit,
+                          initialDays: _customDays,
+                          initialEndOption: _customEndOption,
+                          initialEndDate: _customEndDate,
+                          initialOccurrences: _customCount,
+                          initialMonthlyType: _monthlyType,
                         ),
                       );
 
                       if (result != null) {
                         setState(() {
                           if (result is String) {
-                            // Handle "Daily", "Weekly", etc.
+                            // Handle standard presets ("Daily", "Weekly", etc.)
                             _repeat = result;
-                            _resetCustomFields(); // Clear custom data if a preset is picked
+                            _resetCustomFields(); 
                           } else if (result is Map<String, dynamic>) {
-                            // Handle the Map returned by CustomSelector
+                            // Handle map returned from CustomSelector
                             _repeat = "Custom";
                             _customInterval = result['interval'];
                             _customUnit = result['unit'];

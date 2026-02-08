@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'date_picker.dart';
 
 class CustomSelector extends StatefulWidget {
+  final DateTime eventStartDate; // Syncs labels and defaults with the event
   final int? initialInterval;
   final String? initialUnit;
   final Set<int>? initialDays;
@@ -15,6 +16,7 @@ class CustomSelector extends StatefulWidget {
 
   const CustomSelector({
     super.key,
+    required this.eventStartDate,
     this.initialInterval,
     this.initialUnit,
     this.initialDays,
@@ -43,15 +45,19 @@ class _CustomSelectorState extends State<CustomSelector> {
   @override
   void initState() {
     super.initState();
-    // Initialize with passed values or sensible defaults (Today)
+    // Initialize controllers with passed values or defaults
     _repeatController = TextEditingController(text: (widget.initialInterval ?? 1).toString());
     _occurrenceController = TextEditingController(text: (widget.initialOccurrences ?? 1).toString());
     
     _repeatUnit = widget.initialUnit ?? 'day';
     _monthlyType = widget.initialMonthlyType ?? 'day';
-    _selectedDays = widget.initialDays ?? {DateTime.now().weekday % 7};
+    
+    // Default to the weekday of the event's start date
+    _selectedDays = widget.initialDays ?? {widget.eventStartDate.weekday % 7};
     _endOption = widget.initialEndOption ?? 'never';
-    _selectedEndDate = widget.initialEndDate ?? DateTime.now().add(const Duration(days: 30));
+    
+    // ✅ FIXED: Defaults to the event's START DATE instead of adding 30 days
+    _selectedEndDate = widget.initialEndDate ?? widget.eventStartDate;
   }
 
   @override
@@ -65,8 +71,8 @@ class _CustomSelectorState extends State<CustomSelector> {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
 
-    // Dynamic labels based on today or the event's actual date
-    final referenceDate = widget.initialEndDate ?? DateTime.now();
+    // Use the event's start date to generate accurate labels (e.g. "Monthly on day 8")
+    final referenceDate = widget.eventStartDate;
     final dayNum = referenceDate.day.toString();
     final dayName = DateFormat('EEEE').format(referenceDate);
     final weekNum = ((referenceDate.day - 1) / 7).floor() + 1;
@@ -141,6 +147,11 @@ class _CustomSelectorState extends State<CustomSelector> {
               onTypeChanged: (val) => setState(() => _monthlyType = val),
             ),
           ],
+
+          if (_repeatUnit == 'year') ...[
+            const SizedBox(height: 20),
+            StaticBox(text: "Every year on ${DateFormat('MMMM d').format(referenceDate)}"),
+          ],
           
           const SizedBox(height: 25),
 
@@ -162,6 +173,7 @@ class _CustomSelectorState extends State<CustomSelector> {
             const SizedBox(height: 25),
           ],
 
+          // --- END CONDITIONS ---
           const SectionTitle(title: "Ends"),
           
           EndRow(
