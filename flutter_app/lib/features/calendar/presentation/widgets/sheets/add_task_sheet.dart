@@ -1,4 +1,3 @@
-// File: lib/features/calendar/presentation/widgets/add_task_sheet.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
@@ -19,7 +18,7 @@ import 'add_header_sheet.dart';
 
 class AddTaskSheet extends ConsumerStatefulWidget {
   final Task? task;
-  final DateTime? initialDate; // Accepts the date from your DayView scroll
+  final DateTime? initialDate; 
 
   const AddTaskSheet({
     super.key, 
@@ -44,18 +43,22 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
   bool _movableByAI = false;
   bool _setNonConfliction = true;
 
+  // --- REMINDERS STATE ---
+  bool _hasReminder = true;
+  DateTime _reminderDate = DateTime.now();
+  TimeOfDay _reminderTime = TimeOfDay.now();
+
   // Controllers
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
 
-  // Date & Time (Initialized as late because we set them in initState)
+  // Date & Time
   late DateTime _startDate;
   late TimeOfDay _startTime;
   late TimeOfDay _endTime;
   late DateTime _deadlineDate;
   late TimeOfDay _deadlineTime;
 
-  // Conversion Maps
   final priorityMap = {
     "Low": TaskPriority.low,
     "Medium": TaskPriority.medium,
@@ -73,38 +76,30 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
   void initState() {
     super.initState();
 
-    // 1. DYNAMIC INITIALIZATION
-      final DateTime baseDate;
-      
-      if (widget.task != null) {
-        // Priority 1: Use the time already saved in your DB
-        baseDate = widget.task!.startTime ?? DateTime.now();
-      } else if (widget.initialDate != null) {
-        // Priority 2: Use the exact time of the grey block you clicked
-        // SfCalendar passes the hour/minute of the slot automatically.
-        baseDate = widget.initialDate!;
-      } else {
-        // Priority 3: Fallback to phone time if opened via FAB without a date
-        baseDate = DateTime.now();
-      }
-      
-      _startDate = baseDate;
-      _startTime = TimeOfDay.fromDateTime(baseDate);
-      
-      // Set end time to 1 hour after the clicked slot
-      _endTime = TimeOfDay.fromDateTime(
-        baseDate.add(const Duration(hours: 1))
-      );
+    final DateTime baseDate;
+    if (widget.task != null) {
+      baseDate = widget.task!.startTime ?? DateTime.now();
+    } else if (widget.initialDate != null) {
+      baseDate = widget.initialDate!;
+    } else {
+      baseDate = DateTime.now();
+    }
+    
+    _startDate = baseDate;
+    _startTime = TimeOfDay.fromDateTime(baseDate);
+    _endTime = TimeOfDay.fromDateTime(baseDate.add(const Duration(hours: 1)));
+    _deadlineDate = widget.task?.deadline ?? baseDate;
+    _deadlineTime = const TimeOfDay(hour: 23, minute: 59);
 
-      _deadlineDate = widget.task?.deadline ?? baseDate;
-      _deadlineTime = const TimeOfDay(hour: 23, minute: 59);
+    // Initialize reminder defaults
+    _reminderDate = baseDate;
+    _reminderTime = _startTime;
 
-      if (widget.task != null) {
-        _prefillFromTask(widget.task!);
-      }
+    if (widget.task != null) {
+      _prefillFromTask(widget.task!);
+    }
   }
 
-  // --- HELPERS ---
   String _enumToString(dynamic enumValue) {
     final name = enumValue.toString().split('.').last;
     return name[0].toUpperCase() + name.substring(1);
@@ -140,14 +135,17 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
   Task createTaskSaveTemplate(bool isDark) {
     final colorValue = isDark ? _selectedColor.dark.value : _selectedColor.light.value;
     final title = _titleController.text.trim().isEmpty ? "Untitled Task" : _titleController.text.trim();
-    final description = _descController.text.trim();
+    
+    final DateTime? reminderDateTime = _hasReminder 
+        ? _combineDateAndTime(_reminderDate, _reminderTime)
+        : null;
 
     var baseTask = Task.create(
-      type:  TaskType.task,
+      type: TaskType.task,
       title: title,
-      description: description,
-        priority: priorityMap[_priority] ?? TaskPriority.none,
-        category: categoryMap[_category] ?? TaskCategory.none,
+      description: _descController.text.trim(),
+      priority: priorityMap[_priority] ?? TaskPriority.none,
+      category: categoryMap[_category] ?? TaskCategory.none,
       tags: _selectedTags,
       colorValue: colorValue,
       isAllDay: false,
@@ -177,7 +175,6 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
       deadline: scheduleData["deadline"] as DateTime?,
       status: scheduleData["status"] as TaskStatus,
     );
-    
 
     return widget.task != null ? widget.task!.copyWith(
       title: baseTask.title,
@@ -190,16 +187,13 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
       tags: baseTask.tags,
       status: baseTask.status,
       colorValue: baseTask.colorValue,
-      isAllDay: false,
-      recurrenceRule: null,
       isAiMovable: baseTask.isAiMovable,
-      isConflicting: baseTask.isConflicting
+      isConflicting: baseTask.isConflicting,
     ) : baseTask;
   }
 
   @override
   Widget build(BuildContext context) {
-    print("rebuilding now");
     final colorScheme = Theme.of(context).colorScheme;
     final Color sheetBackground = colorScheme.inversePrimary; 
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
@@ -227,11 +221,41 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AddSheetHeader(data: headerData), 
-          
           Expanded(
             child: SingleChildScrollView(
               child: Column(
                 children: [
+                  // --- REMINDERS ROW ---
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("Reminders", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
+                            const SizedBox(height: 4),
+                            Text(
+                              _hasReminder ? "You'll get a reminder at the start time" : "Reminders are turned off",
+                              style: TextStyle(fontSize: 14, color: colorScheme.onSurface.withOpacity(0.6)),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Transform.scale(
+                        scale: 0.8,
+                        child: Switch(
+                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          value: _hasReminder,
+                          activeTrackColor: colorScheme.primary,
+                          onChanged: (val) => setState(() => _hasReminder = val),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
                   // 1. SMART SCHEDULE TOGGLE
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -242,14 +266,12 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                         scale: 0.8,
                         child: Switch(
                           value: _isSmartScheduleEnabled,
-                          activeThumbColor: Colors.white, 
                           activeTrackColor: colorScheme.primary, 
                           onChanged: (val) => setState(() => _isSmartScheduleEnabled = val),
                         ),
                       ),
                     ],
                   ),
-                  
                   if (_isSmartScheduleEnabled) ...[
                     Align(
                       alignment: Alignment.centerLeft,
@@ -259,8 +281,20 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                       ),
                     ),
                   ],
-                  
                   const SizedBox(height: 10),
+
+                  // 3. PRIORITY
+                  InteractiveInputRow(
+                    label: "Priority", value: _priority,
+                    onTap: () => showModalBottomSheet(
+                      context: context,
+                      backgroundColor: Colors.transparent,
+                      builder: (context) => PrioritySelector(
+                        currentPriority: _priority,
+                        onPrioritySelected: (val) => setState(() => _priority = val),
+                      ),
+                    ),
+                  ),
 
                   // 2. START & END TIME
                   if (!_isSmartScheduleEnabled) ...[
@@ -273,38 +307,22 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                         if (picked != null) setState(() => _startDate = picked);
                       },
                       onTapTrailing: () async {
-                        // Pass the CURRENTLY saved _startTime as the initial value
                         final picked = await pickTime(context, initialTime: _startTime); 
                         if (picked != null) setState(() => _startTime = picked);
                       },
                     ),
-
+                    
                     InteractiveInputRow(
                       label: "End Time", 
                       value: _endTime.format(context),
                       onTapValue: () async {
-                        // Pass the CURRENTLY saved _endTime
                         final picked = await pickTime(context, initialTime: _endTime); 
                         if (picked != null) setState(() => _endTime = picked);
                       },
                     ),
                   ],
 
-                  // 3. PRIORITY
-                  InteractiveInputRow(
-                    label: "Priority", 
-                    value: _priority,
-                    onTap: () {
-                      showModalBottomSheet(
-                        context: context,
-                        backgroundColor: Colors.transparent,
-                        builder: (context) => PrioritySelector(
-                          currentPriority: _priority,
-                          onPrioritySelected: (val) => setState(() => _priority = val),
-                        ),
-                      );
-                    }
-                  ),
+                  
 
                   // 4. DEADLINE
                   InteractiveInputRow(
@@ -323,60 +341,42 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
 
                   // 5. CATEGORY
                   InteractiveInputRow(
-                    label: "Category", 
-                    value: _category,
-                    onTap: () {
-                      showModalBottomSheet(
-                        context: context,
-                        backgroundColor: Colors.transparent,
-                        builder: (context) => CategorySelector(
-                          currentCategory: _category,
-                          onCategorySelected: (val) => setState(() => _category = val),
-                        ),
-                      );
-                    }
+                    label: "Category", value: _category,
+                    onTap: () => showModalBottomSheet(
+                      context: context,
+                      backgroundColor: Colors.transparent,
+                      builder: (context) => CategorySelector(
+                        currentCategory: _category,
+                        onCategorySelected: (val) => setState(() => _category = val),
+                      ),
+                    ),
                   ),
 
                   // 6. TAGS
                   InteractiveInputRow(
-                    label: "Tags", 
-                    value: _selectedTags.isEmpty ? "None" : _selectedTags.join(", "), 
-                    onTap: () {
-                      showModalBottomSheet(
-                        context: context,
-                        isScrollControlled: true,
-                        backgroundColor: Colors.transparent,
-                        builder: (context) {
-                          return StatefulBuilder(
-                            builder: (BuildContext context, StateSetter sheetSetState) {
-                              return TagSelector(
-                                selectedTags: _selectedTags,
-                                availableTags: _tagsList, 
-                                onTagsChanged: (newList) {
-                                  setState(() => _selectedTags = newList);
-                                  sheetSetState(() {}); 
-                                },
-                                onTagAdded: (newTag) async {
-                                  await ref.read(tagsProvider.notifier).addTag(newTag);
-                                  setState(() {
-                                    if (!_tagsList.contains(newTag)) _tagsList.add(newTag);
-                                  });
-                                  sheetSetState(() {});
-                                },
-                                onTagRemoved: (removedTag) async{
-                                  setState(() {
-                                    _tagsList = List<String>.from(_tagsList)..remove(removedTag);
-                                    _selectedTags = List<String>.from(_selectedTags)..remove(removedTag);
-                                  });
-                                  await ref.read(tagsProvider.notifier).deleteTag(removedTag);
-                                  sheetSetState(() {});
-                                },
-                              );
-                            },
-                          );
-                        }
-                      );
-                    }
+                    label: "Tags", value: _selectedTags.isEmpty ? "None" : _selectedTags.join(", "), 
+                    onTap: () => showModalBottomSheet(
+                      context: context, isScrollControlled: true, backgroundColor: Colors.transparent,
+                      builder: (ctx) => StatefulBuilder(
+                        builder: (context, sheetSetState) => TagSelector(
+                          selectedTags: _selectedTags, availableTags: _tagsList,
+                          onTagsChanged: (newList) { setState(() => _selectedTags = newList); sheetSetState(() {}); },
+                          onTagAdded: (newTag) async {
+                            await ref.read(tagsProvider.notifier).addTag(newTag);
+                            setState(() { if (!_tagsList.contains(newTag)) _tagsList.add(newTag); });
+                            sheetSetState(() {});
+                          },
+                          onTagRemoved: (removedTag) async {
+                            setState(() {
+                              _tagsList = List<String>.from(_tagsList)..remove(removedTag);
+                              _selectedTags = List<String>.from(_selectedTags)..remove(removedTag);
+                            });
+                            await ref.read(tagsProvider.notifier).deleteTag(removedTag);
+                            sheetSetState(() {});
+                          },
+                        ),
+                      ),
+                    ),
                   ),
                   
                   // 7. ADVANCED OPTIONS
@@ -384,39 +384,38 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                     data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
                     child: ExpansionTile(
                       tilePadding: EdgeInsets.zero, 
-                      childrenPadding: EdgeInsets.zero,
-                      title: Text('Advanced Options',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
+                      title: Text('Advanced Options', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
                       initiallyExpanded: _advancedExpanded,
                       onExpansionChanged: (val) => setState(() => _advancedExpanded = val),
                       children: [
+                        // --- REMIND ME ON ---
+                        Opacity(
+                          opacity: _hasReminder ? 1.0 : 0.4,
+                          child: InteractiveInputRow(
+                            label: "Remind me on",
+                            value: DateFormat('MMMM d, y').format(_reminderDate),
+                            trailing: _reminderTime.format(context),
+                            onTapValue: _hasReminder ? () async {
+                              final date = await pickDate(context, initialDate: _reminderDate);
+                              if (date != null) setState(() => _reminderDate = date);
+                            } : null,
+                            onTapTrailing: _hasReminder ? () async {
+                              final time = await pickTime(context, initialTime: _reminderTime);
+                              if (time != null) setState(() => _reminderTime = time);
+                            } : null,
+                          ),
+                        ),
                         ListTile(
                           contentPadding: EdgeInsets.zero,
                           title: Text('Auto-Reschedule', style: TextStyle(color: colorScheme.onSurface.withOpacity(0.8), fontSize: 15)),
                           subtitle: Text("Allow AI to move this task if missed", style: TextStyle(color: colorScheme.onSurface.withOpacity(0.5), fontSize: 12)),
-                          trailing: Transform.scale(
-                            scale: 0.8,
-                            child: Switch(
-                              value: _movableByAI,
-                              activeColor: Colors.white,
-                              activeTrackColor: colorScheme.primary,
-                              onChanged: (v) => setState(() => _movableByAI = v),
-                            ),
-                          ),
+                          trailing: Transform.scale(scale: 0.8, child: Switch(value: _movableByAI, activeTrackColor: colorScheme.primary, onChanged: (v) => setState(() => _movableByAI = v))),
                         ),
                         ListTile(
                           contentPadding: EdgeInsets.zero,
                           title: Text('Strict Mode', style: TextStyle(color: colorScheme.onSurface.withOpacity(0.8), fontSize: 15)),
                           subtitle: Text("Ensure absolutely no overlaps", style: TextStyle(color: colorScheme.onSurface.withOpacity(0.5), fontSize: 12)),
-                          trailing: Transform.scale(
-                            scale: 0.8,
-                            child: Switch(
-                              value: _setNonConfliction,
-                              activeColor: Colors.white,
-                              activeTrackColor: colorScheme.primary,
-                              onChanged: (v) => setState(() => _setNonConfliction = v),
-                            ),
-                          ),
+                          trailing: Transform.scale(scale: 0.8, child: Switch(value: _setNonConfliction, activeTrackColor: colorScheme.primary, onChanged: (v) => setState(() => _setNonConfliction = v))),
                         ),
                       ],
                     ),
