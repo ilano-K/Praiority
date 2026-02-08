@@ -141,27 +141,42 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
     final colorValue = isDark ? _selectedColor.dark.value : _selectedColor.light.value;
     final title = _titleController.text.trim().isEmpty ? "Untitled Task" : _titleController.text.trim();
     final description = _descController.text.trim();
-    final startDateTime = _combineDateAndTime(_startDate, _startTime);
-    final endDateTime = _combineDateAndTime(_startDate, _endTime);
-    final deadlineDateTime = _combineDateAndTime(_deadlineDate, _deadlineTime);
 
-    final baseTask = Task.create(
-      type: TaskType.task,
+    var baseTask = Task.create(
+      type:  TaskType.task,
       title: title,
       description: description,
-      startTime: startDateTime,
-      endTime: endDateTime,
-      deadline: deadlineDateTime,
       priority: priorityMap[_priority]!,
       category: categoryMap[_category]!,
-      tags: _selectedTags, 
-      status: TaskStatus.scheduled,
+      tags: _selectedTags,
       colorValue: colorValue,
       isAllDay: false,
       recurrenceRule: null,
       isAiMovable: _movableByAI,
       isConflicting: _setNonConfliction
     );
+
+    final scheduleData = _isSmartScheduleEnabled
+      ? {
+          "startTime": null,
+          "endTime": null,
+          "deadline": null,
+          "status": TaskStatus.pending,
+        }
+      : {
+          "startTime": _combineDateAndTime(_startDate, _startTime),
+          "endTime": _combineDateAndTime(_startDate, _endTime),
+          "deadline": _combineDateAndTime(_deadlineDate, _deadlineTime),
+          "status": TaskStatus.scheduled,
+        };
+
+    baseTask = baseTask.copyWith(
+      startTime: scheduleData["startTime"] as DateTime?,
+      endTime: scheduleData["endTime"] as DateTime?,
+      deadline: scheduleData["deadline"] as DateTime?,
+      status: scheduleData["status"] as TaskStatus,
+    );
+    
 
     return widget.task != null ? widget.task!.copyWith(
       title: baseTask.title,

@@ -34,11 +34,6 @@ class CalendarStateController extends AsyncNotifier<List<Task>> {
     final updatedList = await repository.getTasksByRange(_currentRange!.start, _currentRange!.end);
     
     print("DEBUG: [Controller] Fetched ${updatedList.length} tasks.");
-    if (updatedList.isNotEmpty) {
-       // print("DEBUG: [Controller] First task date: ${updatedList.first.startTime}");
-       // print("DEBUG: [Controller] Last task date: ${updatedList.last.startTime}");
-    }
-
     state = AsyncData(updatedList);
   }
 

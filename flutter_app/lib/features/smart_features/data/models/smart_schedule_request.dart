@@ -1,11 +1,11 @@
 class SmartScheduleRequest {
-  final String taskOriginalId;
-  final String targetDate;
-  final String currentTime;
+  final String cloudId;
+  final DateTime targetDate;
+  final DateTime currentTime;
   final String? instruction;
 
   SmartScheduleRequest({
-    required this.taskOriginalId,
+    required this.cloudId,
     required this.targetDate,
     required this.currentTime,
     this.instruction,
@@ -13,9 +13,9 @@ class SmartScheduleRequest {
 
   Map<String, dynamic> toJson() {
     return {
-      'task_id': taskOriginalId,
-      'target_date': targetDate,
-      'current_time': currentTime,
+      'task_id': cloudId,
+      'target_date': targetDate.toUtc().toIso8601String(),
+      'current_time': currentTime.toUtc().toIso8601String(),
       'instruction' : instruction ?? "",
     };
   }

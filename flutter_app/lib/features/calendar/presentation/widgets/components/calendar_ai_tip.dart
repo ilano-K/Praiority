@@ -74,8 +74,7 @@ class _AiTipWidgetState extends ConsumerState<AiTipWidget> {
       // CALL THE CONTROLLER
       // We pass the task ID and a default instruction
       final newAdvice = await ref.read(smartFeaturesControllerProvider).executeSmartAdvice(
-        widget.taskId, 
-        "Give me a short, actionable tip on how to complete this task efficiently."
+        widget.taskId
       );
 
       if (mounted) {

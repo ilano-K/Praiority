@@ -1,6 +1,6 @@
 class SmartOrganizeRequest {
-  final String targetDate;
-  final String currentTime;
+  final DateTime targetDate;
+  final DateTime currentTime;
   final String? instruction;
 
   SmartOrganizeRequest({
@@ -11,8 +11,8 @@ class SmartOrganizeRequest {
 
   Map<String, dynamic> toJson() {
     return {
-      'target_date': targetDate,
-      'current_time': currentTime,
+      'target_date': targetDate.toUtc().toIso8601String(),
+      'current_time': currentTime.toUtc().toIso8601String(),
       'instruction' : instruction ?? "",
     };
   }
