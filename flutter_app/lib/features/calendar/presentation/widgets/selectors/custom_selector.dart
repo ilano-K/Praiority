@@ -1,12 +1,28 @@
-// lib/src/shared/widgets/selectors/custom_selector.dart
+// lib/features/calendar/presentation/widgets/selectors/custom_selector.dart
 
 import 'package:flutter/material.dart';
-import 'package:flutter_app/features/calendar/presentation/widgets/selectors/date_picker.dart';
-import 'package:flutter_app/features/calendar/presentation/widgets/selectors/repeat_selector.dart';
 import 'package:intl/intl.dart';
+import 'date_picker.dart';
 
 class CustomSelector extends StatefulWidget {
-  const CustomSelector({super.key});
+  final int? initialInterval;
+  final String? initialUnit;
+  final Set<int>? initialDays;
+  final String? initialEndOption;
+  final DateTime? initialEndDate;
+  final int? initialOccurrences;
+  final String? initialMonthlyType;
+
+  const CustomSelector({
+    super.key,
+    this.initialInterval,
+    this.initialUnit,
+    this.initialDays,
+    this.initialEndOption,
+    this.initialEndDate,
+    this.initialOccurrences,
+    this.initialMonthlyType,
+  });
 
   @override
   State<CustomSelector> createState() => _CustomSelectorState();
@@ -14,15 +30,29 @@ class CustomSelector extends StatefulWidget {
 
 class _CustomSelectorState extends State<CustomSelector> {
   // --- STATE VARIABLES ---
-  final TextEditingController _repeatController = TextEditingController(text: '1');
-  final TextEditingController _occurrenceController = TextEditingController(text: '1');
+  late final TextEditingController _repeatController;
+  late final TextEditingController _occurrenceController;
   
-  String _repeatUnit = 'day';
-  String _monthlyType = 'day'; // 'day' or 'position'
+  late String _repeatUnit;
+  late String _monthlyType;
   final List<String> _days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-  final Set<int> _selectedDays = {1}; // Default to Monday
-  String _endOption = 'never'; 
-  DateTime _selectedEndDate = DateTime(2026, 2, 3);
+  late Set<int> _selectedDays;
+  late String _endOption;
+  late DateTime _selectedEndDate;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize with passed values or sensible defaults (Today)
+    _repeatController = TextEditingController(text: (widget.initialInterval ?? 1).toString());
+    _occurrenceController = TextEditingController(text: (widget.initialOccurrences ?? 1).toString());
+    
+    _repeatUnit = widget.initialUnit ?? 'day';
+    _monthlyType = widget.initialMonthlyType ?? 'day';
+    _selectedDays = widget.initialDays ?? {DateTime.now().weekday % 7};
+    _endOption = widget.initialEndOption ?? 'never';
+    _selectedEndDate = widget.initialEndDate ?? DateTime.now().add(const Duration(days: 30));
+  }
 
   @override
   void dispose() {
@@ -35,11 +65,11 @@ class _CustomSelectorState extends State<CustomSelector> {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
 
-    // Logic for Monthly labels based on the selected start date
-    final now = DateTime.now();
-    final dayNum = now.day.toString();
-    final dayName = DateFormat('EEEE').format(now);
-    final weekNum = ((now.day - 1) / 7).floor() + 1;
+    // Dynamic labels based on today or the event's actual date
+    final referenceDate = widget.initialEndDate ?? DateTime.now();
+    final dayNum = referenceDate.day.toString();
+    final dayName = DateFormat('EEEE').format(referenceDate);
+    final weekNum = ((referenceDate.day - 1) / 7).floor() + 1;
     final ordinal = ["", "first", "second", "third", "fourth", "fifth"][weekNum];
 
     return Container(
@@ -57,39 +87,7 @@ class _CustomSelectorState extends State<CustomSelector> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               IconButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  // Your existing transition logic
-                  Navigator.of(context).push(
-                    PageRouteBuilder(
-                      opaque: false,
-                      barrierDismissible: true,
-                      transitionDuration: const Duration(milliseconds: 300),
-                      pageBuilder: (context, _, __) => Scaffold(
-                        backgroundColor: Colors.transparent,
-                        body: Align(
-                          alignment: Alignment.bottomCenter,
-                          child: RepeatSelector(
-                            currentRepeat: "Custom",
-                            onRepeatSelected: (val) {}, 
-                          ),
-                        ),
-                      ),
-                      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                        return SlideTransition(
-                          position: Tween<Offset>(
-                            begin: const Offset(0, 1),
-                            end: Offset.zero,
-                          ).animate(CurvedAnimation(
-                            parent: animation,
-                            curve: Curves.easeOut,
-                          )),
-                          child: child,
-                        );
-                      },
-                    ),
-                  );
-                },
+                onPressed: () => Navigator.pop(context), 
                 icon: Icon(Icons.arrow_back_ios_new, color: colors.onSurface, size: 20),
               ),
               Text(
@@ -124,7 +122,7 @@ class _CustomSelectorState extends State<CustomSelector> {
           const SectionTitle(title: "Repeats Every"),
           Row(
             children: [
-              TypeableBox(controller: _repeatController, width: 50),
+              TypeableBox(controller: _repeatController, width: 55),
               const SizedBox(width: 12),
               RepeatUnitDropdown(
                 currentUnit: _repeatUnit,
@@ -133,7 +131,6 @@ class _CustomSelectorState extends State<CustomSelector> {
             ],
           ),
           
-          // --- CONDITIONAL MONTHLY OPTION ---
           if (_repeatUnit == 'month') ...[
             const SizedBox(height: 20),
             MonthlyTypeSelector(
@@ -147,7 +144,6 @@ class _CustomSelectorState extends State<CustomSelector> {
           
           const SizedBox(height: 25),
 
-          // --- CONDITIONAL REPEATS ON (WEEKLY) ---
           if (_repeatUnit == 'week') ...[
             const SectionTitle(title: "Repeats on"),
             Row(
@@ -166,7 +162,6 @@ class _CustomSelectorState extends State<CustomSelector> {
             const SizedBox(height: 25),
           ],
 
-          // --- ENDS ---
           const SectionTitle(title: "Ends"),
           
           EndRow(
@@ -183,9 +178,7 @@ class _CustomSelectorState extends State<CustomSelector> {
               onTap: () async {
                 setState(() => _endOption = 'on');
                 final date = await pickDate(context, initialDate: _selectedEndDate);
-                if (date != null) {
-                  setState(() => _selectedEndDate = date);
-                }
+                if (date != null) setState(() => _selectedEndDate = date);
               },
               child: StaticBox(
                 text: DateFormat('MMMM d, yyyy').format(_selectedEndDate),
@@ -212,7 +205,7 @@ class _CustomSelectorState extends State<CustomSelector> {
 }
 
 // ==========================================
-//           REUSABLE WIDGET CLASSES
+//           REUSABLE UI COMPONENTS
 // ==========================================
 
 class SectionTitle extends StatelessWidget {
@@ -235,12 +228,7 @@ class SectionTitle extends StatelessWidget {
 class TypeableBox extends StatelessWidget {
   final TextEditingController controller;
   final double width;
-
-  const TypeableBox({
-    super.key,
-    required this.controller,
-    required this.width,
-  });
+  const TypeableBox({super.key, required this.controller, required this.width});
 
   @override
   Widget build(BuildContext context) {
@@ -257,12 +245,8 @@ class TypeableBox extends StatelessWidget {
         controller: controller,
         textAlign: TextAlign.center,
         keyboardType: TextInputType.number,
-        cursorColor: colors.onSurface,
         style: TextStyle(fontWeight: FontWeight.bold, color: colors.onSurface),
-        decoration: const InputDecoration(
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.zero,
-        ),
+        decoration: const InputDecoration(border: InputBorder.none, contentPadding: EdgeInsets.zero),
       ),
     );
   }
@@ -290,42 +274,22 @@ class StaticBox extends StatelessWidget {
 class RepeatUnitDropdown extends StatelessWidget {
   final String currentUnit;
   final ValueChanged<String> onUnitChanged;
-
-  const RepeatUnitDropdown({
-    super.key,
-    required this.currentUnit,
-    required this.onUnitChanged,
-  });
+  const RepeatUnitDropdown({super.key, required this.currentUnit, required this.onUnitChanged});
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    
     return PopupMenuButton<String>(
       onSelected: onUnitChanged,
-      color: colors.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: colors.onSurface, width: 1.2),
-      ),
-      itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-        _buildItem("day", colors),
-        _buildItem("week", colors),
-        _buildItem("month", colors),
-        _buildItem("year", colors),
-      ],
+      itemBuilder: (context) => ["day", "week", "month", "year"]
+          .map((u) => PopupMenuItem(value: u, child: Text(u, style: TextStyle(fontWeight: currentUnit == u ? FontWeight.bold : FontWeight.normal))))
+          .toList(),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          border: Border.all(color: colors.onSurface, width: 1.2),
-          borderRadius: BorderRadius.circular(12),
-        ),
+        decoration: BoxDecoration(border: Border.all(color: colors.onSurface, width: 1.2), borderRadius: BorderRadius.circular(12)),
         child: Row(
           children: [
-            Text(
-              currentUnit,
-              style: TextStyle(fontWeight: FontWeight.bold, color: colors.onSurface),
-            ),
+            Text(currentUnit, style: TextStyle(fontWeight: FontWeight.bold, color: colors.onSurface)),
             const SizedBox(width: 4),
             Icon(Icons.keyboard_arrow_down, color: colors.onSurface),
           ],
@@ -333,59 +297,24 @@ class RepeatUnitDropdown extends StatelessWidget {
       ),
     );
   }
-
-  PopupMenuItem<String> _buildItem(String value, ColorScheme colors) {
-    return PopupMenuItem<String>(
-      value: value,
-      child: Text(
-        value,
-        style: TextStyle(
-          fontWeight: currentUnit == value ? FontWeight.bold : FontWeight.normal,
-          color: colors.onSurface,
-        ),
-      ),
-    );
-  }
 }
 
 class MonthlyTypeSelector extends StatelessWidget {
-  final String currentType;
-  final String dayNum;
-  final String ordinal;
-  final String dayName;
+  final String currentType, dayNum, ordinal, dayName;
   final ValueChanged<String> onTypeChanged;
-
-  const MonthlyTypeSelector({
-    super.key,
-    required this.currentType,
-    required this.dayNum,
-    required this.ordinal,
-    required this.dayName,
-    required this.onTypeChanged,
-  });
+  const MonthlyTypeSelector({super.key, required this.currentType, required this.dayNum, required this.ordinal, required this.dayName, required this.onTypeChanged});
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    
     return PopupMenuButton<String>(
       onSelected: onTypeChanged,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          border: Border.all(color: colors.onSurface, width: 1.2),
-          borderRadius: BorderRadius.circular(12),
-        ),
+        decoration: BoxDecoration(border: Border.all(color: colors.onSurface, width: 1.2), borderRadius: BorderRadius.circular(12)),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              currentType == 'day' 
-                  ? "Monthly on day $dayNum" 
-                  : "Monthly on the $ordinal $dayName",
-              style: TextStyle(fontWeight: FontWeight.bold, color: colors.onSurface),
-            ),
-            const SizedBox(width: 8),
+            Expanded(child: Text(currentType == 'day' ? "Monthly on day $dayNum" : "Monthly on the $ordinal $dayName", style: TextStyle(fontWeight: FontWeight.bold, color: colors.onSurface))),
             Icon(Icons.arrow_drop_down, color: colors.onSurface),
           ],
         ),
@@ -402,13 +331,7 @@ class DayCircle extends StatelessWidget {
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
-
-  const DayCircle({
-    super.key,
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
+  const DayCircle({super.key, required this.label, required this.isSelected, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -416,18 +339,13 @@ class DayCircle extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 42,
-        height: 48,
-        alignment: Alignment.center,
+        width: 42, height: 48, alignment: Alignment.center,
         decoration: BoxDecoration(
           color: isSelected ? colors.primary : colors.surface,
           border: Border.all(color: colors.onSurface, width: 1.2),
           borderRadius: BorderRadius.circular(12),
         ),
-        child: Text(
-          label,
-          style: TextStyle(fontWeight: FontWeight.w900, color: colors.onSurface),
-        ),
+        child: Text(label, style: TextStyle(fontWeight: FontWeight.w900, color: colors.onSurface)),
       ),
     );
   }
@@ -438,14 +356,7 @@ class EndRow extends StatelessWidget {
   final VoidCallback onTap;
   final String label;
   final Widget? trailing;
-
-  const EndRow({
-    super.key,
-    required this.isSelected,
-    required this.onTap,
-    required this.label,
-    this.trailing,
-  });
+  const EndRow({super.key, required this.isSelected, required this.onTap, required this.label, this.trailing});
 
   @override
   Widget build(BuildContext context) {
@@ -454,19 +365,9 @@ class EndRow extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
         children: [
-          GestureDetector(
-            onTap: onTap,
-            child: Icon(
-              isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
-              color: colors.onSurface,
-              size: 28,
-            ),
-          ),
+          GestureDetector(onTap: onTap, child: Icon(isSelected ? Icons.radio_button_checked : Icons.radio_button_off, color: colors.onSurface, size: 28)),
           const SizedBox(width: 12),
-          Text(
-            label, 
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: colors.onSurface)
-          ),
+          Text(label, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: colors.onSurface)),
           const SizedBox(width: 12),
           if (trailing != null) trailing!,
         ],

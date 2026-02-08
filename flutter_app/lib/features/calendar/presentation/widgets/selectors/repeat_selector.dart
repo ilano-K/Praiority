@@ -1,7 +1,7 @@
 // lib/features/calendar/presentation/widgets/selectors/repeat_selector.dart
 
 import 'package:flutter/material.dart';
-import 'package:flutter_app/features/calendar/presentation/widgets/selectors/custom_selector.dart';
+import 'custom_selector.dart';
 
 class RepeatSelector extends StatelessWidget {
   final String currentRepeat;
@@ -18,7 +18,7 @@ class RepeatSelector extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(vertical: 20),
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
@@ -27,43 +27,41 @@ class RepeatSelector extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "Repeat",
-            style: TextStyle(
-              fontSize: 20, 
-              fontWeight: FontWeight.bold,
-              color: colorScheme.onSurface,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Text(
+              "Repeat",
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
+              ),
             ),
           ),
           const SizedBox(height: 15),
-          
           _buildOption(context, "None"),
           _buildOption(context, "Daily"),
           _buildOption(context, "Weekly"),
           _buildOption(context, "Monthly"),
           _buildOption(context, "Yearly"),
+          const Divider(),
           _buildOption(context, "Custom"),
         ],
       ),
     );
   }
 
-  Widget _buildOption(BuildContext context, String label) {
+Widget _buildOption(BuildContext context, String label) {
     final colorScheme = Theme.of(context).colorScheme;
     bool isSelected = currentRepeat == label;
 
     return ListTile(
-      onTap: () {
+      onTap: () async {
         if (label == "Custom") {
-          Navigator.pop(context); // Close RepeatSelector instantly
-
-          // ✅ Updated: Slide-up animation for CustomSelector
-          Navigator.of(context).push(
+          // 1. Wait for the custom data
+          final customData = await Navigator.of(context).push(
             PageRouteBuilder(
-              opaque: false,
-              barrierDismissible: true,
-              transitionDuration: const Duration(milliseconds: 300),
-              reverseTransitionDuration: const Duration(milliseconds: 200),
+              // ... your existing PageRouteBuilder logic ...
               pageBuilder: (context, _, __) => const Scaffold(
                 backgroundColor: Colors.transparent,
                 body: Align(
@@ -71,23 +69,16 @@ class RepeatSelector extends StatelessWidget {
                   child: CustomSelector(),
                 ),
               ),
-              transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                return SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0, 1), // Starts from bottom
-                    end: Offset.zero,          // Moves up to center
-                  ).animate(CurvedAnimation(
-                    parent: animation,
-                    curve: Curves.easeOut,
-                  )),
-                  child: child,
-                );
-              },
             ),
           );
+
+          // 2. If data was saved, pass it back to the AddEventSheet
+          if (customData != null && context.mounted) {
+            Navigator.pop(context, customData);
+          }
         } else {
-          onRepeatSelected(label);
-          Navigator.pop(context);
+          // Standard preset: just pass the string
+          Navigator.pop(context, label);
         }
       },
       title: Text(
@@ -97,7 +88,7 @@ class RepeatSelector extends StatelessWidget {
           color: colorScheme.onSurface,
         ),
       ),
-      trailing: isSelected ? Icon(Icons.check, color: colorScheme.onSurface) : null,
+      trailing: isSelected ? Icon(Icons.check, color: colorScheme.primary) : null,
     );
   }
 }

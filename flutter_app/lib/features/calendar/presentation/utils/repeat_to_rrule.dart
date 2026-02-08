@@ -1,5 +1,6 @@
 import 'package:intl/intl.dart';
 
+/// Converts UI state into an RRule string
 String? repeatToRRule(
   String repeat, {
   DateTime? start,
@@ -13,31 +14,44 @@ String? repeatToRRule(
 }) {
   if (repeat == "None") return null;
 
-  // --- Handle Standard Options ---
+  const dayCodes = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
+
+  // --- 1. HANDLE STANDARD OPTIONS ---
   if (repeat != "Custom") {
-    Map<String, String> baseMap = {
-      "Daily": "FREQ=DAILY;INTERVAL=1",
-      "Weekly": "FREQ=WEEKLY;INTERVAL=1",
-      "Monthly": "FREQ=MONTHLY;INTERVAL=1",
-      "Yearly": "FREQ=YEARLY;INTERVAL=1",
-    };
+    String freq;
+    String extra = "";
 
-    String rrule = baseMap[repeat] ?? "FREQ=DAILY;INTERVAL=1";
-
-    if (repeat == 'Weekly' && start != null) {
-      const days = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'];
-      rrule += ';BYDAY=${days[(start.weekday - 1) % 7]}';
+    switch (repeat) {
+      case "Daily":
+        freq = "DAILY";
+        break;
+      case "Weekly":
+        freq = "WEEKLY";
+        if (start != null) {
+          final startIndex = start.weekday % 7; 
+          extra = ";BYDAY=${dayCodes[startIndex]}";
+        }
+        break;
+      case "Monthly":
+        freq = "MONTHLY";
+        if (start != null) extra = ";BYMONTHDAY=${start.day}";
+        break;
+      case "Yearly":
+        freq = "YEARLY";
+        if (start != null) {
+          extra = ";BYMONTH=${start.month};BYMONTHDAY=${start.day}";
+        }
+        break;
+      default:
+        freq = "DAILY";
     }
 
-    if (repeat == 'Yearly') {
-      rrule += ';UNTIL=20991231';
-    }
-    return rrule;
+    return "FREQ=$freq;INTERVAL=1$extra";
   }
 
-  // --- Handle Custom Logic ---
+  // --- 2. HANDLE CUSTOM LOGIC ---
   if (unit == null) return "FREQ=DAILY;INTERVAL=1";
-  
+
   final freqMap = {
     'day': 'DAILY',
     'week': 'WEEKLY',
@@ -47,10 +61,8 @@ String? repeatToRRule(
 
   String rrule = "FREQ=${freqMap[unit]};INTERVAL=${interval ?? 1}";
 
-  // ✅ New Monthly Logic
   if (unit == 'month' && start != null) {
     if (monthlyType == 'position') {
-      const dayCodes = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
       final dayCode = dayCodes[start.weekday % 7];
       final weekIndex = ((start.day - 1) / 7).floor() + 1;
       rrule += ";BYDAY=$weekIndex$dayCode";
@@ -59,19 +71,45 @@ String? repeatToRRule(
     }
   }
 
-  // Weekly Days logic
   if (unit == 'week' && selectedDays != null && selectedDays.isNotEmpty) {
-    const dayCodes = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
-    final byDay = selectedDays.map((i) => dayCodes[i]).join(',');
+    final sortedDays = selectedDays.toList()..sort();
+    final byDay = sortedDays.map((i) => dayCodes[i]).join(',');
     rrule += ";BYDAY=$byDay";
   }
 
-  // End Conditions
+  // --- 3. END CONDITIONS ---
   if (endOption == 'on' && endDate != null) {
-    rrule += ";UNTIL=${DateFormat('yyyyMMdd').format(endDate)}";
+    final formattedDate = DateFormat('yyyyMMdd').format(endDate);
+    rrule += ";UNTIL=$formattedDate";
   } else if (endOption == 'after' && occurrences != null) {
     rrule += ";COUNT=$occurrences";
   }
 
   return rrule;
+}
+
+/// Converts an RRule string back into a UI label
+String rruleToRepeat(String? rrule) {
+  if (rrule == null || rrule.isEmpty) return "None";
+
+  // Check standard presets (must have INTERVAL=1 and no end conditions for basic presets)
+  if (rrule.contains("FREQ=DAILY;INTERVAL=1") && !rrule.contains("UNTIL") && !rrule.contains("COUNT")) {
+    return "Daily";
+  }
+  
+  if (rrule.contains("FREQ=WEEKLY;INTERVAL=1") && !rrule.contains("UNTIL") && !rrule.contains("COUNT")) {
+    // If it only has one day (the standard preset logic)
+    if (rrule.contains("BYDAY=") && !rrule.contains(",")) return "Weekly";
+  }
+
+  if (rrule.contains("FREQ=MONTHLY;INTERVAL=1") && !rrule.contains("UNTIL") && !rrule.contains("COUNT")) {
+    return "Monthly";
+  }
+
+  if (rrule.contains("FREQ=YEARLY")) {
+    return "Yearly";
+  }
+
+  // If it doesn't match the simple presets, it's a Custom rule
+  return "Custom";
 }

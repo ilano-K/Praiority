@@ -1,3 +1,5 @@
+// lib/features/calendar/presentation/widgets/sheets/add_event_sheet.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
@@ -46,13 +48,13 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
   String? _customEndOption;
   DateTime? _customEndDate;
   int? _customCount;
+  String? _monthlyType;
 
   String _location = "None"; 
   List<String> _selectedTags = [];
   CalendarColor _selectedColor = appEventColors[0];
   List<String> _tagsList = [];
   
-  bool _advancedExpanded = false;
   bool _movableByAI = true;
   bool _setNonConfliction = true;
   bool _hasManuallySetConflict = false;
@@ -74,27 +76,32 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
     });
   }
 
-  void _prefillFromEvent(Task event) {
-    _titleController.text = event.title;
-    _descController.text = event.description ?? "";
-    _isAllDay = event.isAllDay;
-    _startDate = event.startTime ?? DateTime.now();
-    _startTime = TimeOfDay.fromDateTime(event.startTime ?? DateTime.now());
-    _endDate = event.endTime ?? DateTime.now();
-    _endTime = TimeOfDay.fromDateTime(event.endTime ?? DateTime.now());
-    _selectedTags = event.tags;
-    _location = event.location ?? "None";
-    // _repeat = rruleToRepeat(event.recurrenceRule);
-    _movableByAI = event.isAiMovable;
-    _setNonConfliction = event.isConflicting;
-    
+// lib/features/calendar/presentation/widgets/sheets/add_event_sheet.dart
 
-    if (event.colorValue != null) {
-      _selectedColor = appEventColors.firstWhere(
-        (c) => c.light.value == event.colorValue || c.dark.value == event.colorValue,
-        orElse: () => appEventColors[0],
-      );
-    }
+  void _prefillFromEvent(Task event) {
+    setState(() {
+      _titleController.text = event.title;
+      _descController.text = event.description ?? "";
+      _isAllDay = event.isAllDay;
+      _startDate = event.startTime ?? DateTime.now();
+      _startTime = TimeOfDay.fromDateTime(event.startTime ?? DateTime.now());
+      _endDate = event.endTime ?? DateTime.now();
+      _endTime = TimeOfDay.fromDateTime(event.endTime ?? DateTime.now());
+      _selectedTags = event.tags;
+      _location = event.location ?? "None";
+      _movableByAI = event.isAiMovable;
+      _setNonConfliction = event.isConflicting;
+
+      // ✅ FIXED: Parse the saved RRule back into the UI state
+      _repeat = rruleToRepeat(event.recurrenceRule);
+
+      if (event.colorValue != null) {
+        _selectedColor = appEventColors.firstWhere(
+          (c) => c.light.value == event.colorValue || c.dark.value == event.colorValue,
+          orElse: () => appEventColors[0],
+        );
+      }
+    });
   }
 
   // --- HELPER METHODS ---
@@ -105,6 +112,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
     _customEndOption = null;
     _customEndDate = null;
     _customCount = null;
+    _monthlyType = null;
   }
 
   String _getRepeatDisplayValue() {
@@ -137,7 +145,6 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
       tags: _selectedTags, 
       location: _location,
       status: TaskStatus.scheduled,
-      // Pass all custom parameters to the utility
       recurrenceRule: repeatToRRule(
         _repeat, 
         start: startTimeForRule,
@@ -147,15 +154,13 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
         endOption: _customEndOption,
         endDate: _customEndDate,
         occurrences: _customCount,
+        monthlyType: _monthlyType,
       ),
       colorValue: colorValue,
       isAiMovable: _movableByAI,
       isConflicting: _setNonConfliction
     );
 
-    print("[DEBUG] EVENT START TIME: ${baseTask.startTime}");
-    print("[DEBUG] EVENT END TIME: ${baseTask.endTime}");
-    print("[DEBUG] EVENT DEADLINE TIME: ${baseTask.deadline}");
     return widget.task != null ? widget.task!.copyWith(
       title: baseTask.title,
       description: baseTask.description,
@@ -201,11 +206,9 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
             child: SingleChildScrollView(
               child: Column(
                 children: [
-
                   // --- REMINDERS ROW ---
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    // Align items to the top so the toggle stays level with the "Reminders" title
                     crossAxisAlignment: CrossAxisAlignment.start, 
                     children: [
                       Expanded(
@@ -214,42 +217,30 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                           children: [
                             Text(
                               "Reminders",
-                              style: TextStyle(
-                                fontSize: 18, 
-                                fontWeight: FontWeight.bold, 
-                                color: colorScheme.onSurface,
-                              ),
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
                             ),
-                            const SizedBox(height: 8), // Tightened spacing to match standard UI patterns
+                            const SizedBox(height: 8),
                             Text(
                               _hasReminder 
                                   ? "You'll get a reminder at the start time" 
                                   : "Reminders are turned off",
-                              style: TextStyle(
-                                fontSize: 14, 
-                                color: colorScheme.onSurface.withOpacity(0.6),
-                              ),
+                              style: TextStyle(fontSize: 14, color: colorScheme.onSurface.withOpacity(0.6)),
                             ),
                           ],
                         ),
                       ),
-                      // Nudge the switch down slightly to align its center with the first line of text
-                      Padding(
-                        padding: const EdgeInsets.only(top: 0), 
-                        child: Transform.scale(
-                          scale: 0.8,
-                          child: Switch(
-                            // Removing material tap target size helps with tight alignments
-                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            value: _hasReminder,
-                            activeTrackColor: colorScheme.primary,
-                            onChanged: (val) => setState(() => _hasReminder = val),
-                          ),
+                      Transform.scale(
+                        scale: 0.8,
+                        child: Switch(
+                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          value: _hasReminder,
+                          activeTrackColor: colorScheme.primary,
+                          onChanged: (val) => setState(() => _hasReminder = val),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16), // Balanced spacing before the "All Day" row
+                  const SizedBox(height: 16),
 
                   // --- ALL DAY SWITCH ---
                   Row(
@@ -276,7 +267,6 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                     InteractiveInputRow(
                       label: "Date", 
                       value: DateFormat('MMMM d, y').format(_startDate),
-                    
                       onTapValue: () async {
                         final date = await pickDate(context, initialDate: _startDate);
                         if (date != null) setState(() => _startDate = date);
@@ -287,7 +277,6 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                       label: "From", 
                       value: DateFormat('MMMM d, y').format(_startDate),
                       trailing: _startTime.format(context), 
-                    
                       onTapValue: () async {
                         final date = await pickDate(context, initialDate: _startDate);
                         if (date != null) setState(() => _startDate = date);
@@ -301,7 +290,6 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                       label: "To", 
                       value: DateFormat('MMMM d, y').format(_endDate),
                       trailing: _endTime.format(context),
-                    
                       onTapValue: () async {
                         final date = await pickDate(context, initialDate: _endDate);
                         if (date != null) setState(() => _endDate = date);
@@ -314,28 +302,28 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                   ],
 
                   // --- REPEAT ROW ---
+
                   InteractiveInputRow(
                     label: "Repeat",
-                    value: _getRepeatDisplayValue(),
-                  
-                    onTap: () async {
-                      final result = await showModalBottomSheet(
+                    value: _getRepeatDisplayValue(), 
+                    onTapValue: () async {
+                      final dynamic result = await showModalBottomSheet(
                         context: context,
                         backgroundColor: Colors.transparent,
                         builder: (context) => RepeatSelector(
                           currentRepeat: _repeat,
-                          onRepeatSelected: (val) {}, // Handled by Navigator.pop(val)
+                          onRepeatSelected: (val) {}, // Still required by the class signature
                         ),
                       );
 
                       if (result != null) {
-                        if (result is String) {
-                          setState(() {
+                        setState(() {
+                          if (result is String) {
+                            // Handle "Daily", "Weekly", etc.
                             _repeat = result;
-                            _resetCustomFields();
-                          });
-                        } else if (result is Map<String, dynamic>) {
-                          setState(() {
+                            _resetCustomFields(); // Clear custom data if a preset is picked
+                          } else if (result is Map<String, dynamic>) {
+                            // Handle the Map returned by CustomSelector
                             _repeat = "Custom";
                             _customInterval = result['interval'];
                             _customUnit = result['unit'];
@@ -343,8 +331,9 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                             _customEndOption = result['endOption'];
                             _customEndDate = result['endDate'];
                             _customCount = result['occurrences'];
-                          });
-                        }
+                            _monthlyType = result['monthlyType'];
+                          }
+                        });
                       }
                     },
                   ),
@@ -352,76 +341,59 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                   // --- LOCATION & TAGS ---
                   InteractiveInputRow(
                     label: "Location", value: _location,
-                    onTap: () => _showLocationDialog(context, colorScheme),
+                    onTapValue: () => _showLocationDialog(context, colorScheme),
                   ),
                   InteractiveInputRow(
                     label: "Tags", value: _selectedTags.isEmpty ? "None" : _selectedTags.join(", "),
-                    onTap: () => _showTagSelector(context),
+                    onTapValue: () => _showTagSelector(context),
                   ),
 
                   // --- ADVANCED OPTIONS ---
-                  // --- ADVANCED OPTIONS ---
-                    Theme(
-                      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                      child: ExpansionTile(
-                        tilePadding: EdgeInsets.zero,
-                        title: Text(
-                          'Advanced Options',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.onSurface,
+                  Theme(
+                    data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                    child: ExpansionTile(
+                      tilePadding: EdgeInsets.zero,
+                      title: Text(
+                        'Advanced Options',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
+                      ),
+                      children: [
+                        Opacity(
+                          opacity: _hasReminder ? 1.0 : 0.4,
+                          child: InteractiveInputRow(
+                            label: "Remind me on",
+                            value: DateFormat('MMMM d, y').format(_reminderDate),
+                            trailing: _reminderTime.format(context),
+                            onTapValue: _hasReminder ? () async {
+                              final date = await pickDate(context, initialDate: _reminderDate);
+                              if (date != null) setState(() => _reminderDate = date);
+                            } : null,
+                            onTapTrailing: _hasReminder ? () async {
+                              final time = await pickTime(context, initialTime: _reminderTime);
+                              if (time != null) setState(() => _reminderTime = time);
+                            } : null,
                           ),
                         ),
-                        children: [
-                          // --- REMIND ME ON (NEW) ---
-                          // --- REMIND ME ON ---
-                          Opacity(
-                            opacity: _hasReminder ? 1.0 : 0.4,
-                            child: InteractiveInputRow(
-                              label: "Remind me on",
-                              // Displays the selected reminder date and time
-                              value: DateFormat('MMMM d, y').format(_reminderDate),
-                              trailing: _reminderTime.format(context),
-                              
-                              // Trigger pickDate from date_picker.dart
-                              onTapValue: _hasReminder ? () async {
-                                final date = await pickDate(context, initialDate: _reminderDate);
-                                if (date != null) {
-                                  setState(() => _reminderDate = date);
-                                }
-                              } : null,
-
-                              // Trigger pickTime from pick_time.dart
-                              onTapTrailing: _hasReminder ? () async {
-                                final time = await pickTime(context, initialTime: _reminderTime);
-                                if (time != null) {
-                                  setState(() => _reminderTime = time);
-                                }
-                              } : null,
-                            ),
-                          ),
-                          
-                          _buildSwitchTile(
-                            'Auto-Reschedule',
-                            "Allow AI to move this task if missed",
-                            _movableByAI,
-                            (v) => setState(() => _movableByAI = v),
-                            colorScheme,
-                          ),
-                          _buildSwitchTile(
-                            'Strict Mode',
-                            "Ensure absolutely no overlaps",
-                            _setNonConfliction,
-                            (v) => setState(() {
-                              _setNonConfliction = v;
-                              _hasManuallySetConflict = true;
-                            }),
-                            colorScheme,
-                          ),
-                        ],
-                      ),
+                        _buildSwitchTile(
+                          'Auto-Reschedule',
+                          "Allow AI to move this task if missed",
+                          _movableByAI,
+                          (v) => setState(() => _movableByAI = v),
+                          colorScheme,
+                        ),
+                        _buildSwitchTile(
+                          'Strict Mode',
+                          "Ensure absolutely no overlaps",
+                          _setNonConfliction,
+                          (v) => setState(() {
+                            _setNonConfliction = v;
+                            _hasManuallySetConflict = true;
+                          }),
+                          colorScheme,
+                        ),
+                      ],
                     ),
+                  ),
                   const SizedBox(height: 40),
                 ],
               ),
@@ -432,7 +404,6 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
     );
   }
 
-  // --- UI HELPER WIDGETS ---
   Widget _buildSwitchTile(String title, String subtitle, bool value, ValueChanged<bool> onChanged, ColorScheme colors) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
@@ -468,5 +439,4 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
       ],
     ));
   }
-
 }
