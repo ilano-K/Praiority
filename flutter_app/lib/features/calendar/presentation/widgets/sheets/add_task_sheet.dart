@@ -59,19 +59,6 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
   late DateTime _deadlineDate;
   late TimeOfDay _deadlineTime;
 
-  final priorityMap = {
-    "Low": TaskPriority.low,
-    "Medium": TaskPriority.medium,
-    "High": TaskPriority.high 
-  };
-
-  final categoryMap = {
-    "Easy": TaskCategory.easy,
-    "Average": TaskCategory.average,
-    "Hard": TaskCategory.hard,
-    "None" : TaskCategory.none
-  };
-
   @override
   void initState() {
     super.initState();
@@ -144,8 +131,8 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
       type: TaskType.task,
       title: title,
       description: _descController.text.trim(),
-      priority: priorityMap[_priority] ?? TaskPriority.none,
-      category: categoryMap[_category] ?? TaskCategory.none,
+      priority: taskPriorityFromString(_priority),
+      category: taskCategoryFromString(_category),
       tags: _selectedTags,
       colorValue: colorValue,
       isAllDay: false,
