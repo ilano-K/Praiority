@@ -48,11 +48,22 @@ class _SortSelectorState extends ConsumerState<SortSelector> {
         : null;
 
     controller.filterTasks(
-      category: taskCategoryFromString(_selectedCategory),
-      priority: taskPriorityFromString(_selectedPriority),
+      // 1. FIX: Check for "None". If true, pass null.
+      // Otherwise, the DB searches for category == TaskCategory.none specifically.
+      category: _selectedCategory == "None" 
+          ? null 
+          : taskCategoryFromString(_selectedCategory),
+          
+      priority: _selectedPriority == "None" 
+          ? null 
+          : taskPriorityFromString(_selectedPriority),
+          
       start: start,
       end: end,
-      tag: _selectedTag,
+      
+      // 2. FIX: Check for "None" tag.
+      // Passing "None" makes Isar search for a tag named "None".
+      tag: _selectedTag == "None" ? null : _selectedTag,
     );
 
     Navigator.pop(context);

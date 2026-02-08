@@ -7,6 +7,7 @@ import 'package:flutter_app/features/calendar/domain/usecases/delete_task_usecas
 import 'package:flutter_app/features/calendar/domain/usecases/save_task_usecase.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_provider.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/smart_features_controller.dart';
+import 'package:flutter_app/features/calendar/presentation/managers/task_view_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final calendarControllerProvider = AsyncNotifierProvider<CalendarStateController, List<Task>>(CalendarStateController.new);
@@ -43,6 +44,8 @@ class CalendarStateController extends AsyncNotifier<List<Task>> {
       print("DEBUG: Refreshing calendar data from database...");
       // Re-fetch data for the currently visible dates
       await setRange(_currentRange!);
+      ref.invalidate(taskViewControllerProvider);
+      await ref.read(taskSyncServiceProvider).pushLocalChanges();
     } else {
       // Fallback if no range is set yet (rare)
       ref.invalidateSelf();
@@ -87,10 +90,8 @@ class CalendarStateController extends AsyncNotifier<List<Task>> {
 
       final currentTime = DateTime.now();
       await smartFeatureController.executeSmartSchedule(task.id, targetDate, currentTime);
-      await refresh();
     }
     await refresh();
-
   }
 
   Future<void> deleteTask(Task task) async {
@@ -99,8 +100,7 @@ class CalendarStateController extends AsyncNotifier<List<Task>> {
     final currentTasks = state.value ?? [];
     final updatedList = currentTasks.where((t) => t.id != task.id).toList();
     state = AsyncData(updatedList);
-    final syncService = ref.read(taskSyncServiceProvider);
-    unawaited(syncService.pushLocalChanges());
+    await refresh();
   }
 
   Future<void> getTasksByCondition({

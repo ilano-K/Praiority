@@ -168,6 +168,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
       endTime: baseTask.endTime,
       deadline: baseTask.deadline,
       isAllDay: baseTask.isAllDay,
+      isSmartSchedule: false,
       tags: baseTask.tags, 
       location: baseTask.location,
       recurrenceRule: baseTask.recurrenceRule,
