@@ -56,6 +56,9 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
   bool _movableByAI = false;
   bool _setNonConfliction = true;
   bool _hasManuallySetConflict = false;
+  bool _hasReminder = true;
+  DateTime _reminderDate = DateTime.now();
+  TimeOfDay _reminderTime = TimeOfDay.now();
 
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
@@ -84,6 +87,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
     // _repeat = rruleToRepeat(event.recurrenceRule);
     _movableByAI = event.isAiMovable;
     _setNonConfliction = event.isConflicting;
+    
 
     if (event.colorValue != null) {
       _selectedColor = appEventColors.firstWhere(
@@ -197,6 +201,56 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
             child: SingleChildScrollView(
               child: Column(
                 children: [
+
+                  // --- REMINDERS ROW ---
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    // Align items to the top so the toggle stays level with the "Reminders" title
+                    crossAxisAlignment: CrossAxisAlignment.start, 
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Reminders",
+                              style: TextStyle(
+                                fontSize: 18, 
+                                fontWeight: FontWeight.bold, 
+                                color: colorScheme.onSurface,
+                              ),
+                            ),
+                            const SizedBox(height: 8), // Tightened spacing to match standard UI patterns
+                            Text(
+                              _hasReminder 
+                                  ? "You'll get a reminder at the start time" 
+                                  : "Reminders are turned off",
+                              style: TextStyle(
+                                fontSize: 14, 
+                                color: colorScheme.onSurface.withOpacity(0.6),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Nudge the switch down slightly to align its center with the first line of text
+                      Padding(
+                        padding: const EdgeInsets.only(top: 0), 
+                        child: Transform.scale(
+                          scale: 0.8,
+                          child: Switch(
+                            // Removing material tap target size helps with tight alignments
+                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            value: _hasReminder,
+                            activeTrackColor: colorScheme.primary,
+                            onChanged: (val) => setState(() => _hasReminder = val),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16), // Balanced spacing before the "All Day" row
+
                   // --- ALL DAY SWITCH ---
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -306,17 +360,68 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                   ),
 
                   // --- ADVANCED OPTIONS ---
-                  Theme(
-                    data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                    child: ExpansionTile(
-                      tilePadding: EdgeInsets.zero,
-                      title: Text('Advanced Options', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
-                      children: [
-                        _buildSwitchTile('Auto-Reschedule', "Allow AI to move this task if missed", _movableByAI, (v) => setState(() => _movableByAI = v), colorScheme),
-                        _buildSwitchTile('Strict Mode', "Ensure absolutely no overlaps", _setNonConfliction, (v) => setState(() { _setNonConfliction = v; _hasManuallySetConflict = true; }), colorScheme),
-                      ],
+                  // --- ADVANCED OPTIONS ---
+                    Theme(
+                      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                      child: ExpansionTile(
+                        tilePadding: EdgeInsets.zero,
+                        title: Text(
+                          'Advanced Options',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                        children: [
+                          // --- REMIND ME ON (NEW) ---
+                          // --- REMIND ME ON ---
+                          Opacity(
+                            opacity: _hasReminder ? 1.0 : 0.4,
+                            child: InteractiveInputRow(
+                              label: "Remind me on",
+                              // Displays the selected reminder date and time
+                              value: DateFormat('MMMM d, y').format(_reminderDate),
+                              trailing: _reminderTime.format(context),
+                              
+                              // Trigger pickDate from date_picker.dart
+                              onTapValue: _hasReminder ? () async {
+                                final date = await pickDate(context, initialDate: _reminderDate);
+                                if (date != null) {
+                                  setState(() => _reminderDate = date);
+                                }
+                              } : null,
+
+                              // Trigger pickTime from pick_time.dart
+                              onTapTrailing: _hasReminder ? () async {
+                                final time = await pickTime(context, initialTime: _reminderTime);
+                                if (time != null) {
+                                  setState(() => _reminderTime = time);
+                                }
+                              } : null,
+                            ),
+                          ),
+                          
+                          _buildSwitchTile(
+                            'Auto-Reschedule',
+                            "Allow AI to move this task if missed",
+                            _movableByAI,
+                            (v) => setState(() => _movableByAI = v),
+                            colorScheme,
+                          ),
+                          _buildSwitchTile(
+                            'Strict Mode',
+                            "Ensure absolutely no overlaps",
+                            _setNonConfliction,
+                            (v) => setState(() {
+                              _setNonConfliction = v;
+                              _hasManuallySetConflict = true;
+                            }),
+                            colorScheme,
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
                   const SizedBox(height: 40),
                 ],
               ),
