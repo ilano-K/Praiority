@@ -33,11 +33,12 @@ class SaveTaskUseCase {
       if(hasInvalidEndtime) throw EndBeforeStartException();
     }
 
-    if(task.deadline != null){
-       final hasInvalidDeadline = !task.deadline!.isAfter(task.endTime!);
-       if(hasInvalidDeadline) throw DeadlineConflictException();
+    if (task.deadline != null) {
+      final hasInvalidDeadline = task.deadline!.isBefore(task.endTime!);
+      if (hasInvalidDeadline) {
+        throw DeadlineConflictException();
+      }
     }
-
     // skip birthday in time checking
     // skip endtime if not provided
     // skip if task is marked as non conflicting task

@@ -36,7 +36,7 @@ class TaskModel {
 
   late bool isAllDay;
 
-  @Enumerated(EnumType.ordinal)
+  @Enumerated(EnumType.name)
   late TaskPriority priority;
 
   late bool isAiMovable;

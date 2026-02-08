@@ -18,7 +18,7 @@ TaskType? taskTypeFromString(String value) {
 }
 
 /// Converts a string to TaskCategory. Returns null if not valid.
-TaskCategory? taskCategoryFromString(String value) {
+TaskCategory taskCategoryFromString(String value) {
   switch (value.toLowerCase()) {
     case 'easy':
       return TaskCategory.easy;
@@ -27,12 +27,12 @@ TaskCategory? taskCategoryFromString(String value) {
     case 'hard':
       return TaskCategory.hard;
     default:
-      return null;
+      return TaskCategory.none;
   }
 }
 
 /// Converts a string to TaskPriority. Returns null if not valid.
-TaskPriority? taskPriorityFromString(String value) {
+TaskPriority taskPriorityFromString(String value) {
   switch (value.toLowerCase()) {
     case 'low':
       return TaskPriority.low;
@@ -40,8 +40,10 @@ TaskPriority? taskPriorityFromString(String value) {
       return TaskPriority.medium;
     case 'high':
       return TaskPriority.high;
+    case 'none':
+      return TaskPriority.none;
     default:
-      return null;
+      return TaskPriority.none;
   }
 }
 

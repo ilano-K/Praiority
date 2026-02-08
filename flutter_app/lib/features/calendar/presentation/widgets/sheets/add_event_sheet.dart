@@ -53,7 +53,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
   List<String> _tagsList = [];
   
   bool _advancedExpanded = false;
-  bool _movableByAI = false;
+  bool _movableByAI = true;
   bool _setNonConfliction = true;
   bool _hasManuallySetConflict = false;
   bool _hasReminder = true;

@@ -18,20 +18,17 @@ class CalendarLocalDataSource{
 
   // FIX: Change Parameter from TaskModel -> Task
   Future<void> saveAndUpdateTask(Task task) async {
-    debugPrint('saveAndUpdateTask: start originalId=${task.id}');
+
     try {
       // 1. Create the Model from the Entity here
       final taskModel = TaskModel.fromEntity(task);
-
+      print("[DEBUG] SAVING... THIS IS THE PRIORITY ${taskModel.priority}");
       await isar.writeTxn(() async {
-        debugPrint('saveAndUpdateTask: in txn - checking existing task');
         // 2. Check if task exists to preserve the Isar ID
         final existingTask = await isar.taskModels
             .filter()
             .originalIdEqualTo(task.id)
             .findFirst();
-
-        debugPrint('saveAndUpdateTask: existingTask=${existingTask?.id}');
 
         if (existingTask != null) {
           taskModel.id = existingTask.id;
@@ -42,12 +39,8 @@ class CalendarLocalDataSource{
         taskModel.updatedAt = DateTime.now();
         // 3. Save the Task Model first (so it gets an ID)
         await isar.taskModels.put(taskModel);
-        debugPrint('saveAndUpdateTask: put taskModel id=${taskModel.id}');
       });
-
-      debugPrint('saveAndUpdateTask: txn complete for originalId=${task.id}');
     } catch (e, st) {
-      debugPrint('saveAndUpdateTask: ERROR $e\n$st');
       rethrow;
     }
   }
