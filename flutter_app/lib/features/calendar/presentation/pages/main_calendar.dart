@@ -1,6 +1,7 @@
 // File: lib/features/calendar/presentation/pages/main_calendar.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/domain/entities/date_range.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/components/reorganize.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
@@ -167,43 +168,48 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
   }
 
   // --- UI HELPERS ---
-  void _showAiTipBeforeEdit(Task task) {
+void _showAiTipBeforeEdit(Task task) {
     showDialog(
       context: context,
       barrierColor: Colors.black.withOpacity(0.3),
       builder: (context) => Center(
         child: Material(
           color: Colors.transparent,
-          child: AiTipWidget(
-            title: task.title.isEmpty ? "New Task" : task.title,
-            taskId: task.id,
-            description: task.description ?? "No description provided.",
-            generatedTip: task.aiTip ?? "", 
-            isCompleted: task.status == TaskStatus.completed,
-            onEdit: () { Navigator.pop(context); _openTaskSheet(task); },
-            onDelete: () {
-              showDialog(
-                context: context,
-                builder: (context) => AppConfirmationDialog(
-                  title: "Delete Task",
-                  message: "Are you sure you want to delete '${task.title}'?",
-                  confirmLabel: "Delete",
-                  isDestructive: true,
-                  onConfirm: () async {
-                    final controller = ref.read(calendarControllerProvider.notifier);
-                    await controller.deleteTask(task);
-                    if (mounted) Navigator.pop(context);
-                  },
-                ),
-              );
-            },
-            onComplete: task.type == TaskType.birthday ? null : () async {
-              final controller = ref.read(calendarControllerProvider.notifier);
-              final newStatus = task.status == TaskStatus.completed ? TaskStatus.scheduled : TaskStatus.completed;
-              final updatedTask = task.copyWith(status: newStatus);
-              await controller.addTask(updatedTask);
-              if (mounted) Navigator.pop(context);
-            },
+          child: Container(
+            // --- ADDED MARGIN AND CONSTRAINTS ---
+            margin: const EdgeInsets.symmetric(horizontal: 24), // Prevents touching edges
+            constraints: const BoxConstraints(maxWidth: 400),   // Limits width on tablets/large phones
+            child: AiTipWidget(
+              title: task.title.isEmpty ? "New Task" : task.title,
+              taskId: task.id,
+              description: task.description ?? "No description provided.",
+              generatedTip: task.aiTip ?? "", 
+              isCompleted: task.status == TaskStatus.completed,
+              onEdit: () { Navigator.pop(context); _openTaskSheet(task); },
+              onDelete: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => AppConfirmationDialog(
+                    title: "Delete Task",
+                    message: "Are you sure you want to delete '${task.title}'?",
+                    confirmLabel: "Delete",
+                    isDestructive: true,
+                    onConfirm: () async {
+                      final controller = ref.read(calendarControllerProvider.notifier);
+                      await controller.deleteTask(task);
+                      if (mounted) Navigator.pop(context);
+                    },
+                  ),
+                );
+              },
+              onComplete: task.type == TaskType.birthday ? null : () async {
+                final controller = ref.read(calendarControllerProvider.notifier);
+                final newStatus = task.status == TaskStatus.completed ? TaskStatus.scheduled : TaskStatus.completed;
+                final updatedTask = task.copyWith(status: newStatus);
+                await controller.addTask(updatedTask);
+                if (mounted) Navigator.pop(context);
+              },
+            ),
           ),
         ),
       ),
@@ -266,31 +272,52 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
         onViewSelected: _onViewSwitched, 
       ),
 
-      floatingActionButton: CalendarBuilder.buildMainFab(
-        colorScheme: colorScheme,
-        fabController: _fabController,
-        fabAnimation: _fabAnimation,
-        onToggle: _toggleFab,
-        onOptionTap: (label) {
-          _toggleFab();
-          if (label == "Task") {
-            final now = DateTime.now();
-            final dateWithCurrentTime = DateTime(
-              _selectedDate.year,
-              _selectedDate.month,
-              _selectedDate.day,
-              now.hour,
-              now.minute,
-            );
-            showModalBottomSheet(
-              context: context, 
-              isScrollControlled: true, 
-              backgroundColor: Colors.transparent, 
-              builder: (context) => AddTaskSheet(initialDate: dateWithCurrentTime),
-            );
-          }
-        },
-      ),
+        // inside MainCalendar
+        floatingActionButton: CalendarBuilder.buildMainFab(
+          colorScheme: colorScheme,
+          fabController: _fabController,
+          fabAnimation: _fabAnimation,
+          onToggle: _toggleFab,
+          onOptionTap: (label) {
+            _toggleFab();
+            
+            // THIS PRINT IS FOR DEBUGGING - IT WILL TELL YOU EXACTLY WHAT THE FAB SENDS
+            print("FAB CLICKED RAW LABEL: '$label'");
+
+            // Normalize for safety
+            final String key = label.trim().toLowerCase();
+
+            if (key == "task") {
+              final now = DateTime.now();
+              final dateWithCurrentTime = DateTime(
+                _selectedDate.year, _selectedDate.month, _selectedDate.day,
+                now.hour, now.minute,
+              );
+              showModalBottomSheet(
+                context: context, 
+                isScrollControlled: true, 
+                backgroundColor: Colors.transparent, 
+                builder: (context) => AddTaskSheet(initialDate: dateWithCurrentTime),
+              );
+            } 
+            // This handles "Reorganize", "reorganize", or "REORGANIZE"
+            else if (key == "reorganize") {
+              print("SUCCESS: Condition met. Opening center dialog.");
+              showDialog(
+                context: context,
+                barrierColor: Colors.black.withOpacity(0.3),
+                builder: (context) => Center(
+                  child: SingleChildScrollView(
+                    child: Material(
+                      color: Colors.transparent,
+                      child: const Reschedule(),
+                    ),
+                  ),
+                ),
+              );
+            }
+          },
+        ),
       body: SafeArea(
         child: Column(
           children: [
