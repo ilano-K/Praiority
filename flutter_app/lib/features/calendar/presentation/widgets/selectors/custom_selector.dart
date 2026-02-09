@@ -42,23 +42,25 @@ class _CustomSelectorState extends State<CustomSelector> {
   late String _endOption;
   late DateTime _selectedEndDate;
 
-  @override
-  void initState() {
-    super.initState();
-    // Initialize controllers with passed values or defaults
-    _repeatController = TextEditingController(text: (widget.initialInterval ?? 1).toString());
-    _occurrenceController = TextEditingController(text: (widget.initialOccurrences ?? 1).toString());
-    
-    _repeatUnit = widget.initialUnit ?? 'day';
-    _monthlyType = widget.initialMonthlyType ?? 'day';
-    
-    // Default to the weekday of the event's start date
-    _selectedDays = widget.initialDays ?? {widget.eventStartDate.weekday % 7};
-    _endOption = widget.initialEndOption ?? 'never';
-    
-    // ✅ FIXED: Defaults to the event's START DATE instead of adding 30 days
-    _selectedEndDate = widget.initialEndDate ?? widget.eventStartDate;
-  }
+@override
+void initState() {
+  super.initState();
+  // Ensure interval persists
+  _repeatController = TextEditingController(
+    text: (widget.initialInterval ?? 1).toString()
+  );
+  
+  // Ensure occurrences persist (This fixes your "for 3 times" logic)
+  _occurrenceController = TextEditingController(
+    text: (widget.initialOccurrences ?? 1).toString()
+  );
+  
+  _repeatUnit = widget.initialUnit ?? 'day';
+  _monthlyType = widget.initialMonthlyType ?? 'day';
+  _selectedDays = widget.initialDays ?? {widget.eventStartDate.weekday % 7};
+  _endOption = widget.initialEndOption ?? 'never';
+  _selectedEndDate = widget.initialEndDate ?? widget.eventStartDate;
+}
 
   @override
   void dispose() {
@@ -108,6 +110,7 @@ class _CustomSelectorState extends State<CustomSelector> {
                     'days': _selectedDays,
                     'endOption': _endOption,
                     'endDate': _selectedEndDate,
+                    // ✅ Parses the occurrences from the typeable box
                     'occurrences': int.tryParse(_occurrenceController.text) ?? 1,
                     'monthlyType': _monthlyType,
                   });
