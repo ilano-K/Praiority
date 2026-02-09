@@ -6,6 +6,7 @@ import 'package:flutter_app/features/calendar/presentation/managers/calendar_pro
 import 'package:flutter_app/features/calendar/presentation/widgets/components/interactive_row.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/selectors/date_picker.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/selectors/pick_time.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/selectors/reminder_selector.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -196,207 +197,20 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
       reminderOffsets: baseTask.reminderOffsets, // Update offsets
     ) : baseTask;
   }
-
-  // --- NEW SELECTOR SHEET ---
-  // --- UPDATED SELECTOR SHEET ---
+  
   void _showOffsetSelector(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final taskStart = _combineDateAndTime(_startDate, _startTime);
     
-    // 1. Define Standard Presets
-    final standardPresets = [
-      const Duration(minutes: 0),
-      const Duration(minutes: 10),
-      const Duration(minutes: 30),
-      const Duration(hours: 1),
-      const Duration(days: 1),
-    ];
-
-    // 2. MERGE: Combine presets with any custom offsets the user has already selected.
-    // We use a Set to avoid duplicates (e.g., if 10m is selected, don't show it twice).
-    final allOptions = {...standardPresets, ..._selectedOffsets}.toList();
-    
-    // 3. SORT: Sort them by duration (0m -> 10m -> 45m -> 1h) so the UI looks clean.
-    allOptions.sort();
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setSheetState) {
-          return Container(
-            decoration: BoxDecoration(
-              color: colorScheme.surface,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text("Alerts", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
-                const SizedBox(height: 10),
-                
-                // 4. BUILD LIST DYNAMICALLY
-                ...allOptions.map((offset) {
-                  final isSelected = _selectedOffsets.contains(offset);
-                  
-                  // Generate label
-                  String label;
-                  if (offset.inMinutes == 0) label = "At time of event";
-                  else if (offset.inMinutes < 60) label = "${offset.inMinutes} minutes before";
-                  else if (offset.inHours < 24) label = "${offset.inHours} hour${offset.inHours > 1 ? 's' : ''}${offset.inMinutes % 60 != 0 ? ' ${offset.inMinutes % 60}m' : ''} before";
-                  else label = "${offset.inDays} day${offset.inDays > 1 ? 's' : ''} before";
-
-                  return CheckboxListTile(
-                    value: isSelected,
-                    title: Text(label),
-                    activeColor: colorScheme.primary,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 24),
-                    onChanged: (val) {
-                      setSheetState(() {
-                        if (val == true) {
-                          _selectedOffsets.add(offset);
-                        } else {
-                          _selectedOffsets.remove(offset);
-                        }
-                      });
-                      setState(() {}); // Update the parent text field immediately
-                    },
-                  );
-                }),
-
-                const Divider(),
-
-                ListTile(
-                  leading: Icon(Icons.edit_outlined, color: Theme.of(context).colorScheme.primary),
-                  title: const Text("Custom duration..."),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 24),
-                  onTap: () async {
-                    // 1. Close the Bottom Sheet
-                    Navigator.pop(context); 
-                    
-                    // 2. Open the Dialog (and wait for it to finish)
-                    await _pickCustomDuration(context); 
-                    
-                    // 3. Re-open the Bottom Sheet (if the screen is still valid)
-                    if (mounted) _showOffsetSelector(context); 
-                  },
-                ),
-                SizedBox(height: MediaQuery.of(context).padding.bottom),
-              ],
-            ),
-          );
-        }
-      ),
-    );
-  }
-
-  // --- HELPER 1: PICK CUSTOM DURATION (e.g. 45 mins) ---
-  // --- HELPER 1: PICK CUSTOM DURATION ---
-  // --- HELPER 1: PICK CUSTOM DURATION (Standard Dialog) ---
-  Future<void> _pickCustomDuration(BuildContext context) async {
-    int hours = 0;
-    int minutes = 15;
-
-    await showDialog(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          title: const Text("Remind me..."),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text("How long before the task starts?"),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Hours Input
-                  SizedBox(
-                    width: 70,
-                    child: TextFormField(
-                      autofocus: true,
-                      initialValue: "0",
-                      keyboardType: TextInputType.number,
-                      textAlign: TextAlign.center,
-                      decoration: const InputDecoration(labelText: "Hours", border: OutlineInputBorder()),
-                      onChanged: (val) => hours = int.tryParse(val) ?? 0,
-                    ),
-                  ),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 10),
-                    child: Text(":", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24)),
-                  ),
-                  // Minutes Input
-                  SizedBox(
-                    width: 70,
-                    child: TextFormField(
-                      initialValue: "15",
-                      keyboardType: TextInputType.number,
-                      textAlign: TextAlign.center,
-                      decoration: const InputDecoration(labelText: "Mins", border: OutlineInputBorder()),
-                      onChanged: (val) => minutes = int.tryParse(val) ?? 0,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text("Cancel"),
-            ),
-            TextButton(
-              onPressed: () {
-                final duration = Duration(hours: hours, minutes: minutes);
-                if (duration.inMinutes > 0) {
-                  setState(() {
-                    if (!_selectedOffsets.contains(duration)) {
-                      _selectedOffsets.add(duration);
-                    }
-                  });
-                }
-                Navigator.pop(ctx); // ✅ JUST POP. Don't call _showOffsetSelector here.
-              },
-              child: const Text("Add"),
-            ),
-          ],
-        );
+    ReminderSelector.show(
+      parentContext: context, // ✅ Pass the sheet's context here
+      selectedOffsets: _selectedOffsets,
+      taskStartTime: taskStart,
+      onChanged: (newOffsets) {
+        setState(() {
+          _selectedOffsets = newOffsets;
+        });
       },
     );
-  }
-  // --- HELPER 2: PICK SPECIFIC DATE/TIME ---
-  Future<void> _pickSpecificTime(BuildContext context) async {
-    // 1. Pick Date
-    final date = await pickDate(context, initialDate: _startDate); // Use your existing picker
-    if (date == null) return;
-
-    // 2. Pick Time
-    final time = await pickTime(context, initialTime: _startTime); // Use your existing picker
-    if (time == null) return;
-
-    // 3. Calculate Offset
-    final pickedDateTime = _combineDateAndTime(date, time);
-    final taskStart = _combineDateAndTime(_startDate, _startTime);
-
-    if (pickedDateTime.isAfter(taskStart)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Reminder must be before the task starts!")),
-      );
-      return;
-    }
-
-    final offset = taskStart.difference(pickedDateTime);
-
-    setState(() {
-      if (!_selectedOffsets.contains(offset)) {
-        _selectedOffsets.add(offset);
-      }
-    });
-    
-    // Re-open sheet
-    _showOffsetSelector(context);
   }
 
   @override

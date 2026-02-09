@@ -16,6 +16,8 @@ import 'package:intl/intl.dart';
 import '../selectors/tag_selector.dart';
 import '../selectors/repeat_selector.dart'; 
 import '../selectors/color_selector.dart'; 
+// ✅ IMPORT THE NEW SELECTOR
+import '../selectors/reminder_selector.dart';
 import 'add_header_sheet.dart'; 
 
 class AddEventSheet extends ConsumerStatefulWidget {
@@ -58,9 +60,10 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
   bool _movableByAI = true;
   bool _setNonConfliction = true;
   bool _hasManuallySetConflict = false;
+
+  // ✅ UPDATED REMINDER STATE
   bool _hasReminder = true;
-  DateTime _reminderDate = DateTime.now();
-  TimeOfDay _reminderTime = TimeOfDay.now();
+  List<Duration> _selectedOffsets = [const Duration(minutes: 10)]; // Default
 
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
@@ -76,8 +79,6 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
     });
   }
 
-// lib/features/calendar/presentation/widgets/sheets/add_event_sheet.dart
-
   void _prefillFromEvent(Task event) {
     setState(() {
       _titleController.text = event.title;
@@ -92,8 +93,16 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
       _movableByAI = event.isAiMovable;
       _setNonConfliction = event.isConflicting;
 
-      // ✅ FIXED: Parse the saved RRule back into the UI state
       _repeat = rruleToRepeat(event.recurrenceRule);
+
+      // ✅ PREFILL OFFSETS
+      if (event.reminderOffsets.isNotEmpty) {
+        _selectedOffsets = List.from(event.reminderOffsets);
+        _hasReminder = true;
+      } else {
+        _hasReminder = false;
+        _selectedOffsets = [const Duration(minutes: 10)];
+      }
 
       if (event.colorValue != null) {
         _selectedColor = appEventColors.firstWhere(
@@ -124,6 +133,18 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
 
   DateTime _combineDateAndTime(DateTime date, TimeOfDay time) {
     return DateTime(date.year, date.month, date.day, time.hour, time.minute);
+  }
+  
+  // ✅ HELPER FOR DISPLAY
+  String _formatOffsets() {
+    if (_selectedOffsets.isEmpty) return "None";
+    final List<String> parts = _selectedOffsets.map((d) {
+      if (d.inMinutes == 0) return "At time of event";
+      if (d.inMinutes < 60) return "${d.inMinutes}m";
+      if (d.inHours < 24) return "${d.inHours}h";
+      return "${d.inDays}d";
+    }).toList();
+    return "${parts.join(", ")} before";
   }
 
   Task createTaskSaveTemplate(bool isDark) {
@@ -158,7 +179,9 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
       ),
       colorValue: colorValue,
       isAiMovable: _movableByAI,
-      isConflicting: _setNonConfliction
+      isConflicting: _setNonConfliction,
+      // ✅ SAVE OFFSETS
+      reminderOffsets: _hasReminder ? _selectedOffsets : [],
     );
 
     return widget.task != null ? widget.task!.copyWith(
@@ -174,8 +197,27 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
       recurrenceRule: baseTask.recurrenceRule,
       colorValue: baseTask.colorValue,
       isAiMovable: baseTask.isAiMovable,
-      isConflicting: baseTask.isConflicting
+      isConflicting: baseTask.isConflicting,
+      reminderOffsets: baseTask.reminderOffsets,
     ) : baseTask;
+  }
+  
+  // ✅ HELPER TO SHOW SELECTOR
+  void _showReminderSelector(BuildContext context) {
+    final taskStart = _isAllDay 
+        ? startOfDay(_startDate) 
+        : _combineDateAndTime(_startDate, _startTime);
+
+    ReminderSelector.show(
+      parentContext: context,
+      selectedOffsets: _selectedOffsets,
+      taskStartTime: taskStart,
+      onChanged: (newOffsets) {
+        setState(() {
+          _selectedOffsets = newOffsets;
+        });
+      },
+    );
   }
 
   @override
@@ -223,7 +265,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                             const SizedBox(height: 8),
                             Text(
                               _hasReminder 
-                                  ? "You'll get a reminder at the start time" 
+                                  ? "You'll get a notification" 
                                   : "Reminders are turned off",
                               style: TextStyle(fontSize: 14, color: colorScheme.onSurface.withOpacity(0.6)),
                             ),
@@ -303,21 +345,17 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                   ],
 
                   // --- REPEAT ROW ---
-
-                  // lib/features/calendar/presentation/widgets/sheets/add_event_sheet.dart
-
                   InteractiveInputRow(
                     label: "Repeat",
                     value: _getRepeatDisplayValue(), 
                     onTapValue: () async {
                       final dynamic result = await showModalBottomSheet(
                         context: context,
-                        isScrollControlled: true, // Necessary if CustomSelector gets tall
+                        isScrollControlled: true, 
                         backgroundColor: Colors.transparent,
                         builder: (context) => RepeatSelector(
                           currentRepeat: _repeat,
                           onRepeatSelected: (val) {}, 
-                          // --- PASS ALL CUSTOM STATE HERE ---
                           eventStartDate: _startDate, 
                           initialInterval: _customInterval,
                           initialUnit: _customUnit,
@@ -332,11 +370,9 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                       if (result != null) {
                         setState(() {
                           if (result is String) {
-                            // Handle standard presets ("Daily", "Weekly", etc.)
                             _repeat = result;
                             _resetCustomFields(); 
                           } else if (result is Map<String, dynamic>) {
-                            // Handle map returned from CustomSelector
                             _repeat = "Custom";
                             _customInterval = result['interval'];
                             _customUnit = result['unit'];
@@ -371,22 +407,18 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
                       ),
                       children: [
+                        // ✅ UPDATED ALERT SELECTOR
                         Opacity(
                           opacity: _hasReminder ? 1.0 : 0.4,
                           child: InteractiveInputRow(
-                            label: "Remind me on",
-                            value: DateFormat('MMMM d, y').format(_reminderDate),
-                            trailing: _reminderTime.format(context),
-                            onTapValue: _hasReminder ? () async {
-                              final date = await pickDate(context, initialDate: _reminderDate);
-                              if (date != null) setState(() => _reminderDate = date);
-                            } : null,
-                            onTapTrailing: _hasReminder ? () async {
-                              final time = await pickTime(context, initialTime: _reminderTime);
-                              if (time != null) setState(() => _reminderTime = time);
-                            } : null,
+                            label: "Alerts",
+                            value: _formatOffsets(),
+                            onTapValue: _hasReminder 
+                              ? () => _showReminderSelector(context) 
+                              : null,
                           ),
                         ),
+                        
                         _buildSwitchTile(
                           'Auto-Reschedule',
                           "Allow AI to move this task if missed",
