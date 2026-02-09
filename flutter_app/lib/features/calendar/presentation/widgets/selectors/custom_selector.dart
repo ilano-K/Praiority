@@ -1,11 +1,9 @@
-// lib/features/calendar/presentation/widgets/selectors/custom_selector.dart
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'date_picker.dart';
 
 class CustomSelector extends StatefulWidget {
-  final DateTime eventStartDate; // Syncs labels and defaults with the event
+  final DateTime eventStartDate; 
   final int? initialInterval;
   final String? initialUnit;
   final Set<int>? initialDays;
@@ -31,7 +29,6 @@ class CustomSelector extends StatefulWidget {
 }
 
 class _CustomSelectorState extends State<CustomSelector> {
-  // --- STATE VARIABLES ---
   late final TextEditingController _repeatController;
   late final TextEditingController _occurrenceController;
   
@@ -42,25 +39,25 @@ class _CustomSelectorState extends State<CustomSelector> {
   late String _endOption;
   late DateTime _selectedEndDate;
 
-@override
-void initState() {
-  super.initState();
-  // Ensure interval persists
-  _repeatController = TextEditingController(
-    text: (widget.initialInterval ?? 1).toString()
-  );
-  
-  // Ensure occurrences persist (This fixes your "for 3 times" logic)
-  _occurrenceController = TextEditingController(
-    text: (widget.initialOccurrences ?? 1).toString()
-  );
-  
-  _repeatUnit = widget.initialUnit ?? 'day';
-  _monthlyType = widget.initialMonthlyType ?? 'day';
-  _selectedDays = widget.initialDays ?? {widget.eventStartDate.weekday % 7};
-  _endOption = widget.initialEndOption ?? 'never';
-  _selectedEndDate = widget.initialEndDate ?? widget.eventStartDate;
-}
+  @override
+  void initState() {
+    super.initState();
+    // 1. RE-POPULATE THE TEXT FIELDS FROM PREVIOUS STATE
+    _repeatController = TextEditingController(
+      text: (widget.initialInterval ?? 1).toString()
+    );
+    
+    _occurrenceController = TextEditingController(
+      text: (widget.initialOccurrences ?? 1).toString()
+    );
+    
+    // 2. RE-POPULATE DROPDOWNS AND OPTIONS
+    _repeatUnit = widget.initialUnit ?? 'day';
+    _monthlyType = widget.initialMonthlyType ?? 'day';
+    _selectedDays = widget.initialDays ?? {widget.eventStartDate.weekday % 7};
+    _endOption = widget.initialEndOption ?? 'never';
+    _selectedEndDate = widget.initialEndDate ?? widget.eventStartDate;
+  }
 
   @override
   void dispose() {
@@ -72,8 +69,6 @@ void initState() {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-
-    // Use the event's start date to generate accurate labels (e.g. "Monthly on day 8")
     final referenceDate = widget.eventStartDate;
     final dayNum = referenceDate.day.toString();
     final dayName = DateFormat('EEEE').format(referenceDate);
@@ -90,7 +85,6 @@ void initState() {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // --- HEADER SECTION ---
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -107,10 +101,9 @@ void initState() {
                   Navigator.pop(context, {
                     'interval': int.tryParse(_repeatController.text) ?? 1,
                     'unit': _repeatUnit,
-                    'days': _selectedDays,
+                    'days': _repeatUnit == 'week' ? _selectedDays : {widget.eventStartDate.weekday % 7},
                     'endOption': _endOption,
                     'endDate': _selectedEndDate,
-                    // ✅ Parses the occurrences from the typeable box
                     'occurrences': int.tryParse(_occurrenceController.text) ?? 1,
                     'monthlyType': _monthlyType,
                   });
@@ -127,7 +120,6 @@ void initState() {
           ),
           const SizedBox(height: 25),
 
-          // --- REPEATS EVERY ---
           const SectionTitle(title: "Repeats Every"),
           Row(
             children: [
@@ -140,25 +132,8 @@ void initState() {
             ],
           ),
           
-          if (_repeatUnit == 'month') ...[
-            const SizedBox(height: 20),
-            MonthlyTypeSelector(
-              currentType: _monthlyType,
-              dayNum: dayNum,
-              ordinal: ordinal,
-              dayName: dayName,
-              onTypeChanged: (val) => setState(() => _monthlyType = val),
-            ),
-          ],
-
-          if (_repeatUnit == 'year') ...[
-            const SizedBox(height: 20),
-            StaticBox(text: "Every year on ${DateFormat('MMMM d').format(referenceDate)}"),
-          ],
-          
-          const SizedBox(height: 25),
-
           if (_repeatUnit == 'week') ...[
+            const SizedBox(height: 25),
             const SectionTitle(title: "Repeats on"),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -168,23 +143,37 @@ void initState() {
                   label: _days[index],
                   isSelected: isSelected,
                   onTap: () => setState(() {
-                    isSelected ? _selectedDays.remove(index) : _selectedDays.add(index);
+                    if (isSelected) {
+                      if (_selectedDays.length > 1) _selectedDays.remove(index);
+                    } else {
+                      _selectedDays.add(index);
+                    }
                   }),
                 );
               }),
             ),
-            const SizedBox(height: 25),
+          ] else if (_repeatUnit == 'month') ...[
+            const SizedBox(height: 20),
+            MonthlyTypeSelector(
+              currentType: _monthlyType,
+              dayNum: dayNum,
+              ordinal: ordinal,
+              dayName: dayName,
+              onTypeChanged: (val) => setState(() => _monthlyType = val),
+            ),
+          ] else if (_repeatUnit == 'year') ...[
+            const SizedBox(height: 20),
+            StaticBox(text: "Every year on ${DateFormat('MMMM d').format(referenceDate)}"),
           ],
 
-          // --- END CONDITIONS ---
+          const SizedBox(height: 25),
+
           const SectionTitle(title: "Ends"),
-          
           EndRow(
             label: "Never",
             isSelected: _endOption == 'never',
             onTap: () => setState(() => _endOption = 'never'),
           ),
-
           EndRow(
             label: "On",
             isSelected: _endOption == 'on',
@@ -195,12 +184,9 @@ void initState() {
                 final date = await pickDate(context, initialDate: _selectedEndDate);
                 if (date != null) setState(() => _selectedEndDate = date);
               },
-              child: StaticBox(
-                text: DateFormat('MMMM d, yyyy').format(_selectedEndDate),
-              ),
+              child: StaticBox(text: DateFormat('MMM d, yyyy').format(_selectedEndDate)),
             ),
           ),
-
           EndRow(
             label: "After",
             isSelected: _endOption == 'after',
@@ -209,7 +195,7 @@ void initState() {
               children: [
                 TypeableBox(controller: _occurrenceController, width: 50),
                 const SizedBox(width: 10),
-                Text("occurrence", style: TextStyle(fontWeight: FontWeight.bold, color: colors.onSurface)),
+                Text("occurrence(s)", style: TextStyle(fontWeight: FontWeight.bold, color: colors.onSurface)),
               ],
             ),
           ),
@@ -261,7 +247,10 @@ class TypeableBox extends StatelessWidget {
         textAlign: TextAlign.center,
         keyboardType: TextInputType.number,
         style: TextStyle(fontWeight: FontWeight.bold, color: colors.onSurface),
-        decoration: const InputDecoration(border: InputBorder.none, contentPadding: EdgeInsets.zero),
+        decoration: const InputDecoration(
+          border: InputBorder.none, 
+          contentPadding: EdgeInsets.zero
+        ),
       ),
     );
   }
@@ -297,11 +286,17 @@ class RepeatUnitDropdown extends StatelessWidget {
     return PopupMenuButton<String>(
       onSelected: onUnitChanged,
       itemBuilder: (context) => ["day", "week", "month", "year"]
-          .map((u) => PopupMenuItem(value: u, child: Text(u, style: TextStyle(fontWeight: currentUnit == u ? FontWeight.bold : FontWeight.normal))))
+          .map((u) => PopupMenuItem(
+                value: u, 
+                child: Text(u, style: TextStyle(fontWeight: currentUnit == u ? FontWeight.bold : FontWeight.normal))
+              ))
           .toList(),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(border: Border.all(color: colors.onSurface, width: 1.2), borderRadius: BorderRadius.circular(12)),
+        decoration: BoxDecoration(
+          border: Border.all(color: colors.onSurface, width: 1.2), 
+          borderRadius: BorderRadius.circular(12)
+        ),
         child: Row(
           children: [
             Text(currentUnit, style: TextStyle(fontWeight: FontWeight.bold, color: colors.onSurface)),
@@ -317,7 +312,14 @@ class RepeatUnitDropdown extends StatelessWidget {
 class MonthlyTypeSelector extends StatelessWidget {
   final String currentType, dayNum, ordinal, dayName;
   final ValueChanged<String> onTypeChanged;
-  const MonthlyTypeSelector({super.key, required this.currentType, required this.dayNum, required this.ordinal, required this.dayName, required this.onTypeChanged});
+  const MonthlyTypeSelector({
+    super.key, 
+    required this.currentType, 
+    required this.dayNum, 
+    required this.ordinal, 
+    required this.dayName, 
+    required this.onTypeChanged
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -326,10 +328,20 @@ class MonthlyTypeSelector extends StatelessWidget {
       onSelected: onTypeChanged,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(border: Border.all(color: colors.onSurface, width: 1.2), borderRadius: BorderRadius.circular(12)),
+        decoration: BoxDecoration(
+          border: Border.all(color: colors.onSurface, width: 1.2), 
+          borderRadius: BorderRadius.circular(12)
+        ),
         child: Row(
           children: [
-            Expanded(child: Text(currentType == 'day' ? "Monthly on day $dayNum" : "Monthly on the $ordinal $dayName", style: TextStyle(fontWeight: FontWeight.bold, color: colors.onSurface))),
+            Expanded(
+              child: Text(
+                currentType == 'day' 
+                  ? "Monthly on day $dayNum" 
+                  : "Monthly on the $ordinal $dayName", 
+                style: TextStyle(fontWeight: FontWeight.bold, color: colors.onSurface)
+              )
+            ),
             Icon(Icons.arrow_drop_down, color: colors.onSurface),
           ],
         ),
@@ -380,7 +392,14 @@ class EndRow extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
         children: [
-          GestureDetector(onTap: onTap, child: Icon(isSelected ? Icons.radio_button_checked : Icons.radio_button_off, color: colors.onSurface, size: 28)),
+          GestureDetector(
+            onTap: onTap, 
+            child: Icon(
+              isSelected ? Icons.radio_button_checked : Icons.radio_button_off, 
+              color: colors.onSurface, 
+              size: 28
+            )
+          ),
           const SizedBox(width: 12),
           Text(label, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: colors.onSurface)),
           const SizedBox(width: 12),

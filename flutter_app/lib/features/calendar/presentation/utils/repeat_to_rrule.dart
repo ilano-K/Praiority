@@ -76,7 +76,7 @@ String? repeatToRRule(
       final dayCode = dayCodes[start.weekday % 7];
       // Calculate week index (1st, 2nd, 3rd, 4th)
       int weekIndex = ((start.day - 1) / 7).floor() + 1;
-      // Use -1 for the 5th week to represent "Last [Day]"
+      // Google uses -1 for the 5th week to represent "Last [Day]"
       if (weekIndex > 4) weekIndex = -1; 
       rrule += ";BYDAY=$weekIndex$dayCode";
     } else {
@@ -93,7 +93,6 @@ String? repeatToRRule(
 
   // --- 3. END CONDITIONS ---
   if (endOption == 'on' && endDate != null) {
-    // iCalendar format: YYYYMMDDTHHMMSSZ (UTC)
     final utcDate = endDate.toUtc();
     final formattedDate = DateFormat("yyyyMMdd'T'HHmmss'Z'").format(utcDate);
     rrule += ";UNTIL=$formattedDate";
@@ -105,11 +104,10 @@ String? repeatToRRule(
 }
 
 /// Converts an RRule string back into a UI label.
-/// Ensures that complex rules (Interval > 1 or End Dates) always return "Custom".
 String rruleToRepeat(String? rrule) {
   if (rrule == null || rrule.isEmpty) return "None";
 
-  // Check for complexity first
+  // Check for complexity first (if it's not a simple preset, it's Custom)
   bool hasEndCondition = rrule.contains("UNTIL") || rrule.contains("COUNT");
   bool hasComplexInterval = rrule.contains("INTERVAL=") && !rrule.contains("INTERVAL=1");
   bool hasMultipleDays = rrule.contains(",") && rrule.contains("BYDAY=");
@@ -119,18 +117,14 @@ String rruleToRepeat(String? rrule) {
   // Strict Preset Matching
   if (rrule.contains("FREQ=DAILY")) return "Daily";
   
-  if (rrule.contains("FREQ=WEEKLY")) {
-    return "Weekly";
-  }
+  if (rrule.contains("FREQ=WEEKLY")) return "Weekly";
 
   if (rrule.contains("FREQ=MONTHLY")) {
-    // If it's a relative position (BYDAY), we open it in the Custom menu for clarity
+    // If it's a relative position (BYDAY), we show it as "Custom" to avoid UI confusion
     return rrule.contains("BYDAY") ? "Custom" : "Monthly";
   }
 
-  if (rrule.contains("FREQ=YEARLY")) {
-    return "Yearly";
-  }
+  if (rrule.contains("FREQ=YEARLY")) return "Yearly";
 
   return "Custom";
 }

@@ -95,6 +95,82 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
 
       _repeat = rruleToRepeat(event.recurrenceRule);
 
+      // If the recurrence was custom, try to parse components back into
+      // the form state so the CustomSelector will show the saved values.
+      if (_repeat == "Custom" && event.recurrenceRule != null) {
+        try {
+          final rrule = event.recurrenceRule!;
+          final parts = rrule.split(';');
+          final Map<String, String> kv = {};
+          for (var p in parts) {
+            if (!p.contains('=')) continue;
+            final idx = p.indexOf('=');
+            kv[p.substring(0, idx)] = p.substring(idx + 1);
+          }
+
+          // Map FREQ to unit
+          final freq = kv['FREQ'];
+          switch (freq) {
+            case 'DAILY':
+              _customUnit = 'day';
+              break;
+            case 'WEEKLY':
+              _customUnit = 'week';
+              break;
+            case 'MONTHLY':
+              _customUnit = 'month';
+              break;
+            case 'YEARLY':
+              _customUnit = 'year';
+              break;
+            default:
+              _customUnit = 'day';
+          }
+
+          _customInterval = int.tryParse(kv['INTERVAL'] ?? '') ?? 1;
+
+          // BYDAY (week or positional month)
+          if (kv.containsKey('BYDAY')) {
+            final dayCodes = {'SU': 0, 'MO': 1, 'TU': 2, 'WE': 3, 'TH': 4, 'FR': 5, 'SA': 6};
+            final byday = kv['BYDAY']!;
+            if (_customUnit == 'week') {
+              final days = byday.split(',');
+              _customDays = days.map((d) => dayCodes[d] ?? 0).toSet();
+            } else if (_customUnit == 'month') {
+              // If BYDAY contains a leading number (like 2TU or -1SU) it's a positional monthly rule
+              final positional = RegExp(r'^[-0-9]').hasMatch(byday);
+              _monthlyType = positional ? 'position' : 'day';
+            }
+          }
+
+          // BYMONTHDAY -> monthly on a specific day number
+          if (kv.containsKey('BYMONTHDAY')) {
+            _monthlyType = 'day';
+          }
+
+          // End conditions
+          if (kv.containsKey('UNTIL')) {
+            _customEndOption = 'on';
+            try {
+              // UNTIL uses UTC format like 20250210T000000Z
+              final untilStr = kv['UNTIL']!;
+              _customEndDate = DateFormat("yyyyMMdd'T'HHmmss'Z'").parseUtc(untilStr).toLocal();
+            } catch (_) {
+              _customEndDate = event.startTime ?? DateTime.now();
+            }
+          } else if (kv.containsKey('COUNT')) {
+            _customEndOption = 'after';
+            _customCount = int.tryParse(kv['COUNT'] ?? '');
+          } else {
+            _customEndOption = 'never';
+          }
+
+          // If BYMONTH/BYMONTHDAY exist for yearly rules, keep unit as year and leave monthlyType alone
+        } catch (e) {
+          // Parsing failed: leave custom fields null so UI will fall back to defaults
+        }
+      }
+
       // ✅ PREFILL OFFSETS
       if (event.reminderOffsets.isNotEmpty) {
         _selectedOffsets = List.from(event.reminderOffsets);
@@ -219,6 +295,52 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
       },
     );
   }
+
+void _showRepeatSelector(BuildContext context) async {
+  final result = await showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (context) => RepeatSelector(
+      currentRepeat: _repeat,
+      eventStartDate: _startDate,
+      // Sending existing data DOWN to the selector
+      initialInterval: _customInterval,
+      initialUnit: _customUnit,
+      initialDays: _customDays,
+      initialEndOption: _customEndOption, // Check this name in your state
+      initialEndDate: _customEndDate,
+      initialOccurrences: _customCount,
+      initialMonthlyType: _monthlyType,
+      onRepeatSelected: (val) {
+        // This handles simple presets (Daily, Weekly, etc.)
+        setState(() {
+          _repeat = val;
+          _resetCustomFields();
+        });
+      },
+    ),
+  );
+
+  // Receiving custom data UP from the selector
+  if (result != null) {
+    setState(() {
+      if (result is String) {
+        _repeat = result;
+        _resetCustomFields();
+      } else if (result is Map<String, dynamic>) {
+        _repeat = "Custom";
+        _customInterval = result['interval'];
+        _customUnit = result['unit'];
+        _customDays = result['days'];
+        _customEndOption = result['endOption']; // Matches your button key
+        _customEndDate = result['endDate'];
+        _customCount = result['occurrences'];
+        _monthlyType = result['monthlyType'];
+      }
+    });
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -348,43 +470,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                   InteractiveInputRow(
                     label: "Repeat",
                     value: _getRepeatDisplayValue(), 
-                    onTapValue: () async {
-                      final dynamic result = await showModalBottomSheet(
-                        context: context,
-                        isScrollControlled: true, 
-                        backgroundColor: Colors.transparent,
-                        builder: (context) => RepeatSelector(
-                          currentRepeat: _repeat,
-                          onRepeatSelected: (val) {}, 
-                          eventStartDate: _startDate, 
-                          initialInterval: _customInterval,
-                          initialUnit: _customUnit,
-                          initialDays: _customDays,
-                          initialEndOption: _customEndOption,
-                          initialEndDate: _customEndDate,
-                          initialOccurrences: _customCount,
-                          initialMonthlyType: _monthlyType,
-                        ),
-                      );
-
-                      if (result != null) {
-                        setState(() {
-                          if (result is String) {
-                            _repeat = result;
-                            _resetCustomFields(); 
-                          } else if (result is Map<String, dynamic>) {
-                            _repeat = "Custom";
-                            _customInterval = result['interval'];
-                            _customUnit = result['unit'];
-                            _customDays = result['days'];
-                            _customEndOption = result['endOption'];
-                            _customEndDate = result['endDate'];
-                            _customCount = result['occurrences'];
-                            _monthlyType = result['monthlyType'];
-                          }
-                        });
-                      }
-                    },
+                    onTapValue: () => _showRepeatSelector(context), // <--- Use the new method here
                   ),
 
                   // --- LOCATION & TAGS ---
