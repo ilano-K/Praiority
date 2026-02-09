@@ -67,8 +67,5 @@ class SaveTaskUseCase {
     } 
     // 3. DATABASE TRANSACTION
     await repository.saveAndUpdateTask(task);
-
-    // 4. NOTIFICATION
-    await scheduleTaskNotification.execute(task);
   }
 }

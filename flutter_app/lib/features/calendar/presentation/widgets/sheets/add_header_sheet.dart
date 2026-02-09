@@ -131,7 +131,7 @@ class _AddSheetHeaderState extends ConsumerState<AddSheetHeader> {
                     AppDialogs.showWarning(
                       context, 
                       title: "Error", 
-                      message: "An unexpected error occurred: $e"
+                      message: "An unexpected error occurred"
                     );
                   }
                 } 

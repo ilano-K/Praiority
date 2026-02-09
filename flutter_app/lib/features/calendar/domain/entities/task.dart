@@ -28,6 +28,7 @@ class Task extends Equatable{
   // advanced
   final bool isAiMovable; // can be moved automatically by AI
   final bool isConflicting;
+  final List<Duration> reminderOffsets;
  
   //flags
   final TaskStatus status;
@@ -54,6 +55,7 @@ class Task extends Equatable{
     this.isConflicting = true ,
     this.status = TaskStatus.unscheduled,
     this.isSynced = false,
+    this.reminderOffsets = const [],
   });
 
   factory Task.create({
@@ -75,7 +77,8 @@ class Task extends Equatable{
     bool? isAiMovable,
     bool? isConflicting,
     TaskStatus status = TaskStatus.unscheduled,
-    bool isSynced = false
+    bool isSynced = false,
+    List<Duration> reminderOffsets = const [],
   }) {
     return Task(
       id: const Uuid().v4(), // AUTOMATIC ID GENERATION
@@ -98,6 +101,7 @@ class Task extends Equatable{
       isConflicting: isConflicting ?? true,
       status: status,
       isSynced: false,
+      reminderOffsets: reminderOffsets,
     );
   }
   Task copyWith({
@@ -121,6 +125,7 @@ class Task extends Equatable{
     bool? isConflicting, 
     TaskStatus? status,
     bool? isSynced,
+    List<Duration>? reminderOffsets,
   }){
     return Task(
       id: id ?? this.id,
@@ -145,6 +150,7 @@ class Task extends Equatable{
       isConflicting: isConflicting ?? this.isConflicting,
       status: status ?? this.status,
       isSynced: isSynced ?? this.isSynced,
+      reminderOffsets: reminderOffsets ?? this.reminderOffsets
     );
   }
 
@@ -170,6 +176,7 @@ class Task extends Equatable{
         isConflicting,
         status,
         isSynced,
+        reminderOffsets
       ];
   
 }

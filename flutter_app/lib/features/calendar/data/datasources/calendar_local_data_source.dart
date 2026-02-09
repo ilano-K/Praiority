@@ -125,6 +125,16 @@ class CalendarLocalDataSource{
   // ---------------------------------------------------------------------------
   // DATE VIEW LOGIC (CALENDAR PAGE)
   // ---------------------------------------------------------------------------
+  // for notifcations
+  Stream<List<TaskModel>> watchFutureTasks() {
+    return isar.taskModels
+        .filter()
+        .isDeletedEqualTo(false)
+        .startTimeIsNotNull()
+        .startTimeGreaterThan(DateTime.now().subtract(const Duration(minutes: 1)))
+        .watch(fireImmediately: true);
+  }
+
   Future<List<TaskModel>> getTasksByRange(DateTime start, DateTime end) async {
     var q = isar.taskModels.filter().group((g) => g.startTimeBetween(start, end).or().recurrenceRuleIsNotNull());
     final tasks = await q.isDeletedEqualTo(false).sortByStartTime().findAll();
@@ -132,6 +142,7 @@ class CalendarLocalDataSource{
       .where((task) => TaskUtils.validTaskModelForDate(task, start, end))
       .toList();
   } 
+  
   Future<List<TaskModel>> getTasksByCondition({
     DateTime? start, 
     DateTime? end,

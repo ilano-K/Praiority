@@ -4,6 +4,7 @@ import 'package:flutter_app/core/providers/global_providers.dart';
 import 'package:flutter_app/core/services/notification_service.dart';
 import 'package:flutter_app/core/theme/theme_notifier.dart';
 import 'package:flutter_app/features/auth/presentation/pages/auth_gate.dart';
+import 'package:flutter_app/features/calendar/presentation/managers/notification_scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_app/core/services/local_database_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -31,6 +32,8 @@ void main() async {
   final notificationService = container.read(notificationServiceProvider);
   await notificationService.init();
   await notificationService.requestPermissions();
+
+  container.read(notificationSchedulerProvider).initialize();
 
   runApp(
     UncontrolledProviderScope(

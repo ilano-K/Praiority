@@ -54,6 +54,7 @@ class TaskModel {
   DateTime? updatedAt;
 
   late bool isConflicting;
+  late List<int>? reminderMinutes;
 
   // Convert to task object 
   Task toEntity() {
@@ -76,7 +77,8 @@ class TaskModel {
       recurrenceRule: recurrenceRule,
       status: status, // Map status
       isSynced: isSynced,
-      isConflicting: isConflicting
+      isConflicting: isConflicting,
+      reminderOffsets: reminderMinutes?.map((m) => Duration(minutes: m)).toList() ?? [],
     );
   }
 
@@ -104,6 +106,7 @@ class TaskModel {
       "recurrence_rule": recurrenceRule,
       "is_conflicting": isConflicting,
       "is_deleted": isDeleted,
+      "reminder_minutes": reminderMinutes
     };
   }
 
@@ -133,7 +136,8 @@ class TaskModel {
       ..recurrenceRule = json["recurrence_rule"] as String?
       ..status = TaskStatus.values.byName(json["status"] as String) 
       ..isConflicting = json["is_conflicting"] as bool? ?? false
-      ..isDeleted = json["is_deleted"] as bool? ?? false;  
+      ..isDeleted = json["is_deleted"] as bool? ?? false
+      ..reminderMinutes = json["reminder_minutes"] != null ? List<int>.from(json["reminder_minutes"]) : [];
   }
 
 
@@ -158,7 +162,8 @@ class TaskModel {
       ..recurrenceRule = task.recurrenceRule
       ..status = task.status // Map status
       ..isSynced = task.isSynced
-      ..isConflicting = task.isConflicting;
+      ..isConflicting = task.isConflicting
+      ..reminderMinutes = task.reminderOffsets.map((d) => d.inMinutes).toList();
   }
 }
                                                                     

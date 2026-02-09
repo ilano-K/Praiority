@@ -16,7 +16,7 @@ class CalendarRepository {
     // final model = TaskModel.fromEntity(task);
     await localDataSource.saveAndUpdateTask(task);
   }
-
+  
   Future<void> deleteTask(String id) async {
     await localDataSource.deleteTask(id);
   }
@@ -51,6 +51,14 @@ class CalendarRepository {
     return models.map((model) => model.toEntity()).toList();
   }
 
+  Stream<List<Task>> watchFutureTasks() {
+    // 1. Listen to the data source
+    return localDataSource.watchFutureTasks().map((taskModels) {
+      // 2. Convert List<TaskModel> -> List<Task>
+      return taskModels.map((model) => model.toEntity()).toList();
+    });
+  }
+  
   Future<List<String>> getAllTagNames() async {
     final tags = await localDataSource.getAllTagNames();
     return tags.map((t) => t.name).toList();

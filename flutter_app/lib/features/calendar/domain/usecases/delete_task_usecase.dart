@@ -19,7 +19,6 @@ class DeleteTaskUseCase {
   DeleteTaskUseCase(this.repository, this.scheduleTaskNotification);
 
   Future<void> execute(Task task) async {
-    await scheduleTaskNotification.cancel(task.id);
     await repository.deleteTask(task.id);
   }
 }
