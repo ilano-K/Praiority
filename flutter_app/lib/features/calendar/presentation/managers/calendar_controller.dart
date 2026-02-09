@@ -39,17 +39,30 @@ class CalendarStateController extends AsyncNotifier<List<Task>> {
     state = AsyncData(updatedList);
   }
 
-  Future<void> refresh() async {
+  Future<void> refreshUi() async {
     if (_currentRange != null) {
       print("DEBUG: Refreshing calendar data from database...");
       // Re-fetch data for the currently visible dates
       await setRange(_currentRange!);
       ref.invalidate(taskViewControllerProvider);
-      await ref.read(taskSyncServiceProvider).pushLocalChanges();
-    } else {
-      // Fallback if no range is set yet (rare)
-      ref.invalidateSelf();
-    }
+    } 
+  }
+
+  Future<void> _runSmartSchedule(Task task) async {
+    final syncService = ref.read(taskSyncServiceProvider);
+    final smartController = ref.read(smartFeaturesControllerProvider);
+
+    // push changes first
+    await syncService.pushLocalChanges();
+
+    // run smart sched
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    await smartController.executeSmartSchedule(task.id, today, now);
+
+    await syncService.pullRemoteChanges();
+    await refreshUi();
   }
 
   Future<String?> requestAiTip(String taskId) async {
@@ -75,23 +88,26 @@ class CalendarStateController extends AsyncNotifier<List<Task>> {
       updatedList = [...currentTasks, task];
       updatedList.sort((a, b) => (a.startTime ?? DateTime.now()).compareTo(b.startTime ?? DateTime.now()));
     }
-    
-    state = AsyncData(updatedList);
-    final syncService = ref.read(taskSyncServiceProvider);
-    await syncService.pushLocalChanges(); 
-    
-    if(task.isSmartSchedule){
-      final smartFeatureController = ref.read(smartFeaturesControllerProvider);
-      final targetDate = DateTime(
-        DateTime.now().year,
-        DateTime.now().month,
-        DateTime.now().day,
-      );
 
-      final currentTime = DateTime.now();
-      await smartFeatureController.executeSmartSchedule(task.id, targetDate, currentTime);
+    if(task.isSmartSchedule){
+      await _runSmartSchedule(task);
+    } else {
+      final syncService = ref.read(taskSyncServiceProvider);
+      state = AsyncData(updatedList);
+      await refreshUi();
+      unawaited(syncService.pushLocalChanges());
     }
-    await refresh();
+  }
+
+  Future<void> reorganizeTask(DateTime targetDate, String? instruction) async {
+    final smartController = ref.read(smartFeaturesControllerProvider);;
+    print("[DEBUG]: CALENDAR CONTROLLER: THIS IS THE USER INST: ${instruction}");
+    final currentTime = DateTime.now();
+    await smartController.executeSmartOrganize(targetDate, currentTime, instruction: instruction);
+    
+    final syncService = ref.read(taskSyncServiceProvider);
+    await syncService.pullRemoteChanges();
+    await refreshUi();
   }
 
   Future<void> deleteTask(Task task) async {
@@ -100,7 +116,9 @@ class CalendarStateController extends AsyncNotifier<List<Task>> {
     final currentTasks = state.value ?? [];
     final updatedList = currentTasks.where((t) => t.id != task.id).toList();
     state = AsyncData(updatedList);
-    await refresh();
+    await refreshUi();
+    final syncService = ref.read(taskSyncServiceProvider);
+    unawaited(syncService.pushLocalChanges());
   }
 
   Future<void> getTasksByCondition({

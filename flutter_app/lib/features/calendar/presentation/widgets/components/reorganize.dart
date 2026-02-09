@@ -1,17 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_app/features/calendar/presentation/managers/calendar_controller.dart';
+import 'package:flutter_app/features/calendar/presentation/utils/time_utils.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/dialogs/app_dialog.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/selectors/date_picker.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-class Reschedule extends StatefulWidget {
+class Reschedule extends ConsumerStatefulWidget {
   const Reschedule({super.key});
 
   @override
-  State<Reschedule> createState() => _RescheduleState();
+  ConsumerState<Reschedule> createState() => _RescheduleState();
 }
 
-class _RescheduleState extends State<Reschedule> {
+class _RescheduleState extends ConsumerState<Reschedule> {
   // State variable to track the selected date
   DateTime _targetDate = DateTime.now();
+
+  final TextEditingController _instructionController = TextEditingController();
+
+  @override
+  void dispose(){
+    _instructionController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -97,6 +109,7 @@ class _RescheduleState extends State<Reschedule> {
               border: Border.all(color: colorScheme.onSurface.withOpacity(0.5)),
             ),
             child: TextField(
+              controller: _instructionController,
               maxLines: 3,
               decoration: InputDecoration(
                 border: InputBorder.none,
@@ -113,8 +126,22 @@ class _RescheduleState extends State<Reschedule> {
             width: double.infinity,
             height: 54,
             child: ElevatedButton(
-              onPressed: () {
-                // Handle reorganization logic here
+              onPressed: () async {
+                final instruction = _instructionController.text.trim();
+                final calendarController = ref.read(calendarControllerProvider.notifier);
+                print("instruction: $instruction");
+                try{
+                  final targetDateOnly = dateOnly(_targetDate);
+                  await calendarController.reorganizeTask(targetDateOnly, instruction.isEmpty ? null : instruction);
+                }catch(e){
+                    if (context.mounted) {
+                      AppDialogs.showWarning(
+                        context, 
+                        title: "Error", 
+                        message: "An unexpected error occurred"
+                    );
+                  }
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: colorScheme.primary,

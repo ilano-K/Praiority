@@ -21,11 +21,11 @@ class SmartFeaturesController {
       final request = SmartScheduleRequest(
         cloudId: cloudId, 
         targetDate: targetDate, 
-        currentTime: currentTime
+        currentTime: currentTime,
+        instruction: instruction,
       );
 
       await _ref.read(smartServiceProvider).smartSchedule(request: request);
-      await _ref.read(taskSyncServiceProvider).pullRemoteChanges();
     } catch(e){
       print(e);
       rethrow;
@@ -38,11 +38,13 @@ class SmartFeaturesController {
     try{
       final request = SmartOrganizeRequest(
         targetDate: targetDate, 
-        currentTime: currentTime
+        currentTime: currentTime,
+        instruction: instruction,
       );
 
+      print("[DEBUG] SMART CONTROLLER: this is the user instruction: ${request.instruction}");
+
       await _ref.read(smartServiceProvider).smartOrganize(request: request);
-      await _ref.read(taskSyncServiceProvider).pullRemoteChanges();
     } catch(e){
       print(e);
       rethrow; 
@@ -60,7 +62,6 @@ class SmartFeaturesController {
       await _ref.read(smartServiceProvider).smartAdvice(request: request);
 
       // sync tasks
-      await _ref.read(taskSyncServiceProvider).pullRemoteChanges();
 
       final task = await _ref.read(calendarRepositoryProvider).getTaskById(cloudId);
 

@@ -1,8 +1,10 @@
-
+import 'dart:async';
+import 'dart:io'; // For SocketException
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_app/features/calendar/data/datasources/calendar_local_data_source.dart';
 import 'package:flutter_app/features/calendar/data/models/task_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:retry/retry.dart'; // Import this
 
 class TaskSyncService {
   final SupabaseClient _supabase;
@@ -10,8 +12,14 @@ class TaskSyncService {
 
   TaskSyncService(this._supabase, this._localDb);
 
+  // Define retry options: max 3 attempts, random delay to prevent collisions
+  final _r = const RetryOptions(maxAttempts: 3);
+
   Future<void> syncAllTasks() async {
-    if(_supabase.auth.currentUser == null) return;
+    if (_supabase.auth.currentUser == null) return;
+    
+    // Run these in sequence or parallel depending on your conflict logic.
+    // Usually, pushing first ensures your latest edits are saved.
     await pushLocalChanges();
     await pullRemoteChanges();
   }
@@ -20,35 +28,62 @@ class TaskSyncService {
     debugPrint("[DEBUG] PUSHING TASK LOCAL CHANGES NOW!");
     final unsyncedTasks = await _localDb.getUnsyncedTasks();
 
-    for(final task in unsyncedTasks){
-      try{
-        final taskMap = task.toCloudJsonFormat();
-        taskMap["user_id"] = _supabase.auth.currentUser!.id;
-        await _supabase.from('tasks').upsert(taskMap);
-        await _localDb.markTasksAsSynced(task.originalId);
-      }catch(e){
-        debugPrint("[DEBUG]: Push failed for task ${task.id}: $e");
-      }
+    if (unsyncedTasks.isEmpty) return;
 
+    // 1. Prepare the BATCH (Much faster than looping)
+    final List<Map<String, dynamic>> batchData = unsyncedTasks.map((task) {
+      final taskMap = task.toCloudJsonFormat();
+      taskMap["user_id"] = _supabase.auth.currentUser!.id;
+      return taskMap;
+    }).toList();
+
+    try {
+      // 2. Retry Logic using 'retry' package
+      // This handles transient errors (SocketException, Timeout) automatically
+      await _r.retry(
+        () async {
+          // Supabase supports inserting a List<Map> for bulk upsert
+          await _supabase.from('tasks').upsert(batchData);
+        },
+        // Only retry on network-related errors. 
+        // Don't retry if your data is invalid (e.g. missing fields).
+        retryIf: (e) => e is SocketException || e is TimeoutException || e is PostgrestException,
+      );
+
+      // 3. Mark all as synced only if the batch succeeded
+      // Note: You might need to update your local DB to accept a list of IDs for speed
+      for (var task in unsyncedTasks) {
+        await _localDb.markTasksAsSynced(task.originalId);
+      }
+      
+      debugPrint("[DEBUG] Successfully synced ${batchData.length} tasks.");
+
+    } catch (e) {
+      debugPrint("[DEBUG]: Push BATCH failed after retries: $e");
     }
   }
 
   Future<void> pullRemoteChanges() async {
     debugPrint("[DEBUG] PULLING TASK REMOTE CHANGES NOW!");
-    try{
-      final response = await _supabase
-        .from("tasks")
-        .select()
-        .eq('user_id', _supabase.auth.currentUser!.id);
+    try {
+      // Retry the pull as well
+      final response = await _r.retry(
+        () async => await _supabase
+            .from("tasks")
+            .select()
+            .eq('user_id', _supabase.auth.currentUser!.id),
+        retryIf: (e) => e is SocketException || e is TimeoutException,
+      );
 
+      // Map data
+      final List<TaskModel> models = (response as List)
+          .map((e) => TaskModel.fromCloudJson(e))
+          .toList();
 
-      final List<TaskModel> models = response
-        .map((e) => TaskModel.fromCloudJson(e))
-        .toList();
-      
       await _localDb.updateTasksFromCloud(models);
-    }catch(e){
-      debugPrint("[DEBUG]: PULLING OF TASK REMOTE CHANGES FAILED WITH ERROR: $e");
+      
+    } catch (e) {
+      debugPrint("[DEBUG]: PULLING REMOTE CHANGES FAILED: $e");
     }
   }
 }
