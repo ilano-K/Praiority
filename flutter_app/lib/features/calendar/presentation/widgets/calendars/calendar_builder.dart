@@ -8,6 +8,8 @@ import 'package:flutter_app/features/calendar/presentation/utils/time_utils.dart
 import 'package:intl/intl.dart';
 import 'dart:math' as math;
 
+import 'package:syncfusion_flutter_calendar/calendar.dart';
+
 class CalendarBuilder {
   static Widget buildAppBar({
     required BuildContext context,
@@ -33,34 +35,38 @@ class CalendarBuilder {
                 Text(
                   DateFormat('MMMM').format(selectedDate),
                   style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onSurface),
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
+                  ),
                 ),
                 Icon(Icons.arrow_drop_down, color: colorScheme.onSurface),
               ],
             ),
           ),
           const Spacer(),
-          
+
           // --- UPDATED: REFRESH ICON REPLACED WITH GOOGLE ASSET ---
           Padding(
             padding: const EdgeInsets.only(right: 10.0),
             child: Image.asset(
-              'assets/images/G.png', 
-              width: 22, // Sized slightly smaller than 24 to match visual weight
+              'assets/images/G.png',
+              width:
+                  22, // Sized slightly smaller than 24 to match visual weight
               height: 22,
               fit: BoxFit.contain,
             ),
           ),
-          
+
           const SizedBox(width: 10),
           GestureDetector(
             onTap: () => Navigator.push(
-                context, MaterialPageRoute(builder: (context) => const TaskView())),
+              context,
+              MaterialPageRoute(builder: (context) => const TaskView()),
+            ),
             child: Icon(
               Icons.assignment_outlined, // Matches your image
-              size: 24, 
+              size: 24,
               color: colorScheme.onSurface,
             ),
           ),
@@ -86,16 +92,18 @@ class CalendarBuilder {
             Text(
               DateFormat('E').format(selectedDate),
               style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: colorScheme.onSurface),
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: colorScheme.onSurface,
+              ),
             ),
             Text(
               DateFormat('d').format(selectedDate),
               style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.onSurface),
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
+              ),
             ),
             Icon(Icons.arrow_drop_down, size: 18, color: colorScheme.onSurface),
           ],
@@ -104,28 +112,31 @@ class CalendarBuilder {
     );
   }
 
-static Widget buildAllDayList({
+  static Widget buildAllDayList({
     required List<Task> tasks,
     required bool isDark,
     required Function(Task) onTaskTap,
     required DateTime selectedDate,
   }) {
     final selectedDateOnly = dateOnly(selectedDate);
-    final allDayTasks = tasks.where((t) { 
-      if (t.status == TaskStatus.pending){
+    final allDayTasks = tasks.where((t) {
+      if (t.status == TaskStatus.pending) {
         return false;
       }
       if ((t.isAllDay || t.type == TaskType.birthday) && t.startTime != null) {
         final taskDateOnly = dateOnly(t.startTime!);
-        
+
         // For non-recurring tasks, check exact date match
-        if (t.recurrenceRule == null || t.recurrenceRule == "" || t.recurrenceRule == "None") {
+        if (t.recurrenceRule == null ||
+            t.recurrenceRule == "" ||
+            t.recurrenceRule == "None") {
           return taskDateOnly == selectedDateOnly;
         }
-        
+
         // For recurring tasks, check if this date is within the recurring range
         // For birthdays, they repeat every year on the same month/day
-        return t.startTime!.month == selectedDate.month && t.startTime!.day == selectedDate.day;
+        return t.startTime!.month == selectedDate.month &&
+            t.startTime!.day == selectedDate.day;
       }
       return false;
     }).toList();
@@ -146,21 +157,29 @@ static Widget buildAllDayList({
                   c.dark.value == task.colorValue,
               orElse: () => appEventColors[0],
             );
-            final Color taskColor = isDark ? paletteMatch.dark : paletteMatch.light;
+            final Color taskColor = isDark
+                ? paletteMatch.dark
+                : paletteMatch.light;
             final bool isCompleted = task.status == TaskStatus.completed;
             final Color baseTextColor =
-                ThemeData.estimateBrightnessForColor(taskColor) == Brightness.light
-                    ? Colors.black87
-                    : Colors.white;
+                ThemeData.estimateBrightnessForColor(taskColor) ==
+                    Brightness.light
+                ? Colors.black87
+                : Colors.white;
 
             return GestureDetector(
               key: ValueKey(task.id),
-              behavior: HitTestBehavior.opaque, // Ensures the entire bar is clickable
-              onTap: () => onTaskTap(task), // Fixed: Explicitly trigger the tap logic
+              behavior:
+                  HitTestBehavior.opaque, // Ensures the entire bar is clickable
+              onTap: () =>
+                  onTaskTap(task), // Fixed: Explicitly trigger the tap logic
               child: Container(
                 width: double.infinity,
                 margin: const EdgeInsets.only(bottom: 6),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: isCompleted ? taskColor.withOpacity(0.6) : taskColor,
                   borderRadius: BorderRadius.circular(8),
@@ -173,8 +192,9 @@ static Widget buildAllDayList({
                     decoration: isCompleted
                         ? TextDecoration.lineThrough
                         : TextDecoration.none,
-                    color:
-                        isCompleted ? baseTextColor.withOpacity(0.4) : baseTextColor,
+                    color: isCompleted
+                        ? baseTextColor.withOpacity(0.4)
+                        : baseTextColor,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -198,9 +218,19 @@ static Widget buildAllDayList({
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        _buildAnimatedFabOption("ReOrganize", colorScheme, fabAnimation, () => onOptionTap("ReOrganize")),
+        _buildAnimatedFabOption(
+          "ReOrganize",
+          colorScheme,
+          fabAnimation,
+          () => onOptionTap("ReOrganize"),
+        ),
         const SizedBox(height: 10),
-        _buildAnimatedFabOption("Task", colorScheme, fabAnimation, () => onOptionTap("Task")),
+        _buildAnimatedFabOption(
+          "Task",
+          colorScheme,
+          fabAnimation,
+          () => onOptionTap("Task"),
+        ),
         const SizedBox(height: 10),
         SizedBox(
           width: 65,
@@ -238,18 +268,95 @@ static Widget buildAllDayList({
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             decoration: BoxDecoration(
-                color: colors.primary.withOpacity(0.9),
-                borderRadius: BorderRadius.circular(30)),
+              color: colors.primary.withOpacity(0.9),
+              borderRadius: BorderRadius.circular(30),
+            ),
             child: Text(
               label,
               style: TextStyle(
-                  color: colors.onSurface,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14),
+                color: colors.onSurface,
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
             ),
           ),
         ),
       ),
     );
+  }
+}
+
+class TaskDataSource extends CalendarDataSource {
+  TaskDataSource(List<Task> tasks, bool isDark) {
+    _buildAppointments(tasks, isDark);
+  }
+
+  void updateData(List<Task> tasks, bool isDark) {
+    // print("DEBUG: [TaskDataSource] Updating data...");
+    _buildAppointments(tasks, isDark);
+    notifyListeners(CalendarDataSourceAction.reset, appointments!);
+  }
+
+  void _buildAppointments(List<Task> tasks, bool isDark) {
+    // Filter logic
+    final visibleTasks = tasks
+        .where(
+          (t) =>
+              !t.isAllDay &&
+              t.type != TaskType.birthday &&
+              t.startTime != null &&
+              t.status != TaskStatus.pending,
+        )
+        .toList();
+
+    for (var task in tasks) {
+      print("THise are the task in the appointments ${task.title}");
+      print("This is the type: ${task.type}");
+      print("This is the start: ${task.startTime}");
+      print("This is the status: ${task.status}");
+      print("This is the all day: ${task.isAllDay}");
+    }
+
+    appointments = visibleTasks.map((task) {
+      final Color displayColor = _resolveColor(task.colorValue, isDark);
+
+      DateTime visualEndTime = task.endTime!;
+      final duration = task.endTime!.difference(task.startTime!);
+
+      if (duration.inMinutes < 20) {
+        visualEndTime = task.startTime!.add(const Duration(minutes: 20));
+      }
+
+      return Appointment(
+        id: task.id,
+        subject: task.title,
+        startTime: task.startTime!,
+        endTime: visualEndTime,
+        notes: task.status == TaskStatus.completed
+            ? "[COMPLETED]${task.description ?? ''}"
+            : task.description,
+        color: displayColor,
+        isAllDay: task.isAllDay,
+        recurrenceRule: task.recurrenceRule,
+      );
+    }).toList();
+
+    print(
+      "DEBUG: [TaskDataSource] Generated ${appointments?.length} appointments.",
+    );
+  }
+
+  Color _resolveColor(int? savedHex, bool isDark) {
+    if (savedHex == null) {
+      return isDark ? appEventColors[0].dark : appEventColors[0].light;
+    }
+    try {
+      final paletteMatch = appEventColors.firstWhere(
+        (c) => c.light.value == savedHex || c.dark.value == savedHex,
+      );
+      return isDark ? paletteMatch.dark : paletteMatch.light;
+    } catch (e) {
+      return Color(savedHex);
+    }
   }
 }

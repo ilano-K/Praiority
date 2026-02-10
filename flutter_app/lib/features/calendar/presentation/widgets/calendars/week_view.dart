@@ -1,5 +1,6 @@
 // File: lib/features/calendar/presentation/widgets/calendars/week_view.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/calendars/calendar_builder.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 import 'package:intl/intl.dart';
@@ -10,16 +11,16 @@ import 'package:flutter_app/features/calendar/presentation/widgets/components/ap
 import 'package:flutter_app/features/calendar/presentation/widgets/components/task_summary_view.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/selectors/color_selector.dart';
 // Import DayView to share the TaskDataSource logic
-import 'day_view.dart'; 
+import 'day_view.dart';
 
 class WeekView extends ConsumerStatefulWidget {
   final List<Task> tasks;
   final CalendarController calendarController;
   final DateTime selectedDate;
-  
+
   // FIX: Accept Notifier from MainCalendar
   final ValueNotifier<DateTime> dateNotifier;
-  
+
   final Function(ViewChangedDetails) onViewChanged;
   final Function(Task) onTaskTap;
 
@@ -50,12 +51,12 @@ class _WeekViewState extends ConsumerState<WeekView> {
     if (!_isInitialized) {
       // 1. Initialize DataSource ONCE
       _dataSource = TaskDataSource(widget.tasks, isDark);
-      
+
       // 2. Generate Infinite Grid ONCE
       // We generate 24 blocks for one day and set them to repeat DAILY.
       // This ensures the grey background exists for all eternity without rebuilding.
       _gridRegions = _generateInfiniteGrid();
-      
+
       _isInitialized = true;
     } else {
       _dataSource.updateData(widget.tasks, isDark);
@@ -65,7 +66,7 @@ class _WeekViewState extends ConsumerState<WeekView> {
   @override
   void didUpdateWidget(WeekView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    
+
     // Only update data if tasks change
     if (oldWidget.tasks != widget.tasks) {
       final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -79,8 +80,8 @@ class _WeekViewState extends ConsumerState<WeekView> {
   List<TimeRegion> _generateInfiniteGrid() {
     final List<TimeRegion> regions = [];
     // Anchor date (e.g., Jan 1, 2020) - exact date doesn't matter for recurrence
-    final DateTime anchor = DateTime(2020, 1, 1, 0, 0); 
-    
+    final DateTime anchor = DateTime(2020, 1, 1, 0, 0);
+
     for (int h = 0; h < 24; h++) {
       regions.add(
         TimeRegion(
@@ -88,7 +89,7 @@ class _WeekViewState extends ConsumerState<WeekView> {
           endTime: DateTime(anchor.year, anchor.month, anchor.day, h, 59),
           enablePointerInteraction: false,
           // CRITICAL: This makes the blocks repeat every day forever
-          recurrenceRule: 'FREQ=DAILY;INTERVAL=1', 
+          recurrenceRule: 'FREQ=DAILY;INTERVAL=1',
         ),
       );
     }
@@ -108,45 +109,58 @@ class _WeekViewState extends ConsumerState<WeekView> {
         // --- HEADER (Updates via Notifier) ---
         Container(
           color: colorScheme.surface,
-          padding: const EdgeInsets.only(bottom: 8, top: 8), 
+          padding: const EdgeInsets.only(bottom: 8, top: 8),
           child: ValueListenableBuilder<DateTime>(
             valueListenable: widget.dateNotifier,
             builder: (context, date, _) {
               // Calculate the week start based on the swipe date
-              final firstDayOfWeek = date.subtract(Duration(days: date.weekday % 7));
-              
-              return _buildHeaderRow(context, colorScheme, firstDayOfWeek, isDark, now);
+              final firstDayOfWeek = date.subtract(
+                Duration(days: date.weekday % 7),
+              );
+
+              return _buildHeaderRow(
+                context,
+                colorScheme,
+                firstDayOfWeek,
+                isDark,
+                now,
+              );
             },
           ),
         ),
-        
+
         // --- CALENDAR BODY (Stable) ---
         Expanded(
           child: SfCalendar(
             view: CalendarView.week,
             controller: widget.calendarController,
             headerHeight: 0,
-            viewHeaderHeight: 0, 
+            viewHeaderHeight: 0,
             backgroundColor: colorScheme.surface,
-            cellBorderColor: Colors.transparent, 
-            
+            cellBorderColor: Colors.transparent,
+
             // Uses cached infinite grid
             specialRegions: _gridRegions,
-            
+
             // --- GRID LOOK ---
             timeRegionBuilder: (context, details) {
               return Container(
-                margin: const EdgeInsets.symmetric(horizontal: 1, vertical: 0.5),
+                margin: const EdgeInsets.symmetric(
+                  horizontal: 1,
+                  vertical: 0.5,
+                ),
                 decoration: BoxDecoration(
-                  color: colorScheme.onSurface.withOpacity(isDark ? 0.05 : 0.08),
-                  borderRadius: BorderRadius.circular(8), 
+                  color: colorScheme.onSurface.withOpacity(
+                    isDark ? 0.05 : 0.08,
+                  ),
+                  borderRadius: BorderRadius.circular(8),
                 ),
               );
             },
 
             // Uses cached DataSource
             dataSource: _dataSource,
-            
+
             appointmentBuilder: (context, details) {
               final Appointment appointment = details.appointments.first;
               return Container(
@@ -156,14 +170,17 @@ class _WeekViewState extends ConsumerState<WeekView> {
             },
 
             onViewChanged: widget.onViewChanged,
-            
+
             onTap: (details) {
-              if (details.targetElement == CalendarElement.appointment && details.appointments != null) {
-                final tappedTask = widget.tasks.firstWhere((t) => t.id == details.appointments!.first.id);
+              if (details.targetElement == CalendarElement.appointment &&
+                  details.appointments != null) {
+                final tappedTask = widget.tasks.firstWhere(
+                  (t) => t.id == details.appointments!.first.id,
+                );
                 widget.onTaskTap(tappedTask);
               }
             },
-            
+
             timeSlotViewSettings: TimeSlotViewSettings(
               timeRulerSize: 60,
               timeTextStyle: TextStyle(
@@ -171,7 +188,7 @@ class _WeekViewState extends ConsumerState<WeekView> {
                 fontWeight: FontWeight.bold,
                 fontSize: 12,
               ),
-              timeIntervalHeight: 85, 
+              timeIntervalHeight: 85,
             ),
           ),
         ),
@@ -180,25 +197,34 @@ class _WeekViewState extends ConsumerState<WeekView> {
   }
 
   // Extracted Header Builder used inside the Notifier
-  Widget _buildHeaderRow(BuildContext context, ColorScheme colorScheme, DateTime firstDayOfWeek, bool isDark, DateTime now) {
-    final List<DateTime> weekDays = List.generate(7, (i) => firstDayOfWeek.add(Duration(days: i)));
+  Widget _buildHeaderRow(
+    BuildContext context,
+    ColorScheme colorScheme,
+    DateTime firstDayOfWeek,
+    bool isDark,
+    DateTime now,
+  ) {
+    final List<DateTime> weekDays = List.generate(
+      7,
+      (i) => firstDayOfWeek.add(Duration(days: i)),
+    );
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(width: 60), 
+        const SizedBox(width: 60),
         ...weekDays.map((day) {
           final bool isToday = DateUtils.isSameDay(day, now);
-          
+
           return Expanded(
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center, 
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
-                  DateFormat('E').format(day), 
+                  DateFormat('E').format(day),
                   style: TextStyle(
-                    fontSize: 11, 
+                    fontSize: 11,
                     color: colorScheme.onSurface.withOpacity(0.6),
                     fontWeight: FontWeight.w600,
                   ),
@@ -214,15 +240,17 @@ class _WeekViewState extends ConsumerState<WeekView> {
                     DateFormat('d').format(day),
                     style: TextStyle(
                       fontSize: 14,
-                      color: isToday ? colorScheme.onPrimary : colorScheme.onSurface, 
-                      fontWeight: FontWeight.bold
+                      color: isToday
+                          ? colorScheme.onPrimary
+                          : colorScheme.onSurface,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
                 const SizedBox(height: 4),
                 // Tiny task dots or summary for the week header
                 SizedBox(
-                  height: 80, 
+                  height: 80,
                   child: _buildDayTaskList(context, day, isDark),
                 ),
               ],
@@ -234,11 +262,14 @@ class _WeekViewState extends ConsumerState<WeekView> {
   }
 
   Widget _buildDayTaskList(BuildContext context, DateTime day, bool isDark) {
-    final dayAllDayTasks = widget.tasks.where((t) => 
-      (t.isAllDay || t.type == TaskType.birthday) && 
-      t.startTime != null && 
-      DateUtils.isSameDay(t.startTime!, day)
-    ).toList();
+    final dayAllDayTasks = widget.tasks
+        .where(
+          (t) =>
+              (t.isAllDay || t.type == TaskType.birthday) &&
+              t.startTime != null &&
+              DateUtils.isSameDay(t.startTime!, day),
+        )
+        .toList();
 
     if (dayAllDayTasks.isEmpty) return const SizedBox.shrink();
     final bool hasMore = dayAllDayTasks.length > 2;
@@ -249,7 +280,9 @@ class _WeekViewState extends ConsumerState<WeekView> {
       children: [
         ...displayTasks.map((task) {
           final paletteMatch = appEventColors.firstWhere(
-            (c) => c.light.value == task.colorValue || c.dark.value == task.colorValue,
+            (c) =>
+                c.light.value == task.colorValue ||
+                c.dark.value == task.colorValue,
             orElse: () => appEventColors[0],
           );
           return Padding(
@@ -293,7 +326,7 @@ class _WeekViewState extends ConsumerState<WeekView> {
                 width: 38,
                 alignment: Alignment.center,
                 child: Text(
-                  "+${dayAllDayTasks.length - 2}", 
+                  "+${dayAllDayTasks.length - 2}",
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w900,

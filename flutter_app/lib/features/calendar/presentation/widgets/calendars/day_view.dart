@@ -13,10 +13,10 @@ class DayView extends ConsumerStatefulWidget {
   final List<Task> tasks;
   final CalendarController calendarController;
   final DateTime selectedDate;
-  
+
   // FIX: Accept Notifier
   final ValueNotifier<DateTime> dateNotifier;
-  
+
   final Function(ViewChangedDetails) onViewChanged;
   final Function(Task) onTaskTap;
   final VoidCallback onDateTap;
@@ -59,10 +59,12 @@ class _DayViewState extends ConsumerState<DayView> {
   @override
   void didUpdateWidget(DayView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    
+
     // Only update data if the task list content actually changed
     if (oldWidget.tasks != widget.tasks) {
-      print("DEBUG: [DayView] Tasks list updated (Size: ${widget.tasks.length}). Updating Source.");
+      print(
+        "DEBUG: [DayView] Tasks list updated (Size: ${widget.tasks.length}). Updating Source.",
+      );
       final isDark = Theme.of(context).brightness == Brightness.dark;
       if (_isInitialized) {
         _dataSource.updateData(widget.tasks, isDark);
@@ -97,7 +99,11 @@ class _DayViewState extends ConsumerState<DayView> {
                   ),
                   Expanded(
                     child: Padding(
-                      padding: const EdgeInsets.only(top: 12, right: 12, bottom: 8),
+                      padding: const EdgeInsets.only(
+                        top: 12,
+                        right: 12,
+                        bottom: 8,
+                      ),
                       child: CalendarBuilder.buildAllDayList(
                         tasks: widget.tasks,
                         isDark: isDark,
@@ -121,13 +127,15 @@ class _DayViewState extends ConsumerState<DayView> {
             viewHeaderHeight: 0,
             backgroundColor: colorScheme.surface,
             cellBorderColor: Colors.transparent,
-            
+
             dataSource: _dataSource,
 
             // DEBUG: Watch where we scroll
             onViewChanged: (details) {
               if (details.visibleDates.isNotEmpty) {
-                 print("DEBUG: [SfCalendar] Scrolled to: ${details.visibleDates.first}");
+                print(
+                  "DEBUG: [SfCalendar] Scrolled to: ${details.visibleDates.first}",
+                );
               }
               widget.onViewChanged(details);
             },
@@ -135,23 +143,29 @@ class _DayViewState extends ConsumerState<DayView> {
             // --- DEBUG: THE APPOINTMENT BUILDER TRAP ---
             appointmentBuilder: (context, details) {
               final appointment = details.appointments.first;
-              
+
               // We try to find the actual Task object that matches this appointment ID
               final task = widget.tasks.firstWhere(
                 (t) => t.id == appointment.id,
                 orElse: () {
                   // !!! TRAP !!!
-                  // If this runs, it means Syncfusion has an appointment ID that 
+                  // If this runs, it means Syncfusion has an appointment ID that
                   // DOES NOT EXIST in your current 'widget.tasks' list.
                   // This is why it returns SizedBox and looks "invisible".
-                  print("🚨 MISSING TASK: Syncfusion tried to render ID ${appointment.id}, but it's not in the task list!");
-                  return Task(id: "temp", title: "Missing", startTime: DateTime.now());
-                }
+                  print(
+                    "🚨 MISSING TASK: Syncfusion tried to render ID ${appointment.id}, but it's not in the task list!",
+                  );
+                  return Task(
+                    id: "temp",
+                    title: "Missing",
+                    startTime: DateTime.now(),
+                  );
+                },
               );
 
               if (task.id == "temp") {
                 // Return a red box instead of blank so you can SEE if it's missing data vs rendering issue
-                return Container(color: Colors.red, width: 20, height: 20); 
+                return Container(color: Colors.red, width: 20, height: 20);
               }
 
               return DayAppointmentCard(
@@ -178,11 +192,16 @@ class _DayViewState extends ConsumerState<DayView> {
             },
 
             onTap: (CalendarTapDetails details) {
-              if (details.targetElement == CalendarElement.appointment && details.appointments != null) {
+              if (details.targetElement == CalendarElement.appointment &&
+                  details.appointments != null) {
                 final Appointment selectedAppt = details.appointments!.first;
-                final tappedTask = widget.tasks.firstWhere((t) => t.id == selectedAppt.id);
+                final tappedTask = widget.tasks.firstWhere(
+                  (t) => t.id == selectedAppt.id,
+                );
                 widget.onTaskTap(tappedTask);
-              } else if (details.targetElement == CalendarElement.calendarCell && details.date != null) {
+              } else if (details.targetElement ==
+                      CalendarElement.calendarCell &&
+                  details.date != null) {
                 _showAddTaskSheet(context, details.date!);
               }
             },
@@ -257,7 +276,7 @@ class DayAppointmentCard extends StatelessWidget {
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
-                    color: colorScheme.onSurface, 
+                    color: colorScheme.onSurface,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -295,77 +314,20 @@ class DayAppointmentCard extends StatelessWidget {
   Color _getPriorityColor(TaskPriority priority) {
     switch (priority) {
       case TaskPriority.high:
-        return isDark ? const Color.fromARGB(255, 181, 0, 0) : const Color(0xFFD32F2F);
+        return isDark
+            ? const Color.fromARGB(255, 181, 0, 0)
+            : const Color(0xFFD32F2F);
       case TaskPriority.medium:
-        return isDark ? const Color.fromARGB(255, 253, 144, 0) : Colors.orange.shade800;
+        return isDark
+            ? const Color.fromARGB(255, 253, 144, 0)
+            : Colors.orange.shade800;
       case TaskPriority.low:
-        return isDark ? const Color.fromARGB(255, 0, 218, 112) : Colors.green.shade700;
+        return isDark
+            ? const Color.fromARGB(255, 0, 218, 112)
+            : Colors.green.shade700;
       default:
         return isDark ? Colors.white70 : Colors.black54;
     }
   }
 }
 
-// ... TaskDataSource with debugs ...
-class TaskDataSource extends CalendarDataSource {
-  
-  TaskDataSource(List<Task> tasks, bool isDark) {
-    _buildAppointments(tasks, isDark);
-  }
-
-  void updateData(List<Task> tasks, bool isDark) {
-    // print("DEBUG: [TaskDataSource] Updating data...");
-    _buildAppointments(tasks, isDark);
-    notifyListeners(CalendarDataSourceAction.reset, appointments!);
-  }
-
-  void _buildAppointments(List<Task> tasks, bool isDark) {
-    // Filter logic
-    final visibleTasks = tasks.where((t) => 
-        !t.isAllDay && 
-        t.type != TaskType.birthday && 
-        t.startTime != null &&
-        t.status != TaskStatus.pending
-    ).toList();
-
-    appointments = visibleTasks.map((task) {
-      final Color displayColor = _resolveColor(task.colorValue, isDark);
-      
-      DateTime visualEndTime = task.endTime!;
-      final duration = task.endTime!.difference(task.startTime!);
-      
-      if (duration.inMinutes < 20) {
-        visualEndTime = task.startTime!.add(const Duration(minutes: 20));
-      }
-
-      return Appointment(
-        id: task.id,
-        subject: task.title,
-        startTime: task.startTime!,
-        endTime: visualEndTime,
-        notes: task.status == TaskStatus.completed 
-            ? "[COMPLETED]${task.description ?? ''}" 
-            : task.description,
-        color: displayColor,
-        isAllDay: task.isAllDay,
-        recurrenceRule: task.recurrenceRule,
-      );
-    }).toList();
-    
-    print("DEBUG: [TaskDataSource] Generated ${appointments?.length} appointments.");
-  }
-
-  Color _resolveColor(int? savedHex, bool isDark) {
-    if (savedHex == null) {
-      return isDark ? appEventColors[0].dark : appEventColors[0].light;
-    }
-    try {
-      final paletteMatch = appEventColors.firstWhere(
-        (c) => c.light.value == savedHex || c.dark.value == savedHex,
-      );
-      return isDark ? paletteMatch.dark : paletteMatch.light;
-    } catch (e) {
-      return Color(savedHex);
-    }
-  }
-}

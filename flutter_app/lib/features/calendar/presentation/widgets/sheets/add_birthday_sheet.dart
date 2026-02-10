@@ -115,6 +115,7 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
             isAiMovable: baseTask.isAiMovable,
             isConflicting: baseTask.isConflicting,
             isSmartSchedule: baseTask.isSmartSchedule,
+            status: baseTask.status,
           )
         : baseTask;
   }

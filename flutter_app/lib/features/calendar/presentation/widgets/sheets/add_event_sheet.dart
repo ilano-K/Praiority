@@ -1,6 +1,7 @@
 // lib/features/calendar/presentation/widgets/sheets/add_event_sheet.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_provider.dart';
@@ -259,9 +260,6 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
         ? startOfDay(_startDate)
         : _combineDateAndTime(_startDate, _startTime);
 
-    print("=====================");
-    print(startTime);
-    print(endTime);
     final baseTask = Task.create(
       type: TaskType.event,
       title: title,
@@ -287,6 +285,8 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
       colorValue: colorValue,
       isAiMovable: _movableByAI,
       isConflicting: _setNonConfliction,
+      priority: TaskPriority.none,
+      category: TaskCategory.none,
       // ✅ SAVE OFFSETS
       reminderOffsets: _hasReminder ? _selectedOffsets : [],
       isSmartSchedule: false,
@@ -300,7 +300,6 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
             endTime: baseTask.endTime,
             deadline: baseTask.deadline,
             isAllDay: baseTask.isAllDay,
-            isSmartSchedule: false,
             tags: baseTask.tags,
             location: baseTask.location,
             recurrenceRule: baseTask.recurrenceRule,
@@ -308,6 +307,8 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
             isAiMovable: baseTask.isAiMovable,
             isConflicting: baseTask.isConflicting,
             reminderOffsets: baseTask.reminderOffsets,
+            isSmartSchedule: baseTask.isSmartSchedule,
+            status: baseTask.status,
           )
         : baseTask;
   }
