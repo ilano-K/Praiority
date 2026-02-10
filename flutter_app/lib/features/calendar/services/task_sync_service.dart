@@ -14,14 +14,24 @@ class TaskSyncService {
 
   // Define retry options: max 3 attempts, random delay to prevent collisions
   final _r = const RetryOptions(maxAttempts: 3);
+  bool _isSyncing = false;
 
   Future<void> syncAllTasks() async {
+    if (_isSyncing) {
+      return;
+    }
     if (_supabase.auth.currentUser == null) return;
-    
+
+    _isSyncing = true;
+
     // Run these in sequence or parallel depending on your conflict logic.
     // Usually, pushing first ensures your latest edits are saved.
-    await pushLocalChanges();
-    await pullRemoteChanges();
+    try {
+      await pushLocalChanges();
+      await pullRemoteChanges();
+    } finally {
+      _isSyncing = false;
+    }
   }
 
   Future<void> pushLocalChanges() async {
@@ -30,6 +40,7 @@ class TaskSyncService {
 
     if (unsyncedTasks.isEmpty) return;
 
+    if (_isSyncing) return;
     // 1. Prepare the BATCH (Much faster than looping)
     final List<Map<String, dynamic>> batchData = unsyncedTasks.map((task) {
       final taskMap = task.toCloudJsonFormat();
@@ -37,17 +48,23 @@ class TaskSyncService {
       return taskMap;
     }).toList();
 
+    _isSyncing = true;
+
     try {
       // 2. Retry Logic using 'retry' package
       // This handles transient errors (SocketException, Timeout) automatically
+
       await _r.retry(
         () async {
           // Supabase supports inserting a List<Map> for bulk upsert
           await _supabase.from('tasks').upsert(batchData);
         },
-        // Only retry on network-related errors. 
+        // Only retry on network-related errors.
         // Don't retry if your data is invalid (e.g. missing fields).
-        retryIf: (e) => e is SocketException || e is TimeoutException || e is PostgrestException,
+        retryIf: (e) =>
+            e is SocketException ||
+            e is TimeoutException ||
+            e is PostgrestException,
       );
 
       // 3. Mark all as synced only if the batch succeeded
@@ -55,16 +72,18 @@ class TaskSyncService {
       for (var task in unsyncedTasks) {
         await _localDb.markTasksAsSynced(task.originalId);
       }
-      
-      debugPrint("[DEBUG] Successfully synced ${batchData.length} tasks.");
 
+      debugPrint("[DEBUG] Successfully synced ${batchData.length} tasks.");
     } catch (e) {
       debugPrint("[DEBUG]: Push BATCH failed after retries: $e");
+    } finally {
+      _isSyncing = false;
     }
   }
 
   Future<void> pullRemoteChanges() async {
-    debugPrint("[DEBUG] PULLING TASK REMOTE CHANGES NOW!");
+    if (_isSyncing) return;
+    _isSyncing = true;
     try {
       // Retry the pull as well
       final response = await _r.retry(
@@ -81,9 +100,10 @@ class TaskSyncService {
           .toList();
 
       await _localDb.updateTasksFromCloud(models);
-      
     } catch (e) {
       debugPrint("[DEBUG]: PULLING REMOTE CHANGES FAILED: $e");
+    } finally {
+      _isSyncing = false;
     }
   }
 }
