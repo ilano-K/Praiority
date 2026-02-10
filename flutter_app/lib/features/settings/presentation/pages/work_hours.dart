@@ -8,11 +8,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class WorkHours extends ConsumerStatefulWidget {
   final bool isFromSidebar;
-  
-  const WorkHours({
-    super.key, 
-    this.isFromSidebar = false, 
-  });
+
+  const WorkHours({super.key, this.isFromSidebar = false});
 
   @override
   ConsumerState<WorkHours> createState() => _WorkHoursState();
@@ -22,6 +19,33 @@ class _WorkHoursState extends ConsumerState<WorkHours> {
   TimeOfDay _fromTime = const TimeOfDay(hour: 9, minute: 0);
   TimeOfDay _toTime = const TimeOfDay(hour: 17, minute: 0);
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // ✅ PRE-FILL LOGIC
+    // We use addPostFrameCallback or just read directly because
+    // we want to set the initial state before the first build.
+    final settings = ref.read(settingsControllerProvider).value;
+
+    if (settings != null) {
+      if (settings.startWorkHours != null) {
+        _fromTime = _parseTime(settings.startWorkHours!);
+      }
+      if (settings.endWorkHours != null) {
+        _toTime = _parseTime(settings.endWorkHours!);
+      }
+    }
+  }
+
+  TimeOfDay _parseTime(String timeString) {
+    try {
+      final parts = timeString.split(':');
+      return TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+    } catch (e) {
+      return const TimeOfDay(hour: 9, minute: 0); // Fallback
+    }
+  }
 
   String _formatTimeLabel(TimeOfDay time) {
     final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
@@ -94,16 +118,19 @@ class _WorkHoursState extends ConsumerState<WorkHours> {
       children: [
         Scaffold(
           backgroundColor: colorScheme.surface,
-          appBar: widget.isFromSidebar 
-            ? AppBar(
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                leading: IconButton(
-                  icon: Icon(Icons.arrow_back_ios_new, color: colorScheme.onSurface),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              )
-            : null,
+          appBar: widget.isFromSidebar
+              ? AppBar(
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  leading: IconButton(
+                    icon: Icon(
+                      Icons.arrow_back_ios_new,
+                      color: colorScheme.onSurface,
+                    ),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                )
+              : null,
           body: SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 40.0),
@@ -115,7 +142,7 @@ class _WorkHoursState extends ConsumerState<WorkHours> {
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.w900,
-                      color: colorScheme.onSurface, 
+                      color: colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 30),
@@ -135,7 +162,10 @@ class _WorkHoursState extends ConsumerState<WorkHours> {
                     timeLabel: _formatTimeLabel(_fromTime),
                     colorScheme: colorScheme,
                     onTap: () async {
-                      final picked = await pickTime(context, initialTime: _fromTime);
+                      final picked = await pickTime(
+                        context,
+                        initialTime: _fromTime,
+                      );
                       if (picked != null) setState(() => _fromTime = picked);
                     },
                   ),
@@ -148,7 +178,10 @@ class _WorkHoursState extends ConsumerState<WorkHours> {
                     timeLabel: _formatTimeLabel(_toTime),
                     colorScheme: colorScheme,
                     onTap: () async {
-                      final picked = await pickTime(context, initialTime: _toTime);
+                      final picked = await pickTime(
+                        context,
+                        initialTime: _toTime,
+                      );
                       if (picked != null) setState(() => _toTime = picked);
                     },
                   ),
@@ -166,7 +199,7 @@ class _WorkHoursState extends ConsumerState<WorkHours> {
             ),
           ),
         ),
-        
+
         if (_isLoading)
           Container(
             color: Colors.black.withOpacity(0.4),
@@ -184,12 +217,20 @@ class _WorkHoursState extends ConsumerState<WorkHours> {
       alignment: Alignment.centerLeft,
       child: Text(
         text,
-        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: colorScheme.onSurface),
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w900,
+          color: colorScheme.onSurface,
+        ),
       ),
     );
   }
 
-  Widget _buildTimeField({required String timeLabel, required VoidCallback onTap, required ColorScheme colorScheme}) {
+  Widget _buildTimeField({
+    required String timeLabel,
+    required VoidCallback onTap,
+    required ColorScheme colorScheme,
+  }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(15),
@@ -202,13 +243,21 @@ class _WorkHoursState extends ConsumerState<WorkHours> {
         ),
         child: Text(
           timeLabel,
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: colorScheme.onSurface.withOpacity(0.85)),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w900,
+            color: colorScheme.onSurface.withOpacity(0.85),
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildActionButton({required String text, required VoidCallback? onPressed, required ColorScheme colorScheme}) {
+  Widget _buildActionButton({
+    required String text,
+    required VoidCallback? onPressed,
+    required ColorScheme colorScheme,
+  }) {
     return SizedBox(
       width: double.infinity, // ✅ Added width to make the button full-width
       height: 56,
@@ -218,9 +267,14 @@ class _WorkHoursState extends ConsumerState<WorkHours> {
           backgroundColor: colorScheme.onSurface,
           foregroundColor: colorScheme.surface,
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
         ),
-        child: Text(text, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        child: Text(
+          text,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
       ),
     );
   }
