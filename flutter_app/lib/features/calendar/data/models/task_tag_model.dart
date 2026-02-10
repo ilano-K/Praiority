@@ -4,7 +4,7 @@ import 'package:isar/isar.dart';
 part 'task_tag_model.g.dart';
 
 @Collection()
-class TaskTagModel{
+class TaskTagModel {
   Id id = Isar.autoIncrement;
 
   @Index(unique: true, replace: true)
@@ -13,13 +13,10 @@ class TaskTagModel{
   late String name;
 
   TaskTag toEntity() {
-    return TaskTag(
-      id: originalId,
-      name: name
-    );
+    return TaskTag(id: originalId, name: name);
   }
 
-  static TaskTagModel fromEntity(TaskTag tag){
+  static TaskTagModel fromEntity(TaskTag tag) {
     return TaskTagModel()
       ..originalId = tag.id
       ..name = tag.name;
