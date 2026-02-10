@@ -7,12 +7,11 @@ import 'package:flutter_app/features/settings/presentation/pages/mode_option.dar
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class WorkHours extends ConsumerStatefulWidget {
-  // Flag to determine navigation path
   final bool isFromSidebar;
   
   const WorkHours({
     super.key, 
-    this.isFromSidebar = false, // Defaults to false for onboarding
+    this.isFromSidebar = false, 
   });
 
   @override
@@ -37,42 +36,37 @@ class _WorkHoursState extends ConsumerState<WorkHours> {
     return "$hour:$minute";
   }
 
-  Future<void> _handleNavigation({bool waitForSave = false}) async {
+  // ✅ Simplified navigation: Validation and Saving are now mandatory
+  Future<void> _handleSaveAndNavigate() async {
     // 1. VALIDATION
-    if (waitForSave) {
-      final int startMinutes = (_fromTime.hour * 60) + _fromTime.minute;
-      final int endMinutes = (_toTime.hour * 60) + _toTime.minute;
+    final int startMinutes = (_fromTime.hour * 60) + _fromTime.minute;
+    final int endMinutes = (_toTime.hour * 60) + _toTime.minute;
 
-      if (startMinutes == endMinutes) {
-        _showError("Start time and End time cannot be the same.");
-        return;
-      }
+    if (startMinutes == endMinutes) {
+      _showError("Start time and End time cannot be the same.");
+      return;
+    }
 
-      if (endMinutes < startMinutes) {
-        _showError("End time must be later than Start time.");
-        return;
-      }
+    if (endMinutes < startMinutes) {
+      _showError("End time must be later than Start time.");
+      return;
     }
 
     setState(() => _isLoading = true);
 
     // 2. SAVING
-    if (waitForSave == true) {
-      final String dbFrom = _to24HourFormat(_fromTime);
-      final String dbTo = _to24HourFormat(_toTime);
-      final settingsController = ref.read(settingsControllerProvider.notifier);
-      await settingsController.saveSettings(dbFrom, dbTo);
-    }
+    final String dbFrom = _to24HourFormat(_fromTime);
+    final String dbTo = _to24HourFormat(_toTime);
+    final settingsController = ref.read(settingsControllerProvider.notifier);
+    await settingsController.saveSettings(dbFrom, dbTo);
 
     // 3. SMART NAVIGATION
     await Future.delayed(const Duration(milliseconds: 300));
     if (!mounted) return;
 
     if (widget.isFromSidebar) {
-      // If opened from Sidebar, just return to the Calendar
       Navigator.pop(context);
     } else {
-      // If Onboarding, move to the next step
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const ModeOption()),
@@ -100,7 +94,6 @@ class _WorkHoursState extends ConsumerState<WorkHours> {
       children: [
         Scaffold(
           backgroundColor: colorScheme.surface,
-          // Added a back button for sidebar users
           appBar: widget.isFromSidebar 
             ? AppBar(
                 backgroundColor: Colors.transparent,
@@ -162,24 +155,11 @@ class _WorkHoursState extends ConsumerState<WorkHours> {
 
                   const SizedBox(height: 60),
 
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildActionButton(
-                          text: "Save",
-                          colorScheme: colorScheme,
-                          onPressed: _isLoading ? null : () => _handleNavigation(waitForSave: true),
-                        ),
-                      ),
-                      const SizedBox(width: 20),
-                      Expanded(
-                        child: _buildActionButton(
-                          text: "Skip",
-                          colorScheme: colorScheme,
-                          onPressed: _isLoading ? null : _handleNavigation,
-                        ),
-                      ),
-                    ],
+                  // ✅ Removed the Row and the Skip button
+                  _buildActionButton(
+                    text: "Save",
+                    colorScheme: colorScheme,
+                    onPressed: _isLoading ? null : _handleSaveAndNavigate,
                   ),
                 ],
               ),
@@ -230,6 +210,7 @@ class _WorkHoursState extends ConsumerState<WorkHours> {
 
   Widget _buildActionButton({required String text, required VoidCallback? onPressed, required ColorScheme colorScheme}) {
     return SizedBox(
+      width: double.infinity, // ✅ Added width to make the button full-width
       height: 56,
       child: ElevatedButton(
         onPressed: onPressed,
