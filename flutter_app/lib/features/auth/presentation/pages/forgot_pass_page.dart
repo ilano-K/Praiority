@@ -44,7 +44,7 @@ class ForgotPassPage extends StatelessWidget {
           const SizedBox(height: 35),
 
           const Text(
-            "Enter your email for the authentication process, we will send a 6 digit code to your email.",
+            "Enter your email for the authentication process",
             style: TextStyle(
               fontSize: 16,
               color: Colors.black54,
