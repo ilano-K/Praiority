@@ -14,18 +14,14 @@ import 'package:intl/intl.dart';
 import '../selectors/priority_selector.dart';
 import '../selectors/category_selector.dart';
 import '../selectors/tag_selector.dart';
-import '../selectors/color_selector.dart'; 
-import 'add_header_sheet.dart'; 
+import '../selectors/color_selector.dart';
+import 'add_header_sheet.dart';
 
 class AddTaskSheet extends ConsumerStatefulWidget {
   final Task? task;
-  final DateTime? initialDate; 
+  final DateTime? initialDate;
 
-  const AddTaskSheet({
-    super.key, 
-    this.task, 
-    this.initialDate,
-  });
+  const AddTaskSheet({super.key, this.task, this.initialDate});
 
   @override
   ConsumerState<AddTaskSheet> createState() => _AddTaskSheetState();
@@ -33,7 +29,7 @@ class AddTaskSheet extends ConsumerStatefulWidget {
 
 class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
   // --- STATE VARIABLES ---
-  String _selectedType = 'Task'; 
+  String _selectedType = 'Task';
   bool _isSmartScheduleEnabled = true;
   String _priority = "Medium";
   String _category = "None";
@@ -47,7 +43,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
   // --- REMINDERS STATE (Updated) ---
   bool _hasReminder = true;
   // Replaced absolute Date/Time with relative offsets
-  List<Duration> _selectedOffsets = [const Duration(minutes: 10)]; 
+  List<Duration> _selectedOffsets = [const Duration(minutes: 10)];
 
   // Controllers
   final TextEditingController _titleController = TextEditingController();
@@ -72,7 +68,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
     } else {
       baseDate = DateTime.now();
     }
-    
+
     _startDate = baseDate;
     _startTime = TimeOfDay.fromDateTime(baseDate);
     _endTime = TimeOfDay.fromDateTime(baseDate.add(const Duration(hours: 1)));
@@ -95,7 +91,9 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
     _isSmartScheduleEnabled = task.isSmartSchedule;
     _startDate = task.startTime ?? DateTime.now();
     _startTime = TimeOfDay.fromDateTime(task.startTime ?? DateTime.now());
-    _endTime = TimeOfDay.fromDateTime(task.endTime ?? DateTime.now().add(const Duration(hours: 1)));
+    _endTime = TimeOfDay.fromDateTime(
+      task.endTime ?? DateTime.now().add(const Duration(hours: 1)),
+    );
     _deadlineDate = task.deadline ?? DateTime.now();
     _deadlineTime = TimeOfDay.fromDateTime(task.deadline ?? DateTime.now());
     _selectedTags = task.tags;
@@ -104,14 +102,14 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
     _movableByAI = task.isAiMovable;
     _setNonConfliction = task.isConflicting;
 
-    if (task.title == "Untitled Task" || 
-      task.title == "Untitled Event" || 
-      task.title == "Birthday") {
-    _titleController.text = "";
-  } else {
-    _titleController.text = task.title;
-  }
-  
+    if (task.title == "Untitled Task" ||
+        task.title == "Untitled Event" ||
+        task.title == "Birthday") {
+      _titleController.text = "";
+    } else {
+      _titleController.text = task.title;
+    }
+
     // Prefill offsets
     if (task.reminderOffsets.isNotEmpty) {
       _selectedOffsets = List.from(task.reminderOffsets);
@@ -123,7 +121,8 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
 
     if (task.colorValue != null) {
       _selectedColor = appEventColors.firstWhere(
-        (c) => c.light.value == task.colorValue || c.dark.value == task.colorValue,
+        (c) =>
+            c.light.value == task.colorValue || c.dark.value == task.colorValue,
         orElse: () => appEventColors[0],
       );
     }
@@ -136,7 +135,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
   // Helper to format offsets for display (e.g. "10m, 1h before")
   String _formatOffsets() {
     if (_selectedOffsets.isEmpty) return "None";
-    
+
     final List<String> parts = _selectedOffsets.map((d) {
       if (d.inMinutes == 0) return "At time of event";
       if (d.inMinutes < 60) return "${d.inMinutes}m";
@@ -148,9 +147,11 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
   }
 
   Task createTaskSaveTemplate(bool isDark) {
-    final colorValue = isDark ? _selectedColor.dark.value : _selectedColor.light.value;
+    final colorValue = isDark
+        ? _selectedColor.dark.value
+        : _selectedColor.light.value;
     final title = _titleController.text.trim();
-    
+
     var baseTask = Task.create(
       type: TaskType.task,
       title: title,
@@ -169,18 +170,18 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
     );
 
     final scheduleData = _isSmartScheduleEnabled
-      ? {
-          "startTime": null,
-          "endTime": null,
-          "deadline": null,
-          "status": TaskStatus.pending,
-        }
-      : {
-          "startTime": _combineDateAndTime(_startDate, _startTime),
-          "endTime": _combineDateAndTime(_startDate, _endTime),
-          "deadline": _combineDateAndTime(_deadlineDate, _deadlineTime),
-          "status": TaskStatus.scheduled,
-        };
+        ? {
+            "startTime": null,
+            "endTime": null,
+            "deadline": null,
+            "status": TaskStatus.pending,
+          }
+        : {
+            "startTime": _combineDateAndTime(_startDate, _startTime),
+            "endTime": _combineDateAndTime(_startDate, _endTime),
+            "deadline": _combineDateAndTime(_deadlineDate, _deadlineTime),
+            "status": TaskStatus.scheduled,
+          };
 
     baseTask = baseTask.copyWith(
       startTime: scheduleData["startTime"] as DateTime?,
@@ -189,26 +190,28 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
       status: scheduleData["status"] as TaskStatus,
     );
 
-    return widget.task != null ? widget.task!.copyWith(
-      title: baseTask.title,
-      description: baseTask.description,
-      startTime: baseTask.startTime,
-      endTime: baseTask.endTime,
-      deadline: baseTask.deadline,
-      priority: baseTask.priority,
-      category: baseTask.category,
-      tags: baseTask.tags,
-      status: baseTask.status,
-      colorValue: baseTask.colorValue,
-      isAiMovable: baseTask.isAiMovable,
-      isConflicting: baseTask.isConflicting,
-      reminderOffsets: baseTask.reminderOffsets, // Update offsets
-    ) : baseTask;
+    return widget.task != null
+        ? widget.task!.copyWith(
+            title: baseTask.title,
+            description: baseTask.description,
+            startTime: baseTask.startTime,
+            endTime: baseTask.endTime,
+            deadline: baseTask.deadline,
+            priority: baseTask.priority,
+            category: baseTask.category,
+            tags: baseTask.tags,
+            status: baseTask.status,
+            colorValue: baseTask.colorValue,
+            isAiMovable: baseTask.isAiMovable,
+            isConflicting: baseTask.isConflicting,
+            reminderOffsets: baseTask.reminderOffsets, // Update offsets
+          )
+        : baseTask;
   }
-  
+
   void _showOffsetSelector(BuildContext context) {
     final taskStart = _combineDateAndTime(_startDate, _startTime);
-    
+
     ReminderSelector.show(
       parentContext: context, // ✅ Pass the sheet's context here
       selectedOffsets: _selectedOffsets,
@@ -224,7 +227,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final Color sheetBackground = colorScheme.inversePrimary; 
+    final Color sheetBackground = colorScheme.inversePrimary;
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final tagsAsync = ref.watch(tagsProvider);
     _tagsList = tagsAsync.valueOrNull ?? [];
@@ -242,14 +245,14 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
       decoration: BoxDecoration(
-        color: sheetBackground, 
+        color: sheetBackground,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AddSheetHeader(data: headerData), 
+          AddSheetHeader(data: headerData),
           Expanded(
             child: SingleChildScrollView(
               child: Column(
@@ -263,11 +266,23 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text("Reminders", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
+                            Text(
+                              "Reminders",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: colorScheme.onSurface,
+                              ),
+                            ),
                             const SizedBox(height: 4),
                             Text(
-                              _hasReminder ? "You'll get a notification" : "Reminders are turned off",
-                              style: TextStyle(fontSize: 14, color: colorScheme.onSurface.withOpacity(0.6)),
+                              _hasReminder
+                                  ? "You'll get a notification"
+                                  : "Reminders are turned off",
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: colorScheme.onSurface.withOpacity(0.6),
+                              ),
                             ),
                           ],
                         ),
@@ -275,10 +290,12 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                       Transform.scale(
                         scale: 0.8,
                         child: Switch(
-                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
                           value: _hasReminder,
                           activeTrackColor: colorScheme.primary,
-                          onChanged: (val) => setState(() => _hasReminder = val),
+                          onChanged: (val) =>
+                              setState(() => _hasReminder = val),
                         ),
                       ),
                     ],
@@ -289,14 +306,21 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text("Smart Schedule", 
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
+                      Text(
+                        "Smart Schedule",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
                       Transform.scale(
                         scale: 0.8,
                         child: Switch(
                           value: _isSmartScheduleEnabled,
-                          activeTrackColor: colorScheme.primary, 
-                          onChanged: (val) => setState(() => _isSmartScheduleEnabled = val),
+                          activeTrackColor: colorScheme.primary,
+                          onChanged: (val) =>
+                              setState(() => _isSmartScheduleEnabled = val),
                         ),
                       ),
                     ],
@@ -306,7 +330,10 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                       alignment: Alignment.centerLeft,
                       child: Text(
                         "an AI-based system that schedules your tasks\nat the best time for you.",
-                        style: TextStyle(color: colorScheme.onSurface.withOpacity(0.6), fontSize: 14),
+                        style: TextStyle(
+                          color: colorScheme.onSurface.withOpacity(0.6),
+                          fontSize: 14,
+                        ),
                       ),
                     ),
                   ],
@@ -314,13 +341,15 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
 
                   // 3. PRIORITY
                   InteractiveInputRow(
-                    label: "Priority", value: _priority,
+                    label: "Priority",
+                    value: _priority,
                     onTap: () => showModalBottomSheet(
                       context: context,
                       backgroundColor: Colors.transparent,
                       builder: (context) => PrioritySelector(
                         currentPriority: _priority,
-                        onPrioritySelected: (val) => setState(() => _priority = val),
+                        onPrioritySelected: (val) =>
+                            setState(() => _priority = val),
                       ),
                     ),
                   ),
@@ -328,24 +357,33 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                   // 2. START & END TIME
                   if (!_isSmartScheduleEnabled) ...[
                     InteractiveInputRow(
-                      label: "Start Time", 
+                      label: "Start Time",
                       value: DateFormat('MMMM d, y').format(_startDate),
                       trailing: _startTime.format(context),
                       onTapValue: () async {
-                        final picked = await pickDate(context, initialDate: _startDate);
+                        final picked = await pickDate(
+                          context,
+                          initialDate: _startDate,
+                        );
                         if (picked != null) setState(() => _startDate = picked);
                       },
                       onTapTrailing: () async {
-                        final picked = await pickTime(context, initialTime: _startTime); 
+                        final picked = await pickTime(
+                          context,
+                          initialTime: _startTime,
+                        );
                         if (picked != null) setState(() => _startTime = picked);
                       },
                     ),
-                    
+
                     InteractiveInputRow(
-                      label: "End Time", 
+                      label: "End Time",
                       value: _endTime.format(context),
                       onTapValue: () async {
-                        final picked = await pickTime(context, initialTime: _endTime); 
+                        final picked = await pickTime(
+                          context,
+                          initialTime: _endTime,
+                        );
                         if (picked != null) setState(() => _endTime = picked);
                       },
                     ),
@@ -353,67 +391,105 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
 
                   // 4. DEADLINE
                   InteractiveInputRow(
-                    label: "Deadline", 
+                    label: "Deadline",
                     value: DateFormat('MMMM d, y').format(_deadlineDate),
                     trailing: _deadlineTime.format(context),
                     onTapValue: () async {
-                      final picked = await pickDate(context, initialDate: _deadlineDate);
-                      if (picked != null) setState(() => _deadlineDate = picked);
+                      final picked = await pickDate(
+                        context,
+                        initialDate: _deadlineDate,
+                      );
+                      if (picked != null)
+                        setState(() => _deadlineDate = picked);
                     },
                     onTapTrailing: () async {
-                      final picked = await pickTime(context, initialTime: _deadlineTime);
-                      if (picked != null) setState(() => _deadlineTime = picked);
+                      final picked = await pickTime(
+                        context,
+                        initialTime: _deadlineTime,
+                      );
+                      if (picked != null)
+                        setState(() => _deadlineTime = picked);
                     },
                   ),
 
                   // 5. CATEGORY
                   InteractiveInputRow(
-                    label: "Category", value: _category,
+                    label: "Category",
+                    value: _category,
                     onTap: () => showModalBottomSheet(
                       context: context,
                       backgroundColor: Colors.transparent,
                       builder: (context) => CategorySelector(
                         currentCategory: _category,
-                        onCategorySelected: (val) => setState(() => _category = val),
+                        onCategorySelected: (val) =>
+                            setState(() => _category = val),
                       ),
                     ),
                   ),
 
                   // 6. TAGS
                   InteractiveInputRow(
-                    label: "Tags", value: _selectedTags.isEmpty ? "None" : _selectedTags.join(", "), 
+                    label: "Tags",
+                    value: _selectedTags.isEmpty
+                        ? "None"
+                        : _selectedTags.join(", "),
                     onTap: () => showModalBottomSheet(
-                      context: context, isScrollControlled: true, backgroundColor: Colors.transparent,
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
                       builder: (ctx) => StatefulBuilder(
                         builder: (context, sheetSetState) => TagSelector(
-                          selectedTags: _selectedTags, availableTags: _tagsList,
-                          onTagsChanged: (newList) { setState(() => _selectedTags = newList); sheetSetState(() {}); },
+                          selectedTags: _selectedTags,
+                          availableTags: _tagsList,
+                          onTagsChanged: (newList) {
+                            setState(() => _selectedTags = newList);
+                            sheetSetState(() {});
+                          },
                           onTagAdded: (newTag) async {
-                            await ref.read(tagsProvider.notifier).addTag(newTag);
-                            setState(() { if (!_tagsList.contains(newTag)) _tagsList.add(newTag); });
+                            await ref
+                                .read(tagsProvider.notifier)
+                                .addTag(newTag);
+                            setState(() {
+                              if (!_tagsList.contains(newTag))
+                                _tagsList.add(newTag);
+                            });
                             sheetSetState(() {});
                           },
                           onTagRemoved: (removedTag) async {
                             setState(() {
-                              _tagsList = List<String>.from(_tagsList)..remove(removedTag);
-                              _selectedTags = List<String>.from(_selectedTags)..remove(removedTag);
+                              _tagsList = List<String>.from(_tagsList)
+                                ..remove(removedTag);
+                              _selectedTags = List<String>.from(_selectedTags)
+                                ..remove(removedTag);
                             });
-                            await ref.read(tagsProvider.notifier).deleteTag(removedTag);
+                            await ref
+                                .read(tagsProvider.notifier)
+                                .deleteTag(removedTag);
                             sheetSetState(() {});
                           },
                         ),
                       ),
                     ),
                   ),
-                  
+
                   // 7. ADVANCED OPTIONS (UPDATED)
                   Theme(
-                    data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                    data: Theme.of(
+                      context,
+                    ).copyWith(dividerColor: Colors.transparent),
                     child: ExpansionTile(
-                      tilePadding: EdgeInsets.zero, 
-                      title: Text('Advanced Options', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
+                      tilePadding: EdgeInsets.zero,
+                      title: Text(
+                        'Advanced Options',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
                       initiallyExpanded: _advancedExpanded,
-                      onExpansionChanged: (val) => setState(() => _advancedExpanded = val),
+                      onExpansionChanged: (val) =>
+                          setState(() => _advancedExpanded = val),
                       children: [
                         // --- REMIND ME ON (UPDATED TO OFFSETS) ---
                         // Replaced the Date/Time picker with a simple Offset Selector
@@ -421,24 +497,67 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                         Opacity(
                           opacity: _hasReminder ? 1.0 : 0.4,
                           child: InteractiveInputRow(
-                            label: "Alerts", // Renamed from "Remind me on" to fit logic
+                            label:
+                                "Alerts", // Renamed from "Remind me on" to fit logic
                             value: _formatOffsets(), // e.g. "10m, 1h before"
                             // If reminders are on, open the sheet. If off, do nothing.
-                            onTap: _hasReminder ? () => _showOffsetSelector(context) : null,
+                            onTap: _hasReminder
+                                ? () => _showOffsetSelector(context)
+                                : null,
                           ),
                         ),
-                        
+
                         ListTile(
                           contentPadding: EdgeInsets.zero,
-                          title: Text('Auto-Reschedule', style: TextStyle(color: colorScheme.onSurface.withOpacity(0.8), fontSize: 15)),
-                          subtitle: Text("Allow AI to move this task if missed", style: TextStyle(color: colorScheme.onSurface.withOpacity(0.5), fontSize: 12)),
-                          trailing: Transform.scale(scale: 0.8, child: Switch(value: _movableByAI, activeTrackColor: colorScheme.primary, onChanged: (v) => setState(() => _movableByAI = v))),
+                          title: Text(
+                            'Auto-Reschedule',
+                            style: TextStyle(
+                              color: colorScheme.onSurface.withOpacity(0.8),
+                              fontSize: 15,
+                            ),
+                          ),
+                          subtitle: Text(
+                            "Allow AI to move this task if missed",
+                            style: TextStyle(
+                              color: colorScheme.onSurface.withOpacity(0.5),
+                              fontSize: 12,
+                            ),
+                          ),
+                          trailing: Transform.scale(
+                            scale: 0.8,
+                            child: Switch(
+                              value: _movableByAI,
+                              activeTrackColor: colorScheme.primary,
+                              onChanged: (v) =>
+                                  setState(() => _movableByAI = v),
+                            ),
+                          ),
                         ),
                         ListTile(
                           contentPadding: EdgeInsets.zero,
-                          title: Text('Strict Mode', style: TextStyle(color: colorScheme.onSurface.withOpacity(0.8), fontSize: 15)),
-                          subtitle: Text("Ensure absolutely no overlaps", style: TextStyle(color: colorScheme.onSurface.withOpacity(0.5), fontSize: 12)),
-                          trailing: Transform.scale(scale: 0.8, child: Switch(value: _setNonConfliction, activeTrackColor: colorScheme.primary, onChanged: (v) => setState(() => _setNonConfliction = v))),
+                          title: Text(
+                            'Strict Mode',
+                            style: TextStyle(
+                              color: colorScheme.onSurface.withOpacity(0.8),
+                              fontSize: 15,
+                            ),
+                          ),
+                          subtitle: Text(
+                            "Ensure absolutely no overlaps",
+                            style: TextStyle(
+                              color: colorScheme.onSurface.withOpacity(0.5),
+                              fontSize: 12,
+                            ),
+                          ),
+                          trailing: Transform.scale(
+                            scale: 0.8,
+                            child: Switch(
+                              value: _setNonConfliction,
+                              activeTrackColor: colorScheme.primary,
+                              onChanged: (v) =>
+                                  setState(() => _setNonConfliction = v),
+                            ),
+                          ),
                         ),
                       ],
                     ),

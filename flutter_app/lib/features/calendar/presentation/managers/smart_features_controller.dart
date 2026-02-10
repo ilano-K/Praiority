@@ -1,5 +1,3 @@
-
-
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_provider.dart';
 import 'package:flutter_app/features/smart_features/data/models/smart_advice_request.dart';
 import 'package:flutter_app/features/smart_features/data/models/smart_organize_request.dart';
@@ -7,7 +5,9 @@ import 'package:flutter_app/features/smart_features/data/models/smart_schedule_r
 import 'package:flutter_app/features/smart_features/services/smart_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-final smartFeaturesControllerProvider = Provider((ref) => SmartFeaturesController(ref));
+final smartFeaturesControllerProvider = Provider(
+  (ref) => SmartFeaturesController(ref),
+);
 
 class SmartFeaturesController {
   final Ref _ref;
@@ -15,61 +15,83 @@ class SmartFeaturesController {
   SmartFeaturesController(this._ref);
 
   // smart schedule
-  Future<void> executeSmartSchedule(String cloudId, DateTime targetDate, DateTime currentTime, {String? instruction}) async {
-    print("[DEBUG] Executing request: Smart Advice for task with cloudId: $cloudId");
-    try{
+  Future<void> executeSmartSchedule(
+    String cloudId,
+    DateTime targetDate,
+    DateTime currentTime, {
+    String? instruction,
+  }) async {
+    print(
+      "[DEBUG] Executing request: Smart Schedule for task with cloudId: $cloudId",
+    );
+    try {
       final request = SmartScheduleRequest(
-        cloudId: cloudId, 
-        targetDate: targetDate, 
+        cloudId: cloudId,
+        targetDate: targetDate,
         currentTime: currentTime,
         instruction: instruction,
       );
 
       await _ref.read(smartServiceProvider).smartSchedule(request: request);
-    } catch(e){
+    } catch (e) {
       print(e);
       rethrow;
     }
   }
 
   // smart organize
-  Future<void> executeSmartOrganize(DateTime targetDate, DateTime currentTime, {String? instruction}) async {
-    print("[DEBUG] Executing request: Smart Organize for target date: $targetDate");
-    try{
+  Future<void> executeSmartOrganize(
+    DateTime targetDate,
+    DateTime currentTime, {
+    String? instruction,
+  }) async {
+    print(
+      "[DEBUG] Executing request: Smart Organize for target date: $targetDate",
+    );
+    try {
       final request = SmartOrganizeRequest(
-        targetDate: targetDate, 
+        targetDate: targetDate,
         currentTime: currentTime,
         instruction: instruction,
       );
 
-      print("[DEBUG] SMART CONTROLLER: this is the user instruction: ${request.instruction}");
+      print(
+        "[DEBUG] SMART CONTROLLER: this is the user instruction: ${request.instruction}",
+      );
 
       await _ref.read(smartServiceProvider).smartOrganize(request: request);
-    } catch(e){
+    } catch (e) {
       print(e);
-      rethrow; 
+      rethrow;
     }
   }
-  // smart advice 
-  Future<String?> executeSmartAdvice(String cloudId, {String? instruction}) async {
-    print("[DEBUG] Executing request: Smart Advice for task with cloudId: $cloudId");
-    try{
+
+  // smart advice
+  Future<String?> executeSmartAdvice(
+    String cloudId, {
+    String? instruction,
+  }) async {
+    print(
+      "[DEBUG] Executing request: Smart Advice for task with cloudId: $cloudId",
+    );
+    try {
       final request = SmartAdviceRequest(
-        cloudId: cloudId, 
-        instruction: instruction
+        cloudId: cloudId,
+        instruction: instruction,
       );
       // response
       await _ref.read(smartServiceProvider).smartAdvice(request: request);
 
       // sync tasks
 
-      final task = await _ref.read(calendarRepositoryProvider).getTaskById(cloudId);
+      final task = await _ref
+          .read(calendarRepositoryProvider)
+          .getTaskById(cloudId);
 
       return task?.aiTip;
-    } catch (e){
+    } catch (e) {
       print(e);
       rethrow;
     }
-  }  
-
+  }
 }

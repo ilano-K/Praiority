@@ -12,7 +12,7 @@ import '../selectors/color_selector.dart';
 import 'add_header_sheet.dart';
 
 class AddBirthdaySheet extends StatefulWidget {
-  final Task? task; 
+  final Task? task;
   const AddBirthdaySheet({super.key, this.task});
 
   @override
@@ -21,11 +21,11 @@ class AddBirthdaySheet extends StatefulWidget {
 
 class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
   // --- STATE VARIABLES ---
-  String _selectedType = 'Birthday'; 
-  
+  String _selectedType = 'Birthday';
+
   // Birthday Specific Fields
   DateTime _birthdayDate = DateTime.now();
-  String _location = "None"; 
+  String _location = "None";
 
   // --- SELECTED COLOR STATE ---
   CalendarColor _selectedColor = appEventColors[0];
@@ -52,31 +52,45 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
 
     if (birthday.colorValue != null) {
       _selectedColor = appEventColors.firstWhere(
-        (c) => c.light.value == birthday.colorValue || c.dark.value == birthday.colorValue,
+        (c) =>
+            c.light.value == birthday.colorValue ||
+            c.dark.value == birthday.colorValue,
         orElse: () => appEventColors[0],
       );
     }
 
-    if (birthday.title == "Untitled Task" || 
-        birthday.title == "Untitled Event" || 
+    if (birthday.title == "Untitled Task" ||
+        birthday.title == "Untitled Event" ||
         birthday.title == "Birthday") {
       _titleController.text = "";
-        } else {
-          _titleController.text = birthday.title;
-        }
+    } else {
+      _titleController.text = birthday.title;
+    }
   }
 
   // --- SAVE CALLBACK ---
   Task _handleSave(bool isDark) {
-    final colorValue = isDark ? _selectedColor.dark.value : _selectedColor.light.value;
+    final colorValue = isDark
+        ? _selectedColor.dark.value
+        : _selectedColor.light.value;
     final title = _titleController.text.trim();
     final description = _descController.text.trim();
+
+    final endOfDay = DateTime(
+      _birthdayDate.year,
+      _birthdayDate.month,
+      _birthdayDate.day,
+      23,
+      59,
+      59,
+    );
 
     final baseTask = Task.create(
       type: TaskType.birthday,
       title: title,
       description: description,
       startTime: _birthdayDate, // Birthdays usually start on the selected date
+      endTime: endOfDay,
       isAllDay: true,
       location: _location,
       status: TaskStatus.scheduled,
@@ -84,25 +98,32 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
       recurrenceRule: repeatToRRule("Yearly"),
       isAiMovable: false,
       isConflicting: false,
+      isSmartSchedule: false,
     );
 
-    return widget.task != null ? widget.task!.copyWith(
-      title: baseTask.title,
-      description: baseTask.description,
-      startTime: baseTask.startTime,
-      isAllDay: baseTask.isAllDay,
-      location: baseTask.location,
-      colorValue: baseTask.colorValue,
-      recurrenceRule: baseTask.recurrenceRule,
-      deadline: null
-    ) : baseTask;
+    return widget.task != null
+        ? widget.task!.copyWith(
+            title: baseTask.title,
+            description: baseTask.description,
+            startTime: baseTask.startTime,
+            endTime: baseTask.endTime,
+            isAllDay: baseTask.isAllDay,
+            location: baseTask.location,
+            colorValue: baseTask.colorValue,
+            recurrenceRule: baseTask.recurrenceRule,
+            deadline: null,
+            isAiMovable: baseTask.isAiMovable,
+            isConflicting: baseTask.isConflicting,
+            isSmartSchedule: baseTask.isSmartSchedule,
+          )
+        : baseTask;
   }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final Color sheetBackground = colorScheme.inversePrimary; 
+    final Color sheetBackground = colorScheme.inversePrimary;
 
     final headerData = HeaderData(
       selectedType: _selectedType,
@@ -111,9 +132,9 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
       descController: _descController,
       onTypeSelected: (type) => setState(() => _selectedType = type),
       onColorSelected: (color) => setState(() => _selectedColor = color),
-      saveTemplate: () => _handleSave(isDark), 
+      saveTemplate: () => _handleSave(isDark),
     );
-    
+
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
       decoration: BoxDecoration(
@@ -124,7 +145,7 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AddSheetHeader(data: headerData), 
+          AddSheetHeader(data: headerData),
 
           Expanded(
             child: SingleChildScrollView(
@@ -132,11 +153,11 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
                 children: [
                   // 1. ARRANGE A DAY (Updated to use your separate pickDate)
                   InteractiveInputRow(
-                    label: "Arrange a Day", 
+                    label: "Arrange a Day",
                     value: DateFormat('MMMM d, y').format(_birthdayDate),
                     onTapValue: () async {
                       final picked = await pickDate(
-                        context, 
+                        context,
                         initialDate: _birthdayDate,
                         firstDate: DateTime(1900), // Standard birthday range
                         lastDate: DateTime(2100),
@@ -149,11 +170,11 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
 
                   // 2. LOCATION
                   InteractiveInputRow(
-                    label: "Location", 
+                    label: "Location",
                     value: _location,
                     onTap: () => _showLocationDialog(context, colorScheme),
                   ),
-                  
+
                   const SizedBox(height: 40),
                 ],
               ),
@@ -166,12 +187,17 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
 
   // --- LOGIC: Location Dialog ---
   void _showLocationDialog(BuildContext context, ColorScheme colorScheme) {
-    TextEditingController locController = TextEditingController(text: _location == "None" ? "" : _location);
+    TextEditingController locController = TextEditingController(
+      text: _location == "None" ? "" : _location,
+    );
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: colorScheme.surface,
-        title: Text("Set Location", style: TextStyle(color: colorScheme.onSurface)),
+        title: Text(
+          "Set Location",
+          style: TextStyle(color: colorScheme.onSurface),
+        ),
         content: TextField(
           controller: locController,
           autofocus: true,
@@ -180,18 +206,31 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
           decoration: InputDecoration(
             hintText: "Enter location",
             hintStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.5)),
-            focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: colorScheme.onSurface)),
-            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: colorScheme.onSurface.withOpacity(0.5))),
+            focusedBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: colorScheme.onSurface),
+            ),
+            enabledBorder: UnderlineInputBorder(
+              borderSide: BorderSide(
+                color: colorScheme.onSurface.withOpacity(0.5),
+              ),
+            ),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text("Cancel", style: TextStyle(color: colorScheme.onSurface)),
+            child: Text(
+              "Cancel",
+              style: TextStyle(color: colorScheme.onSurface),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
-              setState(() => _location = locController.text.isEmpty ? "None" : locController.text);
+              setState(
+                () => _location = locController.text.isEmpty
+                    ? "None"
+                    : locController.text,
+              );
               Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(
