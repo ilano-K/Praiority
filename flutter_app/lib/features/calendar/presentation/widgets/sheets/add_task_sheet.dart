@@ -104,6 +104,14 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
     _movableByAI = task.isAiMovable;
     _setNonConfliction = task.isConflicting;
 
+    if (task.title == "Untitled Task" || 
+      task.title == "Untitled Event" || 
+      task.title == "Birthday") {
+    _titleController.text = "";
+  } else {
+    _titleController.text = task.title;
+  }
+  
     // Prefill offsets
     if (task.reminderOffsets.isNotEmpty) {
       _selectedOffsets = List.from(task.reminderOffsets);
@@ -141,7 +149,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
 
   Task createTaskSaveTemplate(bool isDark) {
     final colorValue = isDark ? _selectedColor.dark.value : _selectedColor.light.value;
-    final title = _titleController.text.trim().isEmpty ? "Untitled Task" : _titleController.text.trim();
+    final title = _titleController.text.trim();
     
     var baseTask = Task.create(
       type: TaskType.task,

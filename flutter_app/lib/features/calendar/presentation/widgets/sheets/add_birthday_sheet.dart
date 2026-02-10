@@ -56,12 +56,20 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
         orElse: () => appEventColors[0],
       );
     }
+
+    if (birthday.title == "Untitled Task" || 
+        birthday.title == "Untitled Event" || 
+        birthday.title == "Birthday") {
+      _titleController.text = "";
+        } else {
+          _titleController.text = birthday.title;
+        }
   }
 
   // --- SAVE CALLBACK ---
   Task _handleSave(bool isDark) {
     final colorValue = isDark ? _selectedColor.dark.value : _selectedColor.light.value;
-    final title = _titleController.text.trim().isEmpty ? "Birthday" : _titleController.text.trim();
+    final title = _titleController.text.trim();
     final description = _descController.text.trim();
 
     final baseTask = Task.create(

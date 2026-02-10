@@ -88,8 +88,18 @@ class _AddSheetHeaderState extends ConsumerState<AddSheetHeader> {
               onPressed: _isSaving ? null : () async {
                 setState(() => _isSaving = true); // Start Spinner
 
-                final task = widget.data.saveTemplate();
+                var task = widget.data.saveTemplate();
                 final controller = ref.read(calendarControllerProvider.notifier);
+
+                if (task.title.isEmpty) {
+                  // If it's a birthday, just call it "Birthday"
+                  // Otherwise, use "Untitled Task" or "Untitled Event"
+                  final defaultTitle = widget.data.selectedType == "Birthday" 
+                      ? "Birthday" 
+                      : "Untitled ${widget.data.selectedType}";
+                      
+                  task = task.copyWith(title: defaultTitle);
+                }
 
                 try {
                   // This runs fast now, but we show spinner just in case
@@ -174,7 +184,8 @@ class _AddSheetHeaderState extends ConsumerState<AddSheetHeader> {
           cursorColor: colorScheme.onSurface,
           style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: colorScheme.onSurface),
           decoration: InputDecoration(
-            hintText: 'Add Title',
+            // ✅ Change this line
+            hintText: 'Untitled ${widget.data.selectedType}', 
             border: InputBorder.none,
             hintStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.5), fontWeight: FontWeight.w900),
             contentPadding: EdgeInsets.zero,

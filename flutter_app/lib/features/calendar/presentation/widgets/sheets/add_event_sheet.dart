@@ -95,6 +95,14 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
 
       _repeat = rruleToRepeat(event.recurrenceRule);
 
+        if (event.title == "Untitled Task" || 
+        event.title == "Untitled Event" || 
+        event.title == "Birthday") {
+      _titleController.text = "";
+        } else {
+          _titleController.text = event.title;
+        }
+
       // If the recurrence was custom, try to parse components back into
       // the form state so the CustomSelector will show the saved values.
       if (_repeat == "Custom" && event.recurrenceRule != null) {
@@ -225,7 +233,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
 
   Task createTaskSaveTemplate(bool isDark) {
     final colorValue = isDark ? _selectedColor.dark.value : _selectedColor.light.value;
-    final title = _titleController.text.trim().isEmpty ? "Untitled Event" : _titleController.text.trim();
+    final title = _titleController.text.trim();
     
     final DateTime startTime = _isAllDay ? startOfDay(_startDate) : _combineDateAndTime(_startDate, _startTime);
     final DateTime endTime = _isAllDay ? endOfDay(_startDate) : _combineDateAndTime(_endDate, _endTime);
