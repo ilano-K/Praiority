@@ -2,7 +2,6 @@
 
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_app/core/providers/global_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -105,7 +104,7 @@ class _AuthGateState extends ConsumerState<AuthGate> {
 
         try {
           // clear database first
-          await ref.read(localStorageServiceProvider).clearDatabase();
+          // await ref.read(localStorageServiceProvider).clearDatabase();
 
           // Timeout Protection (3 seconds)
           await ref

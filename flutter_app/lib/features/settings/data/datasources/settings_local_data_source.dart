@@ -10,16 +10,6 @@ class SettingsLocalDataSource {
   Future<UserPreferencesModel?> getPreferences() async {
     final existing = await isar.userPreferencesModels.where().findFirst();
     return existing;
-    // if(existing != null){
-    //   return existing;
-    // }
-    // // create a user preference
-    // final userPrefs = UserPreferencesModel();
-    // userPrefs.cloudId = Uuid().v4();
-    // await isar.writeTxn(() async {
-    //   await isar.userPreferencesModels.put(userPrefs);
-    // });
-    // return userPrefs;
   }
 
   Future<void> savePreferences(UserPreferencesModel model) async {
