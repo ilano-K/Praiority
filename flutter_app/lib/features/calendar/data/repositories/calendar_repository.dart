@@ -60,6 +60,9 @@ class CalendarRepository {
       status: status,
       tag: tag,
     );
+    if (models.isEmpty) {
+      return [];
+    }
     final tasksWithTime = models.where(
       (t) => t.startTime != null && t.endTime != null,
     );

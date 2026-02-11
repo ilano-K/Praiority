@@ -30,9 +30,12 @@ class TaskUtils {
     DateTime rangeStart,
     DateTime rangeEnd,
   ) {
-    final taskStartTime = task.startTime!;
-    final taskEndTime = task.endTime!;
+    final taskStartTime = task.startTime;
+    final taskEndTime = task.endTime;
 
+    if (taskStartTime == null || taskEndTime == null) {
+      return false;
+    }
     // for tasks that doesn't repeat.
     if (task.recurrenceRule == "None" ||
         task.recurrenceRule == "" ||

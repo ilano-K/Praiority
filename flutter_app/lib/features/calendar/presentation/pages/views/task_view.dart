@@ -7,11 +7,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 // --- IMPORT EDIT SHEETS & SELECTORS ---
-import '../../widgets/sheets/add_task_sheet.dart'; 
+import '../../widgets/sheets/add_task_sheet.dart';
 import '../../widgets/sheets/add_event_sheet.dart';
 import '../../widgets/sheets/add_birthday_sheet.dart';
 import '../../widgets/dialogs/app_dialog.dart';
-import '../../widgets/selectors/sort_selector.dart'; 
+import '../../widgets/selectors/sort_selector.dart';
 
 class TaskView extends ConsumerStatefulWidget {
   const TaskView({super.key});
@@ -25,7 +25,7 @@ class _TaskViewState extends ConsumerState<TaskView> {
   bool _isPendingExpanded = false;
   bool _isCompletedExpanded = false;
 
-  // We don't need initState to fetch data anymore because 
+  // We don't need initState to fetch data anymore because
   // the taskViewControllerProvider does it automatically in build().
 
   void _openTaskSheet(Task task) {
@@ -47,10 +47,10 @@ class _TaskViewState extends ConsumerState<TaskView> {
 
   void _showSortSheet(BuildContext context) {
     showModalBottomSheet(
-      context: context, 
-      backgroundColor: Colors.transparent, 
+      context: context,
+      backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => const SortSelector(), 
+      builder: (context) => const SortSelector(),
     );
   }
 
@@ -72,7 +72,11 @@ class _TaskViewState extends ConsumerState<TaskView> {
         ),
         title: Row(
           children: [
-            Icon(Icons.assignment_outlined, color: colorScheme.onSurface, size: 28),
+            Icon(
+              Icons.assignment_outlined,
+              color: colorScheme.onSurface,
+              size: 28,
+            ),
             const SizedBox(width: 12),
             const Text(
               "Tasks",
@@ -90,20 +94,46 @@ class _TaskViewState extends ConsumerState<TaskView> {
       ),
       body: tasksAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text(e.toString())),
+        error: (e, stackTrace) {
+          debugPrint("Error in TaskView Provider: $e");
+          debugPrint(
+            stackTrace.toString(),
+          ); // <--- This will show the line number in your console
+          return Center(child: Text("Error: ${e.toString()}"));
+        },
         data: (tasks) {
-          final scheduled = tasks.where((t) => t.status == TaskStatus.scheduled).toList();
-          final pending = tasks.where((t) => t.status == TaskStatus.unscheduled).toList();
-          final completed = tasks.where((t) => t.status == TaskStatus.completed).toList();
+          final scheduled = tasks
+              .where((t) => t.status == TaskStatus.scheduled)
+              .toList();
+          final pending = tasks
+              .where((t) => t.status == TaskStatus.unscheduled)
+              .toList();
+          final completed = tasks
+              .where((t) => t.status == TaskStatus.completed)
+              .toList();
 
           return ListView(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
             children: [
               _buildScheduledCategory(context, scheduled),
-              _buildExpandableCategory(context, pending, "My Pending Tasks", _isPendingExpanded, 
-                  () => setState(() => _isPendingExpanded = !_isPendingExpanded), showActions: false),
-              _buildExpandableCategory(context, completed, "My Completed Tasks", _isCompletedExpanded, 
-                  () => setState(() => _isCompletedExpanded = !_isCompletedExpanded), showActions: true),
+              _buildExpandableCategory(
+                context,
+                pending,
+                "My Pending Tasks",
+                _isPendingExpanded,
+                () => setState(() => _isPendingExpanded = !_isPendingExpanded),
+                showActions: false,
+              ),
+              _buildExpandableCategory(
+                context,
+                completed,
+                "My Completed Tasks",
+                _isCompletedExpanded,
+                () => setState(
+                  () => _isCompletedExpanded = !_isCompletedExpanded,
+                ),
+                showActions: true,
+              ),
             ],
           );
         },
@@ -125,23 +155,33 @@ class _TaskViewState extends ConsumerState<TaskView> {
       ),
       child: Column(
         children: [
-          _buildCategoryHeader("My Scheduled Tasks", tasks.length, _isScheduledExpanded, 
-              () => setState(() => _isScheduledExpanded = !_isScheduledExpanded)),
+          _buildCategoryHeader(
+            "My Scheduled Tasks",
+            tasks.length,
+            _isScheduledExpanded,
+            () => setState(() => _isScheduledExpanded = !_isScheduledExpanded),
+          ),
           AnimatedSize(
             duration: const Duration(milliseconds: 400),
             curve: Curves.easeInOut,
             child: _isScheduledExpanded
                 ? Column(
                     children: [
-                      if (regularTasks.isNotEmpty) _buildSummaryHeader(context, "Tasks", colorScheme),
-                      if (regularTasks.isNotEmpty) ...regularTasks.map((t) => _buildTaskItem(t, true)),
-                      
-                      if (events.isNotEmpty) _buildSummaryHeader(context, "Events", colorScheme),
-                      if (events.isNotEmpty) ...events.map((t) => _buildTaskItem(t, true)),
-                      
-                      if (birthdays.isNotEmpty) _buildSummaryHeader(context, "Birthdays", colorScheme),
-                      if (birthdays.isNotEmpty) ...birthdays.map((t) => _buildTaskItem(t, true)),
-                      
+                      if (regularTasks.isNotEmpty)
+                        _buildSummaryHeader(context, "Tasks", colorScheme),
+                      if (regularTasks.isNotEmpty)
+                        ...regularTasks.map((t) => _buildTaskItem(t, true)),
+
+                      if (events.isNotEmpty)
+                        _buildSummaryHeader(context, "Events", colorScheme),
+                      if (events.isNotEmpty)
+                        ...events.map((t) => _buildTaskItem(t, true)),
+
+                      if (birthdays.isNotEmpty)
+                        _buildSummaryHeader(context, "Birthdays", colorScheme),
+                      if (birthdays.isNotEmpty)
+                        ...birthdays.map((t) => _buildTaskItem(t, true)),
+
                       const SizedBox(height: 12),
                     ],
                   )
@@ -152,7 +192,11 @@ class _TaskViewState extends ConsumerState<TaskView> {
     );
   }
 
-  Widget _buildSummaryHeader(BuildContext context, String title, ColorScheme colorScheme) {
+  Widget _buildSummaryHeader(
+    BuildContext context,
+    String title,
+    ColorScheme colorScheme,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
       child: Row(
@@ -160,16 +204,16 @@ class _TaskViewState extends ConsumerState<TaskView> {
           Text(
             title.toUpperCase(),
             style: TextStyle(
-              fontSize: 13, 
-              fontWeight: FontWeight.w900, 
-              color: colorScheme.onSurface, 
+              fontSize: 13,
+              fontWeight: FontWeight.w900,
+              color: colorScheme.onSurface,
               letterSpacing: 1.5,
             ),
           ),
           const SizedBox(width: 8),
           Expanded(
             child: Divider(
-              color: colorScheme.onSurface.withOpacity(0.1), 
+              color: colorScheme.onSurface.withOpacity(0.1),
               thickness: 1,
             ),
           ),
@@ -178,7 +222,12 @@ class _TaskViewState extends ConsumerState<TaskView> {
     );
   }
 
-  Widget _buildCategoryHeader(String title, int count, bool isExpanded, VoidCallback onTap) {
+  Widget _buildCategoryHeader(
+    String title,
+    int count,
+    bool isExpanded,
+    VoidCallback onTap,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
     return InkWell(
       borderRadius: BorderRadius.circular(12),
@@ -188,7 +237,13 @@ class _TaskViewState extends ConsumerState<TaskView> {
         child: Row(
           children: [
             Expanded(
-              child: Text("$title ($count)", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              child: Text(
+                "$title ($count)",
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
             AnimatedRotation(
               turns: isExpanded ? 0.5 : 0,
@@ -218,7 +273,9 @@ class _TaskViewState extends ConsumerState<TaskView> {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: isDone ? colorScheme.onSurface.withOpacity(0.4) : colorScheme.onSurface,
+                  color: isDone
+                      ? colorScheme.onSurface.withOpacity(0.4)
+                      : colorScheme.onSurface,
                   decoration: isDone ? TextDecoration.lineThrough : null,
                 ),
               ),
@@ -229,29 +286,46 @@ class _TaskViewState extends ConsumerState<TaskView> {
               children: [
                 if (!isBirthday)
                   GestureDetector(
-                    onTap: () => _updateTaskStatus(task, isDone ? TaskStatus.scheduled : TaskStatus.completed),
+                    onTap: () => _updateTaskStatus(
+                      task,
+                      isDone ? TaskStatus.scheduled : TaskStatus.completed,
+                    ),
                     child: Container(
-                      width: 28, height: 28,
+                      width: 28,
+                      height: 28,
                       decoration: BoxDecoration(
-                        color: isDone ? colorScheme.primary : Colors.transparent,
+                        color: isDone
+                            ? colorScheme.primary
+                            : Colors.transparent,
                         shape: BoxShape.circle,
-                        border: Border.all(color: colorScheme.onSurface, width: 1.5),
+                        border: Border.all(
+                          color: colorScheme.onSurface,
+                          width: 1.5,
+                        ),
                       ),
-                      child: isDone ? const Icon(Icons.check, size: 18, color: Colors.white) : null,
+                      child: isDone
+                          ? const Icon(
+                              Icons.check,
+                              size: 18,
+                              color: Colors.white,
+                            )
+                          : null,
                     ),
                   ),
                 if (!isBirthday) const SizedBox(width: 14),
                 IconButton(
                   icon: const Icon(Icons.delete_outline, size: 30),
                   onPressed: () => AppDialogs.showConfirmation(
-                    context, 
-                    title: "Delete Task", 
-                    message: "Remove '${task.title}' permanently?", 
-                    confirmLabel: "Delete", 
+                    context,
+                    title: "Delete Task",
+                    message: "Remove '${task.title}' permanently?",
+                    confirmLabel: "Delete",
                     isDestructive: true,
                     onConfirm: () async {
                       // CHANGE: Use new controller
-                      await ref.read(taskViewControllerProvider.notifier).deleteTask(task);
+                      await ref
+                          .read(taskViewControllerProvider.notifier)
+                          .deleteTask(task);
                     },
                   ),
                 ),
@@ -262,15 +336,26 @@ class _TaskViewState extends ConsumerState<TaskView> {
     );
   }
 
-  Widget _buildExpandableCategory(BuildContext context, List<Task> tasks, String title, bool isExpanded, VoidCallback onTap, {required bool showActions}) {
+  Widget _buildExpandableCategory(
+    BuildContext context,
+    List<Task> tasks,
+    String title,
+    bool isExpanded,
+    VoidCallback onTap, {
+    required bool showActions,
+  }) {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(color: colorScheme.secondary, borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(
+        color: colorScheme.secondary,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Column(
         children: [
           _buildCategoryHeader(title, tasks.length, isExpanded, onTap),
-          if (isExpanded) ...tasks.map((task) => _buildTaskItem(task, showActions)).toList(),
+          if (isExpanded)
+            ...tasks.map((task) => _buildTaskItem(task, showActions)).toList(),
         ],
       ),
     );
@@ -278,6 +363,8 @@ class _TaskViewState extends ConsumerState<TaskView> {
 
   Future<void> _updateTaskStatus(Task task, TaskStatus newStatus) async {
     // CHANGE: Use new controller
-    await ref.read(taskViewControllerProvider.notifier).updateTask(task.copyWith(status: newStatus));
+    await ref
+        .read(taskViewControllerProvider.notifier)
+        .updateTask(task.copyWith(status: newStatus));
   }
 }
