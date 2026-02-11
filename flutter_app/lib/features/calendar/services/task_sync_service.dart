@@ -21,9 +21,6 @@ class TaskSyncService {
       return;
     }
     if (_supabase.auth.currentUser == null) return;
-
-    _isSyncing = true;
-
     // Run these in sequence or parallel depending on your conflict logic.
     // Usually, pushing first ensures your latest edits are saved.
     try {
@@ -35,20 +32,19 @@ class TaskSyncService {
   }
 
   Future<void> pushLocalChanges() async {
-    debugPrint("[DEBUG] PUSHING TASK LOCAL CHANGES NOW!");
+    debugPrint("[DEBUG] PUSHING TASK LOCAL CHANGES NOW! ${_isSyncing}");
     final unsyncedTasks = await _localDb.getUnsyncedTasks();
 
     if (unsyncedTasks.isEmpty) return;
 
     if (_isSyncing) return;
+    _isSyncing = true;
     // 1. Prepare the BATCH (Much faster than looping)
     final List<Map<String, dynamic>> batchData = unsyncedTasks.map((task) {
       final taskMap = task.toCloudJsonFormat();
       taskMap["user_id"] = _supabase.auth.currentUser!.id;
       return taskMap;
     }).toList();
-
-    _isSyncing = true;
 
     try {
       // 2. Retry Logic using 'retry' package
@@ -78,10 +74,14 @@ class TaskSyncService {
       debugPrint("[DEBUG]: Push BATCH failed after retries: $e");
     } finally {
       _isSyncing = false;
+      print("[DEBUG] Syncing set to false ${_isSyncing}");
     }
   }
 
   Future<void> pullRemoteChanges() async {
+    debugPrint(
+      "[pullRemoteChanges] PULLING TASK LOCAL CHANGES NOW! ${_isSyncing}",
+    );
     if (_isSyncing) return;
     _isSyncing = true;
     try {
@@ -99,9 +99,10 @@ class TaskSyncService {
           .map((e) => TaskModel.fromCloudJson(e))
           .toList();
 
+      debugPrint("[pullRemoteChanges]: SUCCESFULLY PULLED : ${models.length}");
       await _localDb.updateTasksFromCloud(models);
     } catch (e) {
-      debugPrint("[DEBUG]: PULLING REMOTE CHANGES FAILED: $e");
+      debugPrint("[pullRemoteChanges]: PULLING REMOTE CHANGES FAILED: $e");
     } finally {
       _isSyncing = false;
     }

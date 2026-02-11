@@ -140,13 +140,18 @@ class CalendarLocalDataSource {
   }
 
   Future<List<TaskModel>> getTasksByRange(DateTime start, DateTime end) async {
-    var q = isar.taskModels.filter().group(
-      (g) => g.startTimeBetween(start, end).or().recurrenceRuleIsNotNull(),
-    );
-    final tasks = await q.isDeletedEqualTo(false).sortByStartTime().findAll();
-    return tasks
-        .where((task) => TaskUtils.validTaskModelForDate(task, start, end))
-        .toList();
+    // var q = isar.taskModels.filter().group(
+    //   (g) => g.startTimeBetween(start, end).or().recurrenceRuleIsNotNull(),
+    // );
+    // final tasks = await q.isDeletedEqualTo(false).sortByStartTime().findAll();
+    final tasks = await isar.taskModels
+        .filter()
+        .isDeletedEqualTo(false)
+        .sortByStartTime()
+        .findAll();
+    print("[GET TASKS BY RANGE (model)] TIME: ${start} AND ${end}");
+    print("[GET TASKS BY RANGE (model)] TASKS: ${tasks}");
+    return tasks.toList();
   }
 
   Future<List<TaskModel>> getTasksByCondition({
@@ -178,22 +183,7 @@ class CalendarLocalDataSource {
     if (tasksWithTime.isEmpty) return [];
 
     // Find earliest and latest safely
-    DateTime earliest = tasksWithTime.first.startTime!;
-    DateTime latest = tasksWithTime.first.endTime!;
-
-    for (var t in tasksWithTime) {
-      if (t.startTime!.isBefore(earliest)) earliest = t.startTime!;
-      if (t.endTime!.isAfter(latest)) latest = t.endTime!;
-    }
-
-    final startRange = start ?? earliest;
-    final endRange = end ?? latest;
-
-    return tasks
-        .where(
-          (task) => TaskUtils.validTaskModelForDate(task, startRange, endRange),
-        )
-        .toList();
+    return tasks.toList();
   }
 
   // tags
@@ -225,6 +215,7 @@ class CalendarLocalDataSource {
 
   Future<void> updateTasksFromCloud(List<TaskModel> cloudTasks) async {
     await isar.writeTxn(() async {
+      print("saving tasks from cloud");
       for (var cloudTask in cloudTasks) {
         final localTask = await isar.taskModels
             .filter()
@@ -251,12 +242,12 @@ class CalendarLocalDataSource {
               .findFirst();
 
           if (existingTag == null) {
-            print("saving tags");
             final tagEntity = TaskTag.create(name: tag);
             final tagModel = TaskTagModel.fromEntity(tagEntity);
             await isar.taskTagModels.put(tagModel);
           }
         }
+        print("saving tasks from cloud for cloud tasks ${cloudTask.title}");
         await isar.taskModels.put(cloudTask);
       }
     });

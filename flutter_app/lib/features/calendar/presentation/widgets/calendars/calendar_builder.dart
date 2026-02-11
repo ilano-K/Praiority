@@ -309,14 +309,6 @@ class TaskDataSource extends CalendarDataSource {
         )
         .toList();
 
-    for (var task in tasks) {
-      print("THise are the task in the appointments ${task.title}");
-      print("This is the type: ${task.type}");
-      print("This is the start: ${task.startTime}");
-      print("This is the status: ${task.status}");
-      print("This is the all day: ${task.isAllDay}");
-    }
-
     appointments = visibleTasks.map((task) {
       final Color displayColor = _resolveColor(task.colorValue, isDark);
 
@@ -340,10 +332,6 @@ class TaskDataSource extends CalendarDataSource {
         recurrenceRule: task.recurrenceRule,
       );
     }).toList();
-
-    print(
-      "DEBUG: [TaskDataSource] Generated ${appointments?.length} appointments.",
-    );
   }
 
   Color _resolveColor(int? savedHex, bool isDark) {

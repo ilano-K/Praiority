@@ -28,7 +28,7 @@ class TaskUtils {
   }
 
   static bool validTaskModelForDate(
-    TaskModel task,
+    Task task,
     DateTime rangeStart,
     DateTime rangeEnd,
   ) {

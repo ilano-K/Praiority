@@ -16,12 +16,12 @@ import 'package:flutter_app/features/calendar/presentation/pages/views/week_view
 import 'package:flutter_app/features/calendar/presentation/pages/views/day_view.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/calendars/calendar_builder.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/components/app_sidebar.dart';
-import 'package:flutter_app/features/calendar/presentation/widgets/components/calendar_ai_tip.dart'; 
+import 'package:flutter_app/features/calendar/presentation/widgets/components/calendar_ai_tip.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/selectors/date_picker.dart';
 
 import 'package:flutter_app/features/calendar/presentation/widgets/sheets/add_birthday_sheet.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/sheets/add_event_sheet.dart';
-import 'package:flutter_app/features/calendar/presentation/widgets/sheets/add_task_sheet.dart'; 
+import 'package:flutter_app/features/calendar/presentation/widgets/sheets/add_task_sheet.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/dialogs/app_confirmation_dialog.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/dialogs/app_warning_dialog.dart';
 
@@ -32,20 +32,21 @@ class MainCalendar extends ConsumerStatefulWidget {
   ConsumerState<MainCalendar> createState() => _MainCalendarState();
 }
 
-class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerProviderStateMixin {
+class _MainCalendarState extends ConsumerState<MainCalendar>
+    with SingleTickerProviderStateMixin {
   DateTime _selectedDate = dateOnly(DateTime.now());
-  
+
   // FIX: ValueNotifier allows us to update the header WITHOUT rebuilding the calendar
   late final ValueNotifier<DateTime> _uiDateNotifier;
 
-  DateTime? _lastFetchDate; 
+  DateTime? _lastFetchDate;
   Timer? _debounceTimer;
-  
+
   CalendarView _currentView = CalendarView.day;
 
   final CalendarController _calendarController = CalendarController();
   late AnimationController _fabController;
-  late Animation<double> _fabAnimation; 
+  late Animation<double> _fabAnimation;
 
   List<TimeRegion>? _cachedGreyBlocks;
   Brightness? _lastBrightness;
@@ -56,8 +57,14 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
     // Initialize notifier
     _uiDateNotifier = ValueNotifier(_selectedDate);
 
-    _fabController = AnimationController(vsync: this, duration: const Duration(milliseconds: 250));
-    _fabAnimation = CurvedAnimation(parent: _fabController, curve: Curves.easeOut);
+    _fabController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 250),
+    );
+    _fabAnimation = CurvedAnimation(
+      parent: _fabController,
+      curve: Curves.easeOut,
+    );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final initialRange = _selectedDate.buffered(CalendarScope.day);
@@ -72,7 +79,7 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
   void didChangeDependencies() {
     super.didChangeDependencies();
     final brightness = Theme.of(context).brightness;
-    
+
     if (_cachedGreyBlocks == null || _lastBrightness != brightness) {
       _lastBrightness = brightness;
       final color = Theme.of(context).colorScheme.secondary;
@@ -88,7 +95,9 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
     super.dispose();
   }
 
-  void _toggleFab() => _fabController.isDismissed ? _fabController.forward() : _fabController.reverse();
+  void _toggleFab() => _fabController.isDismissed
+      ? _fabController.forward()
+      : _fabController.reverse();
 
   // --- OPTIMIZED VIEW HANDLER ---
   void _handleViewChanged(ViewChangedDetails details) {
@@ -116,11 +125,10 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
 
       if (_selectedDate != anchorDate) {
         // DEBUG: Confirming we are NOT rebuilding
-        print("DEBUG: Scroll detected -> Updating Notifier to $anchorDate (NO REBUILD)");
-        
+
         // CRITICAL FIX: Update Notifier only. DO NOT call setState().
-        _selectedDate = anchorDate; 
-        _uiDateNotifier.value = anchorDate; 
+        _selectedDate = anchorDate;
+        _uiDateNotifier.value = anchorDate;
       }
 
       bool shouldFetch = false;
@@ -128,19 +136,17 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
         shouldFetch = true;
       } else {
         final daysDiff = anchorDate.difference(_lastFetchDate!).inDays.abs();
-        if (scope == CalendarScope.day && daysDiff > 15) shouldFetch = true; 
-        if (scope == CalendarScope.week && daysDiff > 80) shouldFetch = true; 
-        if (scope == CalendarScope.month && daysDiff > 180) shouldFetch = true; 
+        if (scope == CalendarScope.day && daysDiff > 15) shouldFetch = true;
+        if (scope == CalendarScope.week && daysDiff > 80) shouldFetch = true;
+        if (scope == CalendarScope.month && daysDiff > 180) shouldFetch = true;
       }
 
       if (shouldFetch) {
         _debounceTimer?.cancel();
         _debounceTimer = Timer(const Duration(milliseconds: 200), () {
           if (!mounted) return;
-          print("DEBUG: Fetching new data from database...");
           _lastFetchDate = anchorDate;
           final range = anchorDate.buffered(scope);
-          print(range);
           ref.read(calendarControllerProvider.notifier).setRange(range);
         });
       }
@@ -150,7 +156,7 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
   void _onViewSwitched(CalendarView view) {
     setState(() {
       _currentView = view;
-      _calendarController.view = view; 
+      _calendarController.view = view;
     });
 
     CalendarScope scope;
@@ -168,7 +174,7 @@ class _MainCalendarState extends ConsumerState<MainCalendar> with SingleTickerPr
   }
 
   // --- UI HELPERS ---
-void _showAiTipBeforeEdit(Task task) {
+  void _showAiTipBeforeEdit(Task task) {
     showDialog(
       context: context,
       barrierColor: Colors.black.withOpacity(0.3),
@@ -177,15 +183,22 @@ void _showAiTipBeforeEdit(Task task) {
           color: Colors.transparent,
           child: Container(
             // --- ADDED MARGIN AND CONSTRAINTS ---
-            margin: const EdgeInsets.symmetric(horizontal: 24), // Prevents touching edges
-            constraints: const BoxConstraints(maxWidth: 400),   // Limits width on tablets/large phones
+            margin: const EdgeInsets.symmetric(
+              horizontal: 24,
+            ), // Prevents touching edges
+            constraints: const BoxConstraints(
+              maxWidth: 400,
+            ), // Limits width on tablets/large phones
             child: AiTipWidget(
               title: task.title.isEmpty ? "New Task" : task.title,
               taskId: task.id,
               description: task.description ?? "No description provided.",
-              generatedTip: task.aiTip ?? "", 
+              generatedTip: task.aiTip ?? "",
               isCompleted: task.status == TaskStatus.completed,
-              onEdit: () { Navigator.pop(context); _openTaskSheet(task); },
+              onEdit: () {
+                Navigator.pop(context);
+                _openTaskSheet(task);
+              },
               onDelete: () {
                 showDialog(
                   context: context,
@@ -195,20 +208,28 @@ void _showAiTipBeforeEdit(Task task) {
                     confirmLabel: "Delete",
                     isDestructive: true,
                     onConfirm: () async {
-                      final controller = ref.read(calendarControllerProvider.notifier);
+                      final controller = ref.read(
+                        calendarControllerProvider.notifier,
+                      );
                       await controller.deleteTask(task);
                       if (mounted) Navigator.pop(context);
                     },
                   ),
                 );
               },
-              onComplete: task.type == TaskType.birthday ? null : () async {
-                final controller = ref.read(calendarControllerProvider.notifier);
-                final newStatus = task.status == TaskStatus.completed ? TaskStatus.scheduled : TaskStatus.completed;
-                final updatedTask = task.copyWith(status: newStatus);
-                await controller.addTask(updatedTask);
-                if (mounted) Navigator.pop(context);
-              },
+              onComplete: task.type == TaskType.birthday
+                  ? null
+                  : () async {
+                      final controller = ref.read(
+                        calendarControllerProvider.notifier,
+                      );
+                      final newStatus = task.status == TaskStatus.completed
+                          ? TaskStatus.scheduled
+                          : TaskStatus.completed;
+                      final updatedTask = task.copyWith(status: newStatus);
+                      await controller.addTask(updatedTask);
+                      if (mounted) Navigator.pop(context);
+                    },
             ),
           ),
         ),
@@ -230,7 +251,10 @@ void _showAiTipBeforeEdit(Task task) {
   }
 
   Future<void> _pickDate(BuildContext context) async {
-    final DateTime? picked = await pickDate(context, initialDate: _selectedDate);
+    final DateTime? picked = await pickDate(
+      context,
+      initialDate: _selectedDate,
+    );
     if (picked != null && picked != _selectedDate) {
       // Manual pick MUST use setState to jump correctly
       setState(() {
@@ -245,12 +269,14 @@ void _showAiTipBeforeEdit(Task task) {
     List<TimeRegion> regions = [];
     final DateTime anchorDate = DateTime(2020, 1, 1);
     for (int i = 0; i < 24; i++) {
-      regions.add(TimeRegion(
-        startTime: anchorDate.copyWith(hour: i, minute: 0),
-        endTime: anchorDate.copyWith(hour: i, minute: 59), 
-        color: color, 
-        recurrenceRule: 'FREQ=DAILY;INTERVAL=1',
-      ));
+      regions.add(
+        TimeRegion(
+          startTime: anchorDate.copyWith(hour: i, minute: 0),
+          endTime: anchorDate.copyWith(hour: i, minute: 59),
+          color: color,
+          recurrenceRule: 'FREQ=DAILY;INTERVAL=1',
+        ),
+      );
     }
     return regions;
   }
@@ -258,7 +284,6 @@ void _showAiTipBeforeEdit(Task task) {
   @override
   Widget build(BuildContext context) {
     // DEBUG: THIS SHOULD ONLY PRINT ONCE OR WHEN VIEW CHANGES
-    print("DEBUG: MainCalendar build() - FULL REBUILD (If this spams, it's bad)");
 
     final colorScheme = Theme.of(context).colorScheme;
     final tasksAsync = ref.watch(calendarControllerProvider);
@@ -268,56 +293,58 @@ void _showAiTipBeforeEdit(Task task) {
       backgroundColor: colorScheme.surface,
       resizeToAvoidBottomInset: false,
       drawer: AppSidebar(
-        currentView: _currentView, 
-        onViewSelected: _onViewSwitched, 
+        currentView: _currentView,
+        onViewSelected: _onViewSwitched,
       ),
 
-        // inside MainCalendar
-        floatingActionButton: CalendarBuilder.buildMainFab(
-          colorScheme: colorScheme,
-          fabController: _fabController,
-          fabAnimation: _fabAnimation,
-          onToggle: _toggleFab,
-          onOptionTap: (label) {
-            _toggleFab();
-            
-            // THIS PRINT IS FOR DEBUGGING - IT WILL TELL YOU EXACTLY WHAT THE FAB SENDS
-            print("FAB CLICKED RAW LABEL: '$label'");
+      // inside MainCalendar
+      floatingActionButton: CalendarBuilder.buildMainFab(
+        colorScheme: colorScheme,
+        fabController: _fabController,
+        fabAnimation: _fabAnimation,
+        onToggle: _toggleFab,
+        onOptionTap: (label) {
+          _toggleFab();
 
-            // Normalize for safety
-            final String key = label.trim().toLowerCase();
+          // THIS PRINT IS FOR DEBUGGING - IT WILL TELL YOU EXACTLY WHAT THE FAB SENDS
 
-            if (key == "task") {
-              final now = DateTime.now();
-              final dateWithCurrentTime = DateTime(
-                _selectedDate.year, _selectedDate.month, _selectedDate.day,
-                now.hour, now.minute,
-              );
-              showModalBottomSheet(
-                context: context, 
-                isScrollControlled: true, 
-                backgroundColor: Colors.transparent, 
-                builder: (context) => AddTaskSheet(initialDate: dateWithCurrentTime),
-              );
-            } 
-            // This handles "Reorganize", "reorganize", or "REORGANIZE"
-            else if (key == "reorganize") {
-              print("SUCCESS: Condition met. Opening center dialog.");
-              showDialog(
-                context: context,
-                barrierColor: Colors.black.withOpacity(0.3),
-                builder: (context) => Center(
-                  child: SingleChildScrollView(
-                    child: Material(
-                      color: Colors.transparent,
-                      child: const Reschedule(),
-                    ),
+          // Normalize for safety
+          final String key = label.trim().toLowerCase();
+
+          if (key == "task") {
+            final now = DateTime.now();
+            final dateWithCurrentTime = DateTime(
+              _selectedDate.year,
+              _selectedDate.month,
+              _selectedDate.day,
+              now.hour,
+              now.minute,
+            );
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (context) =>
+                  AddTaskSheet(initialDate: dateWithCurrentTime),
+            );
+          }
+          // This handles "Reorganize", "reorganize", or "REORGANIZE"
+          else if (key == "reorganize") {
+            showDialog(
+              context: context,
+              barrierColor: Colors.black.withOpacity(0.3),
+              builder: (context) => Center(
+                child: SingleChildScrollView(
+                  child: Material(
+                    color: Colors.transparent,
+                    child: const Reschedule(),
                   ),
                 ),
-              );
-            }
-          },
-        ),
+              ),
+            );
+          }
+        },
+      ),
       body: SafeArea(
         child: Column(
           children: [
@@ -337,17 +364,17 @@ void _showAiTipBeforeEdit(Task task) {
             const SizedBox(height: 2),
             Expanded(
               child: RepaintBoundary(
-                  child: CalendarViewSwitcher(
+                child: CalendarViewSwitcher(
                   currentView: _currentView,
                   tasks: tasks,
                   calendarController: _calendarController,
                   selectedDate: _selectedDate,
-                  
+
                   // PASS NOTIFIER DOWN
-                  // Note: Your DayView needs to accept 'dateNotifier' 
+                  // Note: Your DayView needs to accept 'dateNotifier'
                   // as shown in the previous solution to update the sidebar!
-                  dateNotifier: _uiDateNotifier, 
-                  
+                  dateNotifier: _uiDateNotifier,
+
                   onViewChanged: _handleViewChanged,
                   onTaskTap: _showAiTipBeforeEdit,
                   onDateTap: () => _pickDate(context),
@@ -367,13 +394,13 @@ class CalendarViewSwitcher extends StatelessWidget {
   final List<Task> tasks;
   final CalendarController calendarController;
   final DateTime selectedDate;
-  
+
   // Accept the notifier
   final ValueNotifier<DateTime> dateNotifier;
-  
+
   final Function(ViewChangedDetails) onViewChanged;
   final Function(Task) onTaskTap;
-  final VoidCallback? onDateTap; 
+  final VoidCallback? onDateTap;
   final List<TimeRegion> greyBlocks;
 
   const CalendarViewSwitcher({
@@ -401,7 +428,7 @@ class CalendarViewSwitcher extends StatelessWidget {
           dateNotifier: dateNotifier,
           onTaskTap: onTaskTap,
         );
-      
+
       case CalendarView.month:
         return MonthView(
           tasks: tasks,
@@ -411,7 +438,7 @@ class CalendarViewSwitcher extends StatelessWidget {
           dateNotifier: dateNotifier,
           onTaskTap: onTaskTap,
         );
-      
+
       case CalendarView.day:
       default:
         // Ensure DayView accepts dateNotifier as defined in previous step
@@ -419,7 +446,7 @@ class CalendarViewSwitcher extends StatelessWidget {
           tasks: tasks,
           calendarController: calendarController,
           selectedDate: selectedDate,
-          dateNotifier: dateNotifier, 
+          dateNotifier: dateNotifier,
           onViewChanged: onViewChanged,
           onTaskTap: onTaskTap,
           onDateTap: onDateTap!,
