@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/domain/entities/date_range.dart';
 import 'package:flutter_app/features/calendar/presentation/utils/task_utils.dart';
+import 'package:flutter_app/features/calendar/presentation/utils/time_utils.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/calendars/calendar_builder.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
@@ -172,11 +173,17 @@ class _MonthViewState extends ConsumerState<MonthView> {
             details.targetElement == CalendarElement.appointment) {
           final date = details.date!;
           final range = date.range(CalendarScope.day);
+          print(date);
           final dayTasks = widget.tasks
               .where(
                 (t) =>
                     t.startTime != null &&
-                    TaskUtils.validTaskModelForDate(t, range.start, range.end),
+                        TaskUtils.validTaskModelForDate(
+                          t,
+                          range.start,
+                          range.end,
+                        ) ||
+                    dateOnly(t.startTime!) == dateOnly(date),
               )
               .toList();
 

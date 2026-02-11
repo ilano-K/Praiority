@@ -35,6 +35,7 @@ class TaskUtils {
     final taskStartTime = task.startTime!;
     final taskEndTime = task.endTime!;
 
+    print(task.recurrenceRule);
     // for tasks that doesn't repeat.
     if (task.recurrenceRule == "None" ||
         task.recurrenceRule == "" ||
@@ -84,6 +85,7 @@ class TaskUtils {
         includeAfter: true,
       );
 
+      print(instances);
       return instances.isNotEmpty;
     } catch (e) {
       // If there's an error parsing the recurrence rule, treat it as a non-recurring task
