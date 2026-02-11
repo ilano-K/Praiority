@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
-import 'package:flutter_app/features/calendar/presentation/pages/task_view.dart';
+import 'package:flutter_app/features/calendar/presentation/pages/views/task_view.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/selectors/color_selector.dart';
 import 'package:flutter_app/features/calendar/presentation/utils/time_utils.dart';
 import 'package:intl/intl.dart';

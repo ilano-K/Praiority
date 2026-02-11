@@ -7,11 +7,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 // --- IMPORT EDIT SHEETS & SELECTORS ---
-import '../widgets/sheets/add_task_sheet.dart'; 
-import '../widgets/sheets/add_event_sheet.dart';
-import '../widgets/sheets/add_birthday_sheet.dart';
-import '../widgets/dialogs/app_dialog.dart';
-import '../widgets/selectors/sort_selector.dart'; 
+import '../../widgets/sheets/add_task_sheet.dart'; 
+import '../../widgets/sheets/add_event_sheet.dart';
+import '../../widgets/sheets/add_birthday_sheet.dart';
+import '../../widgets/dialogs/app_dialog.dart';
+import '../../widgets/selectors/sort_selector.dart'; 
 
 class TaskView extends ConsumerStatefulWidget {
   const TaskView({super.key});
