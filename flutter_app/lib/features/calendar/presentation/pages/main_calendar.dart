@@ -11,9 +11,9 @@ import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_controller.dart';
 import 'package:flutter_app/features/calendar/presentation/utils/time_utils.dart';
 
-import 'package:flutter_app/features/calendar/presentation/widgets/calendars/month_view.dart';
-import 'package:flutter_app/features/calendar/presentation/widgets/calendars/week_view.dart';
-import 'package:flutter_app/features/calendar/presentation/widgets/calendars/day_view.dart';
+import 'package:flutter_app/features/calendar/presentation/pages/views/month_view.dart';
+import 'package:flutter_app/features/calendar/presentation/pages/views/week_view.dart';
+import 'package:flutter_app/features/calendar/presentation/pages/views/day_view.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/calendars/calendar_builder.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/components/app_sidebar.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/components/calendar_ai_tip.dart'; 
