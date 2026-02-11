@@ -289,6 +289,7 @@ class _MainCalendarState extends ConsumerState<MainCalendar>
     final tasksAsync = ref.watch(calendarControllerProvider);
     final tasks = tasksAsync.valueOrNull ?? [];
 
+
     return Scaffold(
       backgroundColor: colorScheme.surface,
       resizeToAvoidBottomInset: false,

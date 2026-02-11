@@ -48,7 +48,6 @@ class _DayViewState extends ConsumerState<DayView> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     if (!_isInitialized) {
-      print("DEBUG: [DayView] Creating Data Source (First Load)");
       _dataSource = TaskDataSource(widget.tasks, isDark);
       _isInitialized = true;
     } else {
@@ -62,9 +61,6 @@ class _DayViewState extends ConsumerState<DayView> {
 
     // Only update data if the task list content actually changed
     if (oldWidget.tasks != widget.tasks) {
-      print(
-        "DEBUG: [DayView] Tasks list updated (Size: ${widget.tasks.length}). Updating Source.",
-      );
       final isDark = Theme.of(context).brightness == Brightness.dark;
       if (_isInitialized) {
         _dataSource.updateData(widget.tasks, isDark);
@@ -74,7 +70,6 @@ class _DayViewState extends ConsumerState<DayView> {
 
   @override
   Widget build(BuildContext context) {
-    print("[DEBUG] REBUILDING");
     final colorScheme = Theme.of(context).colorScheme;
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -330,4 +325,3 @@ class DayAppointmentCard extends StatelessWidget {
     }
   }
 }
-

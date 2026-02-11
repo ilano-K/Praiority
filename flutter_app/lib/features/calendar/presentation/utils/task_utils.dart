@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_app/features/calendar/data/models/task_model.dart';
-import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'package:flutter_app/features/calendar/presentation/utils/time_utils.dart';
 import 'package:rrule/rrule.dart';
@@ -35,7 +33,6 @@ class TaskUtils {
     final taskStartTime = task.startTime!;
     final taskEndTime = task.endTime!;
 
-    print(task.recurrenceRule);
     // for tasks that doesn't repeat.
     if (task.recurrenceRule == "None" ||
         task.recurrenceRule == "" ||
@@ -84,9 +81,10 @@ class TaskUtils {
         before: beforeUTC,
         includeAfter: true,
       );
+      final originalFits =
+          !taskEndTime.isBefore(rangeStart) && !taskStartTime.isAfter(rangeEnd);
 
-      print(instances);
-      return instances.isNotEmpty;
+      return instances.isNotEmpty || originalFits;
     } catch (e) {
       // If there's an error parsing the recurrence rule, treat it as a non-recurring task
       return !taskEndTime.isBefore(rangeStart) &&

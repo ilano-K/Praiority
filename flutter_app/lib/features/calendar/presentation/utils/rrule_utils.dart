@@ -8,7 +8,10 @@ class RRuleUtils {
       return endOfDay(task.startTime!);
     }
 
-    final untilMatch = RegExp(r'UNTIL=([0-9T]+Z?)', caseSensitive: false).firstMatch(rr);
+    final untilMatch = RegExp(
+      r'UNTIL=([0-9T]+Z?)',
+      caseSensitive: false,
+    ).firstMatch(rr);
     if (untilMatch != null) {
       String s = untilMatch.group(1)!;
       try {
