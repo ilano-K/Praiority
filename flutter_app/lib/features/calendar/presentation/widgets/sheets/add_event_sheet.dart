@@ -5,9 +5,8 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_provider.dart';
-import 'package:flutter_app/features/calendar/presentation/utils/repeat_to_rrule.dart';
-import 'package:flutter_app/features/calendar/presentation/utils/time_adjust.dart';
-import 'package:flutter_app/features/calendar/presentation/utils/time_utils.dart';
+import 'package:flutter_app/features/calendar/presentation/utils/date_time_utils.dart';
+import 'package:flutter_app/features/calendar/presentation/utils/rrule_utils.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/components/interactive_row.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/selectors/date_picker.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/selectors/pick_time.dart';
@@ -94,7 +93,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
       _movableByAI = event.isAiMovable;
       _setNonConfliction = event.isConflicting;
 
-      _repeat = rruleToRepeat(event.recurrenceRule);
+      _repeat = RRuleUtils.rruleToRepeat(event.recurrenceRule);
 
       if (event.title == "Untitled Task" ||
           event.title == "Untitled Event" ||
@@ -271,7 +270,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
       tags: _selectedTags,
       location: _location,
       status: TaskStatus.scheduled,
-      recurrenceRule: repeatToRRule(
+      recurrenceRule: RRuleUtils.repeatToRRule(
         _repeat,
         start: startTimeForRule,
         interval: _customInterval,

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
-import 'package:flutter_app/features/calendar/presentation/utils/time_utils.dart';
+import 'package:flutter_app/features/calendar/presentation/utils/date_time_utils.dart';
 import 'package:rrule/rrule.dart';
 
 // File: lib/core/utils/task_utils.dart

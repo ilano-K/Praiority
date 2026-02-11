@@ -6,7 +6,7 @@ import 'package:flutter_app/features/auth/presentation/manager/auth_controller.d
 import 'package:flutter_app/features/auth/presentation/pages/forgot_pass_page.dart';
 import 'package:flutter_app/features/auth/presentation/widgets/auth_components.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_provider.dart';
-import 'package:flutter_app/features/settings/presentation/pages/work_hours.dart'; 
+import 'package:flutter_app/features/settings/presentation/pages/work_hours.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 
@@ -44,23 +44,17 @@ class _SignInPageState extends ConsumerState<SignInPage> {
     // Hide keyboard for better UX
     FocusScope.of(context).unfocus();
     final authController = ref.read(authControllerProvider.notifier);
-    
+
     // Await the sign-in process
     await authController.signIn(email: email, password: password);
 
-    final taskSyncService = ref.read(taskSyncServiceProvider);
-    // sync tasks 
-    unawaited(taskSyncService.syncAllTasks());
+    // sync tasks
   }
 
   // --- LOGIC: GOOGLE SIGN IN ---
   void _handleGoogleSignIn() async {
     final authController = ref.read(authControllerProvider.notifier);
     await authController.signInWithGoogle();
-
-    final taskSyncService = ref.read(taskSyncServiceProvider);
-    // sync tasks 
-    unawaited(taskSyncService.syncAllTasks());
   }
 
   // --- LOGIC: SHOW FORGOT PASSWORD POPUP ---
@@ -94,9 +88,7 @@ class _SignInPageState extends ConsumerState<SignInPage> {
     final colorScheme = Theme.of(context).colorScheme;
 
     // Error Listener
-   ref.listen<AsyncValue>(
-    authControllerProvider,
-    (_, state) {
+    ref.listen<AsyncValue>(authControllerProvider, (_, state) {
       if (!state.hasError) return;
 
       final error = parseError(state.error!); // <-- now defined
@@ -104,9 +96,9 @@ class _SignInPageState extends ConsumerState<SignInPage> {
         case AppErrorType.invalidCredentials:
         case AppErrorType.network:
         case AppErrorType.validation:
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(error.message)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(error.message)));
           break;
 
         case AppErrorType.server:
@@ -120,15 +112,16 @@ class _SignInPageState extends ConsumerState<SignInPage> {
           break;
 
         default:
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Something went wrong.")),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text("Something went wrong.")));
       }
-    },
-  );
+    });
 
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final String logoPath = isDarkMode ? 'assets/images/DarkLogo.png' : 'assets/images/LightLogo.png';
+    final String logoPath = isDarkMode
+        ? 'assets/images/DarkLogo.png'
+        : 'assets/images/LightLogo.png';
 
     return Stack(
       children: [
@@ -151,9 +144,16 @@ class _SignInPageState extends ConsumerState<SignInPage> {
                     ),
                   ),
                   const SizedBox(height: 30),
-                  AuthField(hint: "Username/Email", controller: _emailUnController),
+                  AuthField(
+                    hint: "Username/Email",
+                    controller: _emailUnController,
+                  ),
                   const SizedBox(height: 15),
-                  AuthField(hint: "Password", isPass: true, controller: _passwordController),
+                  AuthField(
+                    hint: "Password",
+                    isPass: true,
+                    controller: _passwordController,
+                  ),
                   const SizedBox(height: 25),
                   AuthComponents.buildButton(
                     context,
@@ -163,9 +163,12 @@ class _SignInPageState extends ConsumerState<SignInPage> {
                   const SizedBox(height: 20),
                   AuthComponents.buildSocialDivider(context, "sign in"),
                   const SizedBox(height: 20),
-                  AuthComponents.buildGoogleButton(context, onTap: _handleGoogleSignIn),
+                  AuthComponents.buildGoogleButton(
+                    context,
+                    onTap: _handleGoogleSignIn,
+                  ),
                   const SizedBox(height: 30),
-                  
+
                   // Forgot Password Button
                   TextButton(
                     onPressed: () => _showForgotPass(context),
@@ -183,7 +186,10 @@ class _SignInPageState extends ConsumerState<SignInPage> {
                     onTap: widget.onSwitch,
                     child: RichText(
                       text: TextSpan(
-                        style: TextStyle(color: colorScheme.onSurface, fontSize: 14),
+                        style: TextStyle(
+                          color: colorScheme.onSurface,
+                          fontSize: 14,
+                        ),
                         children: [
                           const TextSpan(text: "Don't Have an Account? "),
                           TextSpan(
@@ -203,7 +209,7 @@ class _SignInPageState extends ConsumerState<SignInPage> {
             ),
           ),
         ),
-        
+
         // --- LOADING OVERLAY ---
         if (isLoading)
           Container(

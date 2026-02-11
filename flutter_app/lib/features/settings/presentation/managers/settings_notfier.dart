@@ -3,19 +3,18 @@ import 'package:flutter_app/features/settings/presentation/managers/settings_pro
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 
-final settingsControllerProvider = 
-    AsyncNotifierProvider<SettingsController, UserPreferences>(() {
-  return SettingsController();
-});
+final settingsControllerProvider =
+    AsyncNotifierProvider<SettingsController, UserPreferences?>(() {
+      return SettingsController();
+    });
 
-class SettingsController extends AsyncNotifier<UserPreferences>{
-
-  @override  
-  FutureOr<UserPreferences> build() async {
+class SettingsController extends AsyncNotifier<UserPreferences?> {
+  @override
+  FutureOr<UserPreferences?> build() async {
     return await loadUserSettings();
   }
 
-  Future<UserPreferences> loadUserSettings() async {
+  Future<UserPreferences?> loadUserSettings() async {
     final repository = ref.watch(settingsRepositoryProvider);
     return await repository.getPreferences();
   }
@@ -23,8 +22,10 @@ class SettingsController extends AsyncNotifier<UserPreferences>{
   Future<void> saveSettings(String start, String end) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      print("[DEBUG]: THIS IS START WORK HOURS: $start");
-      final newPrefs = (await loadUserSettings()).copyWith(
+      // Safely load existing preferences
+      final currentPrefs = await loadUserSettings();
+
+      final newPrefs = (currentPrefs ?? UserPreferences()).copyWith(
         startWorkHours: start,
         endWorkHours: end,
       );
@@ -33,8 +34,9 @@ class SettingsController extends AsyncNotifier<UserPreferences>{
       await repository.savePreferences(newPrefs);
 
       final prefSyncController = ref.read(userPrefSyncServiceProvider);
-      // save to database
+      // save to database asynchronously
       unawaited(prefSyncController.pushLocalChanges());
+
       return newPrefs;
     });
   }

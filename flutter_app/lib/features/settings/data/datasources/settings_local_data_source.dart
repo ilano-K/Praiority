@@ -2,25 +2,26 @@ import 'package:flutter_app/features/settings/data/models/user_preferences_model
 import 'package:isar/isar.dart';
 import 'package:uuid/uuid.dart';
 
-
-class SettingsLocalDataSource{
+class SettingsLocalDataSource {
   final Isar isar;
 
   SettingsLocalDataSource(this.isar);
-   
-  Future<UserPreferencesModel> getPreferences() async {
+
+  Future<UserPreferencesModel?> getPreferences() async {
     final existing = await isar.userPreferencesModels.where().findFirst();
-    if(existing != null){
-      return existing;
-    }
-    // create a user preference 
-    final userPrefs = UserPreferencesModel();
-    userPrefs.cloudId = Uuid().v4();
-    await isar.writeTxn(() async {
-      await isar.userPreferencesModels.put(userPrefs);
-    });
-    return userPrefs;
+    return existing;
+    // if(existing != null){
+    //   return existing;
+    // }
+    // // create a user preference
+    // final userPrefs = UserPreferencesModel();
+    // userPrefs.cloudId = Uuid().v4();
+    // await isar.writeTxn(() async {
+    //   await isar.userPreferencesModels.put(userPrefs);
+    // });
+    // return userPrefs;
   }
+
   Future<void> savePreferences(UserPreferencesModel model) async {
     await isar.writeTxn(() async {
       final existing = await isar.userPreferencesModels
@@ -38,11 +39,11 @@ class SettingsLocalDataSource{
   Future<void> markPrefAsSynced(int id) async {
     await isar.writeTxn(() async {
       final existing = await isar.userPreferencesModels
-        .filter()
-        .idEqualTo(id)
-        .findFirst();
-      
-      if(existing == null){
+          .filter()
+          .idEqualTo(id)
+          .findFirst();
+
+      if (existing == null) {
         return;
       }
       // set as synced
@@ -54,20 +55,20 @@ class SettingsLocalDataSource{
   Future<void> updateUserPreferenceFromCloud(UserPreferencesModel model) async {
     await isar.writeTxn(() async {
       final existing = await isar.userPreferencesModels
-        .filter()
-        .cloudIdEqualTo(model.cloudId)
-        .findFirst();
+          .filter()
+          .cloudIdEqualTo(model.cloudId)
+          .findFirst();
 
-      // if there's an existing data, match the id 
-      if(existing != null){
+      // if there's an existing data, match the id
+      if (existing != null) {
         model.id = existing.id;
       }
 
-      // marked as synced 
+      // marked as synced
       model.isSynced = true;
       model.isSetupComplete = true;
 
-      // save to isar 
+      // save to isar
       await isar.userPreferencesModels.put(model);
     });
   }
@@ -77,5 +78,4 @@ class SettingsLocalDataSource{
       await isar.clear();
     });
   }
-
 }

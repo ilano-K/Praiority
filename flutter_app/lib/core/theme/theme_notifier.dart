@@ -24,6 +24,7 @@ class ThemeNotifier extends Notifier<ThemeData> {
     try {
       final repository = ref.read(settingsRepositoryProvider);
       final prefs = await repository.getPreferences();
+      if (prefs == null) return;
       final isDark = prefs.isDarkMode;
       state = isDark ? darkMode : lightMode;
     } catch (e) {
@@ -40,6 +41,7 @@ class ThemeNotifier extends Notifier<ThemeData> {
     try {
       final repository = ref.read(settingsRepositoryProvider);
       final currentPrefs = await repository.getPreferences();
+      if (currentPrefs == null) return;
       final updated = currentPrefs.copyWith(isDarkMode: newIsDark);
       await repository.savePreferences(updated);
 

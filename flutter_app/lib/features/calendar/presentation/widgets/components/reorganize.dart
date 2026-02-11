@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_controller.dart';
-import 'package:flutter_app/features/calendar/presentation/utils/time_utils.dart';
+import 'package:flutter_app/features/calendar/presentation/utils/date_time_utils.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/dialogs/app_dialog.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/selectors/date_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

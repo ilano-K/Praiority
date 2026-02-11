@@ -33,12 +33,13 @@ class TaskSyncService {
 
   Future<void> pushLocalChanges() async {
     debugPrint("[DEBUG] PUSHING TASK LOCAL CHANGES NOW! ${_isSyncing}");
+    if (_isSyncing) return;
+    _isSyncing = true;
+
     final unsyncedTasks = await _localDb.getUnsyncedTasks();
 
     if (unsyncedTasks.isEmpty) return;
 
-    if (_isSyncing) return;
-    _isSyncing = true;
     // 1. Prepare the BATCH (Much faster than looping)
     final List<Map<String, dynamic>> batchData = unsyncedTasks.map((task) {
       final taskMap = task.toCloudJsonFormat();

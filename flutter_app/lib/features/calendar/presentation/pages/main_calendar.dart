@@ -9,7 +9,7 @@ import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_controller.dart';
-import 'package:flutter_app/features/calendar/presentation/utils/time_utils.dart';
+import 'package:flutter_app/features/calendar/presentation/utils/date_time_utils.dart';
 
 import 'package:flutter_app/features/calendar/presentation/pages/views/month_view.dart';
 import 'package:flutter_app/features/calendar/presentation/pages/views/week_view.dart';

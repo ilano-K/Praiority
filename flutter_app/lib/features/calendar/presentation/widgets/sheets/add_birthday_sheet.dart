@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
-import 'package:flutter_app/features/calendar/presentation/utils/repeat_to_rrule.dart';
+import 'package:flutter_app/features/calendar/presentation/utils/rrule_utils.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/components/interactive_row.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/selectors/date_picker.dart';
 import 'package:intl/intl.dart';
@@ -95,7 +95,7 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
       location: _location,
       status: TaskStatus.scheduled,
       colorValue: colorValue,
-      recurrenceRule: repeatToRRule("Yearly"),
+      recurrenceRule: RRuleUtils.repeatToRRule("Yearly"),
       isAiMovable: false,
       isConflicting: false,
       isSmartSchedule: false,

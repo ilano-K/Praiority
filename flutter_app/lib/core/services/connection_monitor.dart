@@ -5,6 +5,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_provider.dart';
 import 'package:flutter_app/features/settings/presentation/managers/settings_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 // 1. The Provider
 final connectionMonitorProvider = Provider<ConnectionMonitor>((ref) {
@@ -25,7 +26,8 @@ class ConnectionMonitor {
     _subscription = Connectivity().onConnectivityChanged.listen((results) {
       // connectivity_plus now returns a List<ConnectivityResult>
       if (results.contains(ConnectivityResult.mobile) ||
-          results.contains(ConnectivityResult.wifi)) {
+          results.contains(ConnectivityResult.wifi) &&
+              Supabase.instance.client.auth.currentSession != null) {
         print("[ConnectionMonitor] Internet Detected! Triggering Sync...");
         _triggerSync();
       }

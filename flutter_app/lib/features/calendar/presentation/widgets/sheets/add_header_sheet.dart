@@ -14,9 +14,9 @@ import 'package:flutter_app/features/calendar/presentation/managers/calendar_con
 
 // --- LOCAL WIDGETS ---
 import '../selectors/color_selector.dart';
-import 'add_task_sheet.dart'; 
+import 'add_task_sheet.dart';
 import 'add_event_sheet.dart';
-import 'add_birthday_sheet.dart'; 
+import 'add_birthday_sheet.dart';
 
 class HeaderData {
   final String selectedType;
@@ -56,7 +56,9 @@ class _AddSheetHeaderState extends ConsumerState<AddSheetHeader> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final Color displayColor = isDark ? widget.data.selectedColor.dark : widget.data.selectedColor.light;
+    final Color displayColor = isDark
+        ? widget.data.selectedColor.dark
+        : widget.data.selectedColor.light;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -67,17 +69,23 @@ class _AddSheetHeaderState extends ConsumerState<AddSheetHeader> {
           children: [
             // DELETE BUTTON
             IconButton(
-              icon: Icon(Icons.delete_outline, size: 28, color: colorScheme.onSurface),
+              icon: Icon(
+                Icons.delete_outline,
+                size: 28,
+                color: colorScheme.onSurface,
+              ),
               onPressed: () => AppDialogs.showConfirmation(
                 context,
                 title: "Delete ${widget.data.selectedType}",
                 message: "Are you sure? This cannot be undone.",
                 onConfirm: () async {
                   final task = widget.data.saveTemplate();
-                  final controller = ref.read(calendarControllerProvider.notifier);
+                  final controller = ref.read(
+                    calendarControllerProvider.notifier,
+                  );
                   await controller.deleteTask(task);
-                  
-                  if (context.mounted) Navigator.pop(context); 
+
+                  if (context.mounted) Navigator.pop(context);
                 },
               ),
             ),
@@ -85,109 +93,131 @@ class _AddSheetHeaderState extends ConsumerState<AddSheetHeader> {
             // ✅ OPTIMIZED SAVE BUTTON
             ElevatedButton(
               // Disable button if already saving (Prevents Double Tap)
-              onPressed: _isSaving ? null : () async {
-                setState(() => _isSaving = true); // Start Spinner
+              onPressed: _isSaving
+                  ? null
+                  : () async {
+                      setState(() => _isSaving = true); // Start Spinner
 
-                var task = widget.data.saveTemplate();
-                final controller = ref.read(calendarControllerProvider.notifier);
+                      var task = widget.data.saveTemplate();
+                      final controller = ref.read(
+                        calendarControllerProvider.notifier,
+                      );
 
-                if (task.title.isEmpty) {
-                  // If it's a birthday, just call it "Birthday"
-                  // Otherwise, use "Untitled Task" or "Untitled Event"
-                  final defaultTitle = widget.data.selectedType == "Birthday" 
-                      ? "Birthday" 
-                      : "Untitled ${widget.data.selectedType}";
-                      
-                  task = task.copyWith(title: defaultTitle);
-                }
+                      if (task.title.isEmpty) {
+                        // If it's a birthday, just call it "Birthday"
+                        // Otherwise, use "Untitled Task" or "Untitled Event"
+                        final defaultTitle =
+                            widget.data.selectedType == "Birthday"
+                            ? "Birthday"
+                            : "Untitled ${widget.data.selectedType}";
 
-                try {
-                  // This runs fast now, but we show spinner just in case
-                  await controller.addTask(task);
-                  
-                  if (context.mounted) Navigator.pop(context);
-                } 
-                on TimeConflictException {
-                  // Keep sheet open so user can fix it
-                  if (context.mounted) {
-                    AppDialogs.showWarning(
-                      context, 
-                      title: "Schedule Conflict", 
-                      message: "This task overlaps with an existing schedule. Please adjust the time."
-                    );
-                  }
-                } 
-                on EndBeforeStartException {
-                  if (context.mounted) {
-                    AppDialogs.showWarning(
-                      context, 
-                      title: "Oops! Check Time", 
-                      message: "The end time cannot be before the start time."
-                    );
-                  }
-                } 
+                        task = task.copyWith(title: defaultTitle);
+                      }
 
-                on DeadlineConflictException{
-                  if (context.mounted){
-                    AppDialogs.showWarning(
-                      context, 
-                      title: "Invalid End Time", 
-                      message: "The task ends after its deadline. Please adjust the time."
-                    );
-                  }
-                }
-                catch (e) {
-                  if (context.mounted) {
-                    AppDialogs.showWarning(
-                      context, 
-                      title: "Error", 
-                      message: "An unexpected error occurred"
-                    );
-                  }
-                } 
-                finally {
-                  // Always stop spinner if we are still on this screen
-                  if (mounted) {
-                    setState(() => _isSaving = false);
-                  }
-                }
-              },
+                      try {
+                        // This runs fast now, but we show spinner just in case
+                        await controller.addTask(task);
+
+                        if (context.mounted) Navigator.pop(context);
+                      } on TimeConflictException {
+                        // Keep sheet open so user can fix it
+                        if (context.mounted) {
+                          AppDialogs.showWarning(
+                            context,
+                            title: "Schedule Conflict",
+                            message:
+                                "This task overlaps with an existing schedule. Please adjust the time.",
+                          );
+                        }
+                      } on EndBeforeStartException {
+                        if (context.mounted) {
+                          AppDialogs.showWarning(
+                            context,
+                            title: "Oops! Check Time",
+                            message:
+                                "The end time cannot be before the start time.",
+                          );
+                        }
+                      } on DeadlineConflictException {
+                        if (context.mounted) {
+                          AppDialogs.showWarning(
+                            context,
+                            title: "Invalid End Time",
+                            message:
+                                "The task ends after its deadline. Please adjust the time.",
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          AppDialogs.showWarning(
+                            context,
+                            title: "Error",
+                            message: "An unexpected error occurred",
+                          );
+                        }
+                      } finally {
+                        // Always stop spinner if we are still on this screen
+                        if (mounted) {
+                          setState(() => _isSaving = false);
+                        }
+                      }
+                    },
               style: ElevatedButton.styleFrom(
                 backgroundColor: colorScheme.primary,
                 foregroundColor: colorScheme.onSurface,
-                disabledBackgroundColor: colorScheme.primary.withOpacity(0.6), // Dim when loading
+                disabledBackgroundColor: colorScheme.primary.withOpacity(
+                  0.6,
+                ), // Dim when loading
                 elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
                 // Ensure minimum size keeps button stable when switching to spinner
-                minimumSize: const Size(88, 48), 
+                minimumSize: const Size(88, 48),
               ),
-              child: _isSaving 
-                ? SizedBox(
-                    width: 20, 
-                    height: 20, 
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5, 
-                      color: colorScheme.onSurface
+              child: _isSaving
+                  ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: colorScheme.onSurface,
+                      ),
                     )
-                  )
-                : const Text("Save", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  : const Text(
+                      "Save",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
             ),
           ],
         ),
-        
+
         const SizedBox(height: 20),
 
         // --- TITLE INPUT ---
         TextField(
           controller: widget.data.titleController,
           cursorColor: colorScheme.onSurface,
-          style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: colorScheme.onSurface),
+          style: TextStyle(
+            fontSize: 32,
+            fontWeight: FontWeight.w900,
+            color: colorScheme.onSurface,
+          ),
           decoration: InputDecoration(
             // ✅ Change this line
-            hintText: 'Untitled ${widget.data.selectedType}', 
+            hintText: 'Untitled ${widget.data.selectedType}',
             border: InputBorder.none,
-            hintStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.5), fontWeight: FontWeight.w900),
+            hintStyle: TextStyle(
+              color: colorScheme.onSurface.withOpacity(0.5),
+              fontWeight: FontWeight.w900,
+            ),
             contentPadding: EdgeInsets.zero,
           ),
         ),
@@ -196,7 +226,10 @@ class _AddSheetHeaderState extends ConsumerState<AddSheetHeader> {
         TextField(
           controller: widget.data.descController,
           cursorColor: colorScheme.onSurface,
-          style: TextStyle(fontSize: 16, color: colorScheme.onSurface.withOpacity(0.8)),
+          style: TextStyle(
+            fontSize: 16,
+            color: colorScheme.onSurface.withOpacity(0.8),
+          ),
           decoration: InputDecoration(
             hintText: 'Add Description',
             border: InputBorder.none,
@@ -238,13 +271,21 @@ class _AddSheetHeaderState extends ConsumerState<AddSheetHeader> {
           child: Row(
             children: [
               Container(
-                width: 28, height: 28,
-                decoration: BoxDecoration(color: displayColor, shape: BoxShape.circle),
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: displayColor,
+                  shape: BoxShape.circle,
+                ),
               ),
               const SizedBox(width: 10),
               Text(
                 widget.data.selectedColor.name,
-                style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16, color: colorScheme.onSurface),
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  fontSize: 16,
+                  color: colorScheme.onSurface,
+                ),
               ),
             ],
           ),
@@ -259,61 +300,65 @@ class _AddSheetHeaderState extends ConsumerState<AddSheetHeader> {
 
   // --- HELPERS ---
 
-  Widget _buildTypeButton(String label, ColorScheme colors, BuildContext context) {
-  final bool isSelected = widget.data.selectedType == label;
+  Widget _buildTypeButton(
+    String label,
+    ColorScheme colors,
+    BuildContext context,
+  ) {
+    final bool isSelected = widget.data.selectedType == label;
 
-  return GestureDetector(
-    onTap: () {
-      if (isSelected) return;
+    return GestureDetector(
+      onTap: () {
+        if (isSelected) return;
 
-      final currentDraft = widget.data.saveTemplate();
-      TaskType newType = label == 'Event' 
-          ? TaskType.event 
-          : (label == 'Birthday' ? TaskType.birthday : TaskType.task);
-      final updatedDraft = currentDraft.copyWith(type: newType);
+        final currentDraft = widget.data.saveTemplate();
+        TaskType newType = label == 'Event'
+            ? TaskType.event
+            : (label == 'Birthday' ? TaskType.birthday : TaskType.task);
+        final updatedDraft = currentDraft.copyWith(type: newType);
 
-      // Close current sheet instantly
-      Navigator.pop(context); 
+        // Close current sheet instantly
+        Navigator.pop(context);
 
-      // Open new sheet with NO slide-up animation for a "flat" feel
-      showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        transitionAnimationController: AnimationController(
-          vsync: Navigator.of(context), 
-          duration: Duration.zero, 
-        )..forward(), 
-        builder: (context) {
-          if (label == 'Task') return AddTaskSheet(task: updatedDraft);
-          if (label == 'Event') return AddEventSheet(task: updatedDraft);
-          return AddBirthdaySheet(task: updatedDraft);
-        },
-      );
-    },
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-      decoration: BoxDecoration(
-        // --- 1. BACKGROUND: Now uses surface when selected ---
-        color: isSelected ? colors.primary : Colors.transparent,
-        
-        // --- 2. BORDER: Stays onSurface for high contrast ---
-        border: Border.all(
-          color: isSelected ? colors.onSurface : colors.onSurface, 
-          width: 1.2,
+        // Open new sheet with NO slide-up animation for a "flat" feel
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          transitionAnimationController: AnimationController(
+            vsync: Navigator.of(context),
+            duration: Duration.zero,
+          )..forward(),
+          builder: (context) {
+            if (label == 'Task') return AddTaskSheet(task: updatedDraft);
+            if (label == 'Event') return AddEventSheet(task: updatedDraft);
+            return AddBirthdaySheet(task: updatedDraft);
+          },
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+        decoration: BoxDecoration(
+          // --- 1. BACKGROUND: Now uses surface when selected ---
+          color: isSelected ? colors.primary : Colors.transparent,
+
+          // --- 2. BORDER: Stays onSurface for high contrast ---
+          border: Border.all(
+            color: isSelected ? colors.onSurface : colors.onSurface,
+            width: 1.2,
+          ),
+          borderRadius: BorderRadius.circular(8),
         ),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontWeight: FontWeight.bold, 
-          // --- 3. TEXT: Stays onSurface ---
-          color: colors.onSurface, 
-          fontSize: 14,
+        child: Text(
+          label,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            // --- 3. TEXT: Stays onSurface ---
+            color: colors.onSurface,
+            fontSize: 14,
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 }

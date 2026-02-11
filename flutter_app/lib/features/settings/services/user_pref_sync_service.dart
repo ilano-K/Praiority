@@ -1,4 +1,3 @@
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_app/features/settings/data/datasources/settings_local_data_source.dart';
 import 'package:flutter_app/features/settings/data/models/user_preferences_model.dart';
@@ -11,7 +10,7 @@ class UserPrefSyncService {
   UserPrefSyncService(this._supabase, this._localDb);
 
   Future<void> syncPreferences() async {
-    if(_supabase.auth.currentUser == null) return;
+    if (_supabase.auth.currentUser == null) return;
     await pushLocalChanges();
     await pullRemoteChanges();
   }
@@ -22,23 +21,23 @@ class UserPrefSyncService {
     final userPrefsModel = await _localDb.getPreferences();
 
     debugPrint("[DEBUG] MODEL: $userPrefsModel");
-    // if null or already synced, return 
-    if(userPrefsModel.isSynced == true)return;
 
-    try{
+    if (userPrefsModel == null) return;
+    // if null or already synced, return
+    if (userPrefsModel.isSynced == true) return;
+
+    try {
       // convert model to json
       final userPrefsMap = userPrefsModel.toJson();
-      // get user id 
+      // get user id
       final userId = _supabase.auth.currentUser!.id;
 
       userPrefsMap["user_id"] = userId;
-      // request for update 
-      await _supabase
-        .from('user_preferences')
-        .upsert(userPrefsMap);
-      
+      // request for update
+      await _supabase.from('user_preferences').upsert(userPrefsMap);
+
       await _localDb.markPrefAsSynced(userPrefsModel.id);
-    } catch(e) {
+    } catch (e) {
       debugPrint("[DEBUG]: PUSH FAILED FOR USER SETTINGS WITH ERROR: $e");
     }
   }
@@ -46,21 +45,24 @@ class UserPrefSyncService {
   Future<void> pullRemoteChanges() async {
     debugPrint("[DEBUG] PULLING USER SETTINGS REMOTE CHANGES NOW!");
     // request for remote chnanges
-    try{
+    try {
       final userId = _supabase.auth.currentUser!.id;
       final response = await _supabase
-        .from("user_preferences")
-        .select()
-        .eq("user_id", userId)
-        .maybeSingle();
-      
-      if(response == null) return;
-      final userPrefsModel = UserPreferencesModelJson.fromJson(response);
-      debugPrint("[DEBUG] PULLING USER SETTINGS: cloud id: ${userPrefsModel.cloudId}");
-      await _localDb.updateUserPreferenceFromCloud(userPrefsModel);
+          .from("user_preferences")
+          .select()
+          .eq("user_id", userId)
+          .maybeSingle();
 
-    }catch(e){
-      debugPrint("[DEBUG]: PULLING OF TASK REMOTE CHANGES FAILED WITH ERROR: $e");
+      if (response == null) return;
+      final userPrefsModel = UserPreferencesModelJson.fromJson(response);
+      debugPrint(
+        "[DEBUG] PULLING USER SETTINGS: cloud id: ${userPrefsModel.cloudId}",
+      );
+      await _localDb.updateUserPreferenceFromCloud(userPrefsModel);
+    } catch (e) {
+      debugPrint(
+        "[DEBUG]: PULLING OF TASK REMOTE CHANGES FAILED WITH ERROR: $e",
+      );
     }
   }
 }
