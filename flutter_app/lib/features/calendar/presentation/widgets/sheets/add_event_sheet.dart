@@ -12,6 +12,7 @@ import 'package:flutter_app/features/calendar/presentation/widgets/selectors/dat
 import 'package:flutter_app/features/calendar/presentation/widgets/selectors/pick_time.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:syncfusion_flutter_calendar/calendar.dart';
 
 import '../selectors/tag_selector.dart';
 import '../selectors/repeat_selector.dart';
@@ -259,6 +260,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
         ? startOfDay(_startDate)
         : _combineDateAndTime(_startDate, _startTime);
 
+
     final baseTask = Task.create(
       type: TaskType.event,
       title: title,
@@ -290,6 +292,8 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
       reminderOffsets: _hasReminder ? _selectedOffsets : [],
       isSmartSchedule: false,
     );
+
+    print("this is the recurrence rule: ${baseTask.recurrenceRule}");
 
     return widget.task != null
         ? widget.task!.copyWith(

@@ -18,9 +18,13 @@ class TaskSyncService {
 
   Future<void> syncAllTasks() async {
     if (_isSyncing) {
+      _isSyncing = false;
       return;
     }
-    if (_supabase.auth.currentUser == null) return;
+    if (_supabase.auth.currentUser == null) {
+      _isSyncing = false;
+      return;
+    }
     // Run these in sequence or parallel depending on your conflict logic.
     // Usually, pushing first ensures your latest edits are saved.
     try {
@@ -33,16 +37,23 @@ class TaskSyncService {
 
   Future<void> pushLocalChanges() async {
     debugPrint("[DEBUG] PUSHING TASK LOCAL CHANGES NOW! ${_isSyncing}");
-    if (_isSyncing) return;
+    if (_isSyncing) {
+      _isSyncing = false;
+      return;
+    }
     _isSyncing = true;
 
     final unsyncedTasks = await _localDb.getUnsyncedTasks();
 
-    if (unsyncedTasks.isEmpty) return;
+    if (unsyncedTasks.isEmpty) {
+      _isSyncing = false;
+      return;
+    }
 
     // 1. Prepare the BATCH (Much faster than looping)
     final List<Map<String, dynamic>> batchData = unsyncedTasks.map((task) {
       final taskMap = task.toCloudJsonFormat();
+
       taskMap["user_id"] = _supabase.auth.currentUser!.id;
       return taskMap;
     }).toList();
@@ -72,6 +83,7 @@ class TaskSyncService {
 
       debugPrint("[DEBUG] Successfully synced ${batchData.length} tasks.");
     } catch (e) {
+      _isSyncing = false;
       debugPrint("[DEBUG]: Push BATCH failed after retries: $e");
     } finally {
       _isSyncing = false;
@@ -83,7 +95,11 @@ class TaskSyncService {
     debugPrint(
       "[pullRemoteChanges] PULLING TASK LOCAL CHANGES NOW! ${_isSyncing}",
     );
-    if (_isSyncing) return;
+    if (_isSyncing) {
+      _isSyncing = false;
+      return;
+    }
+    ;
     _isSyncing = true;
     try {
       // Retry the pull as well
@@ -104,6 +120,7 @@ class TaskSyncService {
       await _localDb.updateTasksFromCloud(models);
     } catch (e) {
       debugPrint("[pullRemoteChanges]: PULLING REMOTE CHANGES FAILED: $e");
+      _isSyncing = false;
     } finally {
       _isSyncing = false;
     }

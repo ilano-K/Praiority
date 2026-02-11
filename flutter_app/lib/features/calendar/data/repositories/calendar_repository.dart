@@ -21,7 +21,6 @@ class CalendarRepository {
   }
 
   Future<void> saveTag(String tag) async {
-    print("saving");
     await localDataSource.saveTag(tag);
   }
 
@@ -37,8 +36,6 @@ class CalendarRepository {
   Future<List<Task>> getTasksByRange(DateTime start, DateTime end) async {
     final models = await localDataSource.getTasksByRange(start, end);
     final entities = models.map((model) => model.toEntity()).toList();
-
-    print("[GET TASKS BY RANGE (entity)] TASKS: ${models}");
 
     return entities
         .where((task) => TaskUtils.validTaskModelForDate(task, start, end))

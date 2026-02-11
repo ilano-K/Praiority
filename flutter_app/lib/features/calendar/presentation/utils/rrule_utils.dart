@@ -140,6 +140,25 @@ class RRuleUtils {
     return rrule;
   }
 
+  static String? sanitizeRRule(String? rrule) {
+    if (rrule == null || rrule.isEmpty) return null;
+
+    // Regex to find "BYDAY=+2WE", "BYDAY=2WE", or "BYDAY=-1FR"
+    // Captures: Group 1 (Number), Group 2 (Day Code)
+    final regex = RegExp(r'BYDAY=([+-]?\d+)([A-Z]{2})');
+
+    if (regex.hasMatch(rrule)) {
+      // Transform "BYDAY=2WE" -> "BYDAY=WE;BYSETPOS=2"
+      return rrule.replaceAllMapped(regex, (match) {
+        final number = match.group(1);
+        final day = match.group(2);
+        return 'BYDAY=$day;BYSETPOS=$number';
+      });
+    }
+
+    return rrule;
+  }
+
   /// Converts an RRule string back into a UI label.
   static String rruleToRepeat(String? rrule) {
     if (rrule == null || rrule.isEmpty) return "None";

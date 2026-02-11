@@ -112,6 +112,7 @@ class _AuthGateState extends ConsumerState<AuthGate> {
               .syncAllTasks()
               .timeout(const Duration(seconds: 3));
 
+          print("this is gonna trigger");
           await ref
               .read(userPrefSyncServiceProvider)
               .pullRemoteChanges()

@@ -149,8 +149,7 @@ class CalendarLocalDataSource {
         .isDeletedEqualTo(false)
         .sortByStartTime()
         .findAll();
-    print("[GET TASKS BY RANGE (model)] TIME: ${start} AND ${end}");
-    print("[GET TASKS BY RANGE (model)] TASKS: ${tasks}");
+  
     return tasks.toList();
   }
 
