@@ -375,7 +375,8 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
 
                     InteractiveInputRow(
                       label: "End Time",
-                      value: _endTime.format(context),
+                      value: DateFormat('MMMM d, y').format(_startDate),
+                      trailing: _startTime.format(context),
                       onTapValue: () async {
                         final picked = await pickTime(
                           context,
