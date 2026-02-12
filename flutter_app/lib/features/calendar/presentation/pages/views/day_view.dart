@@ -173,14 +173,17 @@ class _DayViewState extends ConsumerState<DayView> {
 
             specialRegions: widget.greyBlocks,
             timeRegionBuilder: (context, details) {
-              return Container(
-                margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: colorScheme.secondary.withOpacity(isDark ? 0.5 : 0.8),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: colorScheme.onSurface.withOpacity(0.05),
-                    width: 1,
+              return IgnorePointer(
+                ignoring: true,
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: colorScheme.secondary.withOpacity(isDark ? 0.5 : 0.8),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: colorScheme.onSurface.withOpacity(0.05),
+                      width: 1,
+                    ),
                   ),
                 ),
               );
@@ -218,11 +221,20 @@ class _DayViewState extends ConsumerState<DayView> {
   }
 
   void _showAddTaskSheet(BuildContext context, DateTime tappedTime) {
+    // Normalize to the start of the hour for accurate task scheduling
+    final normalizedTime = DateTime(
+      tappedTime.year,
+      tappedTime.month,
+      tappedTime.day,
+      tappedTime.hour,
+      0,
+      0,
+    );
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => AddTaskSheet(initialDate: tappedTime),
+      builder: (context) => AddTaskSheet(initialDate: normalizedTime),
     );
   }
 }

@@ -5,6 +5,7 @@ import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'package:flutter_app/features/calendar/presentation/utils/task_utils.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/components/task_summary_view.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/sheets/add_task_sheet.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 import 'package:flutter_app/features/calendar/presentation/utils/rrule_utils.dart';
@@ -215,6 +216,16 @@ class _MonthViewState extends ConsumerState<MonthView> {
                 tasks: dayTasks,
                 onTaskTap: widget.onTaskTap,
               ),
+            );
+          } else {
+            // No tasks for this day - allow creating a new task
+            // Normalize to start of day (midnight) for month view
+            final normalizedDate = DateTime(date.year, date.month, date.day, 0, 0, 0);
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (context) => AddTaskSheet(initialDate: normalizedDate),
             );
           }
         }

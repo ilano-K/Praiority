@@ -10,6 +10,7 @@ import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/components/appointment_card.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/components/task_summary_view.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/selectors/color_selector.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/sheets/add_task_sheet.dart';
 // Import DayView to share the TaskDataSource logic
 import 'day_view.dart';
 
@@ -87,8 +88,9 @@ class _WeekViewState extends ConsumerState<WeekView> {
         TimeRegion(
           startTime: DateTime(anchor.year, anchor.month, anchor.day, h, 0),
           endTime: DateTime(anchor.year, anchor.month, anchor.day, h, 59),
-          enablePointerInteraction: false,
-          // CRITICAL: This makes the blocks repeat every day forever
+          enablePointerInteraction: true,
+          // CRITICAL: enablePointerInteraction: true allows taps to be registered by the calendar
+          // The IgnorePointer wrapper on the visual element prevents the Container from blocking taps
           recurrenceRule: 'FREQ=DAILY;INTERVAL=1',
         ),
       );
@@ -144,16 +146,19 @@ class _WeekViewState extends ConsumerState<WeekView> {
 
             // --- GRID LOOK ---
             timeRegionBuilder: (context, details) {
-              return Container(
-                margin: const EdgeInsets.symmetric(
-                  horizontal: 1,
-                  vertical: 0.5,
-                ),
-                decoration: BoxDecoration(
-                  color: colorScheme.onSurface.withOpacity(
-                    isDark ? 0.05 : 0.08,
+              return IgnorePointer(
+                ignoring: true,
+                child: Container(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 1,
+                    vertical: 0.5,
                   ),
-                  borderRadius: BorderRadius.circular(8),
+                  decoration: BoxDecoration(
+                    color: colorScheme.onSurface.withOpacity(
+                      isDark ? 0.05 : 0.08,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
               );
             },
@@ -241,6 +246,9 @@ class _WeekViewState extends ConsumerState<WeekView> {
                   (t) => t.id == details.appointments!.first.id,
                 );
                 widget.onTaskTap(tappedTask);
+              } else if (details.targetElement == CalendarElement.calendarCell &&
+                  details.date != null) {
+                _handleEmptySlotTap(context, details.date!);
               }
             },
 
@@ -257,6 +265,46 @@ class _WeekViewState extends ConsumerState<WeekView> {
         ),
       ],
     );
+  }
+
+  /// Check if a specific time slot is empty (no existing task)
+  /// Extracts the hour from dateTime and checks that specific hour block
+  bool _isSlotEmpty(DateTime dateTime) {
+    // Extract hour from the tapped time
+    final hour = dateTime.hour;
+    final slotStart = DateTime(dateTime.year, dateTime.month, dateTime.day, hour, 0);
+    final slotEnd = DateTime(dateTime.year, dateTime.month, dateTime.day, hour, 59, 59);
+
+    return !widget.tasks.any((task) {
+      if (task.startTime == null) return false;
+      final taskStart = task.startTime!;
+      final taskEnd = task.endTime ?? taskStart.add(const Duration(hours: 1));
+
+      // Check if task overlaps with this hour slot
+      return taskStart.isBefore(slotEnd) && taskEnd.isAfter(slotStart);
+    });
+  }
+
+  /// Handle empty slot tap - open AddTaskSheet if slot is empty
+  /// Normalizes time to start of hour for accurate task scheduling
+  void _handleEmptySlotTap(BuildContext context, DateTime tappedTime) {
+    if (_isSlotEmpty(tappedTime)) {
+      // Normalize to the exact start of the clicked hour
+      final normalizedTime = DateTime(
+        tappedTime.year,
+        tappedTime.month,
+        tappedTime.day,
+        tappedTime.hour,
+        0,
+        0,
+      );
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => AddTaskSheet(initialDate: normalizedTime),
+      );
+    }
   }
 
   // Extracted Header Builder used inside the Notifier

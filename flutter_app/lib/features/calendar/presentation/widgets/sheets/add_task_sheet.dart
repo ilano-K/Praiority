@@ -70,6 +70,8 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
 
     _startDate = baseDate;
     _startTime = TimeOfDay.fromDateTime(baseDate);
+    // CRITICAL: Always initialize end time as 1 hour after start
+    // This ensures proper duration even when initialDate is provided
     _endTime = TimeOfDay.fromDateTime(baseDate.add(const Duration(hours: 1)));
     _deadlineDate = widget.task?.deadline ?? baseDate;
     _deadlineTime = const TimeOfDay(hour: 23, minute: 59);
@@ -368,14 +370,26 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                           context,
                           initialTime: _startTime,
                         );
-                        if (picked != null) setState(() => _startTime = picked);
+                        if (picked != null) {
+                          setState(() {
+                            _startTime = picked;
+                            // Auto-adjust end time if it's now equal to or before start time
+                            if (_endTime.hour <= _startTime.hour && 
+                                _endTime.minute <= _startTime.minute) {
+                              _endTime = TimeOfDay(
+                                hour: (_startTime.hour + 1) % 24,
+                                minute: _startTime.minute,
+                              );
+                            }
+                          });
+                        }
                       },
                     ),
 
                     InteractiveInputRow(
                       label: "End Time",
                       value: DateFormat('MMMM d, y').format(_startDate),
-                      trailing: _startTime.format(context),
+                      trailing: _endTime.format(context),
                       onTapValue: () async {
                         final picked = await pickTime(
                           context,
