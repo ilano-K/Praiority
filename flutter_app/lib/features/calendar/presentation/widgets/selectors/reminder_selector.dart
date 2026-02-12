@@ -56,16 +56,33 @@ class ReminderSelector {
             padding: const EdgeInsets.symmetric(vertical: 20),
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              // ALIGN LEFT
+              crossAxisAlignment: CrossAxisAlignment.start, 
               children: [
-                Text("Alerts", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
+                // ALIGN LEFT with padding
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  child: Text(
+                    "Remind me", 
+                    style: TextStyle(
+                      fontSize: 20, 
+                      fontWeight: FontWeight.bold, 
+                      color: colorScheme.onSurface 
+                    )
+                  ),
+                ),
                 const SizedBox(height: 10),
 
                 ...allOptions.map((offset) {
                   final isSelected = currentSelection.contains(offset);
                   return CheckboxListTile(
                     value: isSelected,
-                    title: Text(_formatDuration(offset)),
-                    activeColor: colorScheme.primary,
+                    title: Text(
+                      _formatDuration(offset),
+                      style: TextStyle(color: colorScheme.onSurface), 
+                    ),
+                    activeColor: colorScheme.primary, // Kept at primary
+                    checkColor: colorScheme.onPrimary,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 24),
                     onChanged: (val) => toggleSelection(offset, val),
                   );
@@ -75,23 +92,23 @@ class ReminderSelector {
 
                 // --- CUSTOM DURATION ---
                 ListTile(
-                  leading: Icon(Icons.edit_outlined, color: colorScheme.primary),
-                  title: const Text("Custom duration..."),
+                  leading: Icon(Icons.edit_outlined, color: colorScheme.onSurface),
+                  title: Text(
+                    "Custom duration",
+                    style: TextStyle(color: colorScheme.onSurface),
+                  ),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 24),
                   onTap: () async {
                     Navigator.pop(innerContext); 
                     
                     await _pickCustomDuration(parentContext, (newDuration) {
                       if (!currentSelection.contains(newDuration)) {
-                         // 1. Update Parent
-                         onChanged([...currentSelection, newDuration]);
-                         // 2. ✅ Update Local List (CRITICAL for re-opening)
-                         currentSelection.add(newDuration);
+                          onChanged([...currentSelection, newDuration]);
+                          currentSelection.add(newDuration);
                       }
                     });
 
                     if (parentContext.mounted) {
-                      // Now we pass the UPDATED list to the new sheet
                       show(parentContext: parentContext, selectedOffsets: currentSelection, taskStartTime: taskStartTime, onChanged: onChanged);
                     }
                   },
@@ -99,8 +116,11 @@ class ReminderSelector {
 
                 // --- SPECIFIC TIME ---
                 ListTile(
-                  leading: Icon(Icons.calendar_today_outlined, color: colorScheme.primary),
-                  title: const Text("Pick specific time..."),
+                  leading: Icon(Icons.calendar_today_outlined, color: colorScheme.onSurface),
+                  title: Text(
+                    "Pick specific date",
+                    style: TextStyle(color: colorScheme.onSurface),
+                  ),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 24),
                   onTap: () async {
                     Navigator.pop(innerContext); 
@@ -108,7 +128,6 @@ class ReminderSelector {
                     await _pickSpecificTime(parentContext, taskStartTime, (newDuration) {
                        if (!currentSelection.contains(newDuration)) {
                          onChanged([...currentSelection, newDuration]);
-                         // 2. ✅ Update Local List here too
                          currentSelection.add(newDuration);
                        }
                     });
@@ -127,7 +146,6 @@ class ReminderSelector {
     );
   }
 
-  // ... (Keep helpers _formatDuration, _pickCustomDuration, _pickSpecificTime exactly as they were) ...
   static String _formatDuration(Duration offset) {
     if (offset.inMinutes == 0) return "At time of event";
     if (offset.inMinutes < 60) return "${offset.inMinutes} minutes before";
@@ -138,36 +156,59 @@ class ReminderSelector {
   static Future<void> _pickCustomDuration(BuildContext context, ValueChanged<Duration> onPicked) async {
     int hours = 0;
     int minutes = 15;
+    final colorScheme = Theme.of(context).colorScheme; 
 
     await showDialog(
       context: context,
       builder: (ctx) {
         return AlertDialog(
-          title: const Text("Remind me..."),
+          backgroundColor: colorScheme.surface,
+          title: Text(
+            "Remind me...", 
+            style: TextStyle(color: colorScheme.onSurface)
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text("How long before the task starts?"),
+              Text(
+                "How long before the task starts?",
+                style: TextStyle(color: colorScheme.onSurface.withOpacity(0.7)),
+              ),
               const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _buildNumberInput("Hours", "0", (val) => hours = int.tryParse(val) ?? 0),
-                  const Padding(padding: EdgeInsets.symmetric(horizontal: 10), child: Text(":", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24))),
-                  _buildNumberInput("Mins", "15", (val) => minutes = int.tryParse(val) ?? 0),
+                  _buildNumberInput(context, "Hours", "0", (val) => hours = int.tryParse(val) ?? 0),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10), 
+                    child: Text(
+                      ":", 
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold, 
+                        fontSize: 24,
+                        color: colorScheme.onSurface
+                      )
+                    )
+                  ),
+                  _buildNumberInput(context, "Mins", "15", (val) => minutes = int.tryParse(val) ?? 0),
                 ],
               ),
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx), 
+              // UPDATED: Changed from primary to onSurface
+              child: Text("Cancel", style: TextStyle(color: colorScheme.onSurface))
+            ),
             TextButton(
               onPressed: () {
                 final duration = Duration(hours: hours, minutes: minutes);
                 if (duration.inMinutes > 0) onPicked(duration);
                 Navigator.pop(ctx);
               },
-              child: const Text("Add"),
+              // UPDATED: Changed from primary to onSurface
+              child: Text("Add", style: TextStyle(color: colorScheme.onSurface)),
             ),
           ],
         );
@@ -175,7 +216,8 @@ class ReminderSelector {
     );
   }
 
-  static Widget _buildNumberInput(String label, String init, ValueChanged<String> onChanged) {
+  static Widget _buildNumberInput(BuildContext context, String label, String init, ValueChanged<String> onChanged) {
+    final colorScheme = Theme.of(context).colorScheme;
     return SizedBox(
       width: 70,
       child: TextFormField(
@@ -183,7 +225,19 @@ class ReminderSelector {
         initialValue: init,
         keyboardType: TextInputType.number,
         textAlign: TextAlign.center,
-        decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
+        style: TextStyle(color: colorScheme.onSurface), 
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.7)),
+          enabledBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: colorScheme.onSurface.withOpacity(0.5)),
+          ),
+          focusedBorder: OutlineInputBorder(
+             // UPDATED: Changed from primary to onSurface
+             borderSide: BorderSide(color: colorScheme.onSurface),
+          ),
+          border: const OutlineInputBorder(),
+        ),
         onChanged: onChanged,
       ),
     );

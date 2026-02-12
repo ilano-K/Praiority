@@ -169,13 +169,6 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
                     },
                   ),
 
-                  // 2. LOCATION
-                  InteractiveInputRow(
-                    label: "Location",
-                    value: _location,
-                    onTap: () => _showLocationDialog(context, colorScheme),
-                  ),
-
                   const SizedBox(height: 40),
                 ],
               ),
@@ -186,62 +179,4 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
     );
   }
 
-  // --- LOGIC: Location Dialog ---
-  void _showLocationDialog(BuildContext context, ColorScheme colorScheme) {
-    TextEditingController locController = TextEditingController(
-      text: _location == "None" ? "" : _location,
-    );
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: colorScheme.surface,
-        title: Text(
-          "Set Location",
-          style: TextStyle(color: colorScheme.onSurface),
-        ),
-        content: TextField(
-          controller: locController,
-          autofocus: true,
-          style: TextStyle(color: colorScheme.onSurface),
-          cursorColor: colorScheme.onSurface,
-          decoration: InputDecoration(
-            hintText: "Enter location",
-            hintStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.5)),
-            focusedBorder: UnderlineInputBorder(
-              borderSide: BorderSide(color: colorScheme.onSurface),
-            ),
-            enabledBorder: UnderlineInputBorder(
-              borderSide: BorderSide(
-                color: colorScheme.onSurface.withOpacity(0.5),
-              ),
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              "Cancel",
-              style: TextStyle(color: colorScheme.onSurface),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              setState(
-                () => _location = locController.text.isEmpty
-                    ? "None"
-                    : locController.text,
-              );
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: colorScheme.primary,
-              foregroundColor: Colors.black,
-            ),
-            child: const Text("Set"),
-          ),
-        ],
-      ),
-    );
-  }
 }

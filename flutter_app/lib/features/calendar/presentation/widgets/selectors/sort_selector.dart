@@ -8,7 +8,6 @@ import 'package:flutter_app/features/calendar/presentation/widgets/selectors/pri
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:intl/intl.dart';
-import 'category_selector.dart';
 import 'date_picker.dart';
 
 class SortSelector extends ConsumerStatefulWidget {
@@ -154,24 +153,6 @@ class _SortSelectorState extends ConsumerState<SortSelector> {
                   }
                 });
               }
-            },
-          ),
-
-          // CATEGORY
-          SortOption(
-            title: "Category",
-            value: _selectedCategory,
-            onTap: () {
-              showModalBottomSheet(
-                context: context,
-                backgroundColor: Colors.transparent,
-                builder: (context) => CategorySelector(
-                  currentCategory: _selectedCategory,
-                  onCategorySelected: (val) {
-                    setState(() => _selectedCategory = val);
-                  },
-                ),
-              );
             },
           ),
 

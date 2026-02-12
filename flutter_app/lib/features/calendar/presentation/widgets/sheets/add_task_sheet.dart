@@ -12,7 +12,6 @@ import 'package:intl/intl.dart';
 
 // UI Components
 import '../selectors/priority_selector.dart';
-import '../selectors/category_selector.dart';
 import '../selectors/tag_selector.dart';
 import '../selectors/color_selector.dart';
 import 'add_header_sheet.dart';
@@ -412,22 +411,26 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                     },
                   ),
 
-                  // 5. CATEGORY
-                  InteractiveInputRow(
-                    label: "Category",
-                    value: _category,
-                    onTap: () => showModalBottomSheet(
-                      context: context,
-                      backgroundColor: Colors.transparent,
-                      builder: (context) => CategorySelector(
-                        currentCategory: _category,
-                        onCategorySelected: (val) =>
-                            setState(() => _category = val),
+                  // 7. ADVANCED OPTIONS (UPDATED)
+                  Theme(
+                    data: Theme.of(
+                      context,
+                    ).copyWith(dividerColor: Colors.transparent),
+                    child: ExpansionTile(
+                      tilePadding: EdgeInsets.zero,
+                      title: Text(
+                        'Advanced Options',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.onSurface,
+                        ),
                       ),
-                    ),
-                  ),
-
-                  // 6. TAGS
+                      initiallyExpanded: _advancedExpanded,
+                      onExpansionChanged: (val) =>
+                          setState(() => _advancedExpanded = val),
+                      children: [
+                         // 6. TAGS
                   InteractiveInputRow(
                     label: "Tags",
                     value: _selectedTags.isEmpty
@@ -472,25 +475,6 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                     ),
                   ),
 
-                  // 7. ADVANCED OPTIONS (UPDATED)
-                  Theme(
-                    data: Theme.of(
-                      context,
-                    ).copyWith(dividerColor: Colors.transparent),
-                    child: ExpansionTile(
-                      tilePadding: EdgeInsets.zero,
-                      title: Text(
-                        'Advanced Options',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.onSurface,
-                        ),
-                      ),
-                      initiallyExpanded: _advancedExpanded,
-                      onExpansionChanged: (val) =>
-                          setState(() => _advancedExpanded = val),
-                      children: [
                         // --- REMIND ME ON (UPDATED TO OFFSETS) ---
                         // Replaced the Date/Time picker with a simple Offset Selector
                         // but kept the "InteractiveInputRow" style.
@@ -498,7 +482,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                           opacity: _hasReminder ? 1.0 : 0.4,
                           child: InteractiveInputRow(
                             label:
-                                "Alerts", // Renamed from "Remind me on" to fit logic
+                                "Remind me", // Renamed from "Remind me on" to fit logic
                             value: _formatOffsets(), // e.g. "10m, 1h before"
                             // If reminders are on, open the sheet. If off, do nothing.
                             onTap: _hasReminder
@@ -510,14 +494,14 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                         ListTile(
                           contentPadding: EdgeInsets.zero,
                           title: Text(
-                            'Auto-Reschedule',
+                            'Lock Task',
                             style: TextStyle(
                               color: colorScheme.onSurface.withOpacity(0.8),
                               fontSize: 15,
                             ),
                           ),
                           subtitle: Text(
-                            "Allow AI to move this task if missed",
+                            "Exclude from auto-reorganization.",
                             style: TextStyle(
                               color: colorScheme.onSurface.withOpacity(0.5),
                               fontSize: 12,
@@ -536,14 +520,14 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                         ListTile(
                           contentPadding: EdgeInsets.zero,
                           title: Text(
-                            'Strict Mode',
+                            'No Overlaps',
                             style: TextStyle(
                               color: colorScheme.onSurface.withOpacity(0.8),
                               fontSize: 15,
                             ),
                           ),
                           subtitle: Text(
-                            "Ensure absolutely no overlaps",
+                            "Ensures no overlapping tasks.",
                             style: TextStyle(
                               color: colorScheme.onSurface.withOpacity(0.5),
                               fontSize: 12,

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
+import 'package:flutter_app/features/calendar/presentation/managers/calendar_controller.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_provider.dart';
 import 'package:flutter_app/features/calendar/presentation/utils/date_time_utils.dart';
 import 'package:flutter_app/features/calendar/presentation/utils/rrule_utils.dart';
@@ -287,7 +288,6 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
       isAiMovable: _movableByAI,
       isConflicting: _setNonConfliction,
       priority: TaskPriority.none,
-      category: TaskCategory.none,
       // ✅ SAVE OFFSETS
       reminderOffsets: _hasReminder ? _selectedOffsets : [],
       isSmartSchedule: false,
@@ -554,13 +554,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                     value: _location,
                     onTapValue: () => _showLocationDialog(context, colorScheme),
                   ),
-                  InteractiveInputRow(
-                    label: "Tags",
-                    value: _selectedTags.isEmpty
-                        ? "None"
-                        : _selectedTags.join(", "),
-                    onTapValue: () => _showTagSelector(context),
-                  ),
+
 
                   // --- ADVANCED OPTIONS ---
                   Theme(
@@ -578,11 +572,57 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                         ),
                       ),
                       children: [
+
+                         // 6. TAGS
+                  InteractiveInputRow(
+                    label: "Tags",
+                    value: _selectedTags.isEmpty
+                        ? "None"
+                        : _selectedTags.join(", "),
+                    onTap: () => showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (ctx) => StatefulBuilder(
+                        builder: (context, sheetSetState) => TagSelector(
+                          selectedTags: _selectedTags,
+                          availableTags: _tagsList,
+                          onTagsChanged: (newList) {
+                            setState(() => _selectedTags = newList);
+                            sheetSetState(() {});
+                          },
+                          onTagAdded: (newTag) async {
+                            await ref
+                                .read(tagsProvider.notifier)
+                                .addTag(newTag);
+                            setState(() {
+                              if (!_tagsList.contains(newTag))
+                                _tagsList.add(newTag);
+                            });
+                            sheetSetState(() {});
+                          },
+                          onTagRemoved: (removedTag) async {
+                            setState(() {
+                              _tagsList = List<String>.from(_tagsList)
+                                ..remove(removedTag);
+                              _selectedTags = List<String>.from(_selectedTags)
+                                ..remove(removedTag);
+                            });
+                            await ref
+                                .read(tagsProvider.notifier)
+                                .deleteTag(removedTag);
+                            sheetSetState(() {});
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                  
                         // ✅ UPDATED ALERT SELECTOR
                         Opacity(
                           opacity: _hasReminder ? 1.0 : 0.4,
                           child: InteractiveInputRow(
-                            label: "Alerts",
+                            label: "Remind me",
                             value: _formatOffsets(),
                             onTapValue: _hasReminder
                                 ? () => _showReminderSelector(context)
@@ -591,15 +631,15 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                         ),
 
                         _buildSwitchTile(
-                          'Auto-Reschedule',
-                          "Allow AI to move this task if missed",
+                          'Lock Task',
+                          "Exclude from auto-reorganization.",
                           _movableByAI,
                           (v) => setState(() => _movableByAI = v),
                           colorScheme,
                         ),
                         _buildSwitchTile(
-                          'Strict Mode',
-                          "Ensure absolutely no overlaps",
+                          'No Overlaps',
+                          "Ensures no overlapping events.",
                           _setNonConfliction,
                           (v) => setState(() {
                             _setNonConfliction = v;
