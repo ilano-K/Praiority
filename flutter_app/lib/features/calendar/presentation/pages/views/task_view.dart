@@ -46,11 +46,17 @@ class _TaskViewState extends ConsumerState<TaskView> {
   }
 
   void _showSortSheet(BuildContext context) {
+    final controller = ref.read(taskViewControllerProvider.notifier);
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => const SortSelector(),
+      builder: (context) => SortSelector(
+        initialFromDate: controller.currentStartDate,
+        initialToDate: controller.currentEndDate,
+        initialPriority: controller.currentPriority,
+        initialTag: controller.currentTag,
+      ),
     );
   }
 

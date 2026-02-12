@@ -13,6 +13,12 @@ final taskViewControllerProvider =
     );
 
 class TaskViewStateController extends AutoDisposeAsyncNotifier<List<Task>> {
+  // Store current filter state for UI preservation
+  DateTime? _currentStartDate;
+  DateTime? _currentEndDate;
+  TaskPriority? _currentPriority;
+  String _currentTag = "None";
+
   @override
   FutureOr<List<Task>> build() async {
     // Initial load: Get all tasks (or pending)
@@ -43,6 +49,12 @@ class TaskViewStateController extends AutoDisposeAsyncNotifier<List<Task>> {
     TaskPriority? priority,
     String? tag,
   }) async {
+    // Store current filter state
+    _currentStartDate = start;
+    _currentEndDate = end;
+    _currentPriority = priority;
+    _currentTag = tag ?? "None";
+
     state = const AsyncLoading();
     state = await AsyncValue.guard(
       () => fetchTasks(
@@ -54,6 +66,12 @@ class TaskViewStateController extends AutoDisposeAsyncNotifier<List<Task>> {
       ),
     );
   }
+
+  // Getter methods for current filter state
+  DateTime? get currentStartDate => _currentStartDate;
+  DateTime? get currentEndDate => _currentEndDate;
+  TaskPriority? get currentPriority => _currentPriority;
+  String get currentTag => _currentTag;
 
   Future<void> updateTask(Task task) async {
     final saveTask = ref.read(saveTaskUseCaseProvider);

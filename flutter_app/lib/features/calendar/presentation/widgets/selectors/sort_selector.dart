@@ -11,7 +11,18 @@ import 'package:intl/intl.dart';
 import 'date_picker.dart';
 
 class SortSelector extends ConsumerStatefulWidget {
-  const SortSelector({super.key});
+  final DateTime? initialFromDate;
+  final DateTime? initialToDate;
+  final TaskPriority? initialPriority;
+  final String initialTag;
+
+  const SortSelector({
+    super.key,
+    this.initialFromDate,
+    this.initialToDate,
+    this.initialPriority,
+    this.initialTag = "None",
+  });
 
   @override
   ConsumerState<SortSelector> createState() => _SortSelectorState();
@@ -30,6 +41,15 @@ class _SortSelectorState extends ConsumerState<SortSelector> {
   @override
   void initState() {
     super.initState();
+    
+    // Initialize from widget parameters
+    _selectedFromDate = widget.initialFromDate;
+    _selectedToDate = widget.initialToDate;
+    _selectedPriority = widget.initialPriority != null 
+        ? widget.initialPriority.toString().split('.').last
+        : "None";
+    _selectedTag = widget.initialTag;
+
     ref.read(calendarRepositoryProvider).getAllTagNames().then((tags) {
       setState(() {
         _availableTags = tags.toList();
