@@ -155,7 +155,6 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
       title: title,
       description: _descController.text.trim(),
       priority: taskPriorityFromString(_priority),
-      category: taskCategoryFromString(_category),
       tags: _selectedTags,
       colorValue: colorValue,
       isAllDay: false,
@@ -429,50 +428,51 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                       onExpansionChanged: (val) =>
                           setState(() => _advancedExpanded = val),
                       children: [
-                         // 6. TAGS
-                  InteractiveInputRow(
-                    label: "Tags",
-                    value: _selectedTags.isEmpty
-                        ? "None"
-                        : _selectedTags.join(", "),
-                    onTap: () => showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (ctx) => StatefulBuilder(
-                        builder: (context, sheetSetState) => TagSelector(
-                          selectedTags: _selectedTags,
-                          availableTags: _tagsList,
-                          onTagsChanged: (newList) {
-                            setState(() => _selectedTags = newList);
-                            sheetSetState(() {});
-                          },
-                          onTagAdded: (newTag) async {
-                            await ref
-                                .read(tagsProvider.notifier)
-                                .addTag(newTag);
-                            setState(() {
-                              if (!_tagsList.contains(newTag))
-                                _tagsList.add(newTag);
-                            });
-                            sheetSetState(() {});
-                          },
-                          onTagRemoved: (removedTag) async {
-                            setState(() {
-                              _tagsList = List<String>.from(_tagsList)
-                                ..remove(removedTag);
-                              _selectedTags = List<String>.from(_selectedTags)
-                                ..remove(removedTag);
-                            });
-                            await ref
-                                .read(tagsProvider.notifier)
-                                .deleteTag(removedTag);
-                            sheetSetState(() {});
-                          },
+                        // 6. TAGS
+                        InteractiveInputRow(
+                          label: "Tags",
+                          value: _selectedTags.isEmpty
+                              ? "None"
+                              : _selectedTags.join(", "),
+                          onTap: () => showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            backgroundColor: Colors.transparent,
+                            builder: (ctx) => StatefulBuilder(
+                              builder: (context, sheetSetState) => TagSelector(
+                                selectedTags: _selectedTags,
+                                availableTags: _tagsList,
+                                onTagsChanged: (newList) {
+                                  setState(() => _selectedTags = newList);
+                                  sheetSetState(() {});
+                                },
+                                onTagAdded: (newTag) async {
+                                  await ref
+                                      .read(tagsProvider.notifier)
+                                      .addTag(newTag);
+                                  setState(() {
+                                    if (!_tagsList.contains(newTag))
+                                      _tagsList.add(newTag);
+                                  });
+                                  sheetSetState(() {});
+                                },
+                                onTagRemoved: (removedTag) async {
+                                  setState(() {
+                                    _tagsList = List<String>.from(_tagsList)
+                                      ..remove(removedTag);
+                                    _selectedTags = List<String>.from(
+                                      _selectedTags,
+                                    )..remove(removedTag);
+                                  });
+                                  await ref
+                                      .read(tagsProvider.notifier)
+                                      .deleteTag(removedTag);
+                                  sheetSetState(() {});
+                                },
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                  ),
 
                         // --- REMIND ME ON (UPDATED TO OFFSETS) ---
                         // Replaced the Date/Time picker with a simple Offset Selector

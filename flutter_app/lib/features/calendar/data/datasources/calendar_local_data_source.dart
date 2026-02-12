@@ -1,6 +1,4 @@
 // File: lib/features/calendar/datasources/calendar_local_data_source_impl.dart
-// Purpose: Isar-backed implementation of CalendarLocalDataSource.
-// Handles persisting, updating, deleting tasks and linking tag models.
 import 'package:flutter/foundation.dart';
 import 'package:flutter_app/features/calendar/data/models/task_model.dart';
 import 'package:flutter_app/features/calendar/data/models/task_tag_model.dart';
@@ -15,7 +13,80 @@ class CalendarLocalDataSource {
 
   CalendarLocalDataSource(this.isar);
 
-  // FIX: Change Parameter from TaskModel -> Task
+  // ======= SYNCING LOGIC ======
+  // --- SUPABASE ----
+  Future<void> markTasksAsSynced(String originalId) async {
+    await isar.writeTxn(() async {
+      final tasks = await isar.taskModels
+          .filter()
+          .originalIdEqualTo(originalId)
+          .findAll();
+
+      for (var task in tasks) {
+        task.isSynced = true;
+        await isar.taskModels.put(task);
+      }
+    });
+  }
+
+  Future<void> updateTasksFromCloud(List<TaskModel> cloudTasks) async {
+    await isar.writeTxn(() async {
+      print("saving tasks from cloud");
+      for (var cloudTask in cloudTasks) {
+        final localTask = await isar.taskModels
+            .filter()
+            .originalIdEqualTo(cloudTask.originalId)
+            .findFirst();
+
+        if (localTask != null) {
+          // Task exists locally → update fields
+          cloudTask.id = localTask.id; // preserve local Isar ID
+          cloudTask.isSynced = true;
+          cloudTask.status = TaskStatus.scheduled;
+          cloudTask.updatedAt = DateTime.now();
+        } else {
+          // New task → insert as is
+          cloudTask.isSynced = true;
+          cloudTask.status = TaskStatus.scheduled;
+          cloudTask.updatedAt = DateTime.now();
+        }
+
+        for (final tag in cloudTask.tags) {
+          final existingTag = await isar.taskTagModels
+              .filter()
+              .nameEqualTo(tag)
+              .findFirst();
+
+          if (existingTag == null) {
+            final tagEntity = TaskTag.create(name: tag);
+            final tagModel = TaskTagModel.fromEntity(tagEntity);
+            await isar.taskTagModels.put(tagModel);
+          }
+        }
+        print("saving tasks from cloud for cloud tasks ${cloudTask.title}");
+        await isar.taskModels.put(cloudTask);
+      }
+    });
+  }
+
+  Future<void> saveTasksFromGoogle(List<TaskModel> tasks) async {
+    if (tasks.isEmpty) return;
+
+    await isar.writeTxn(() async {
+      await isar.taskModels.putAll(tasks);
+    });
+  }
+
+  // ---- google calendar -----
+  Future<List<String>> getAllGoogleEventIds() async {
+    final tasks = await isar.taskModels
+        .filter()
+        .googleEventIdIsNotNull()
+        .findAll();
+
+    return tasks.map((t) => t.googleEventId!).toList();
+  }
+
   Future<void> saveAndUpdateTask(Task task) async {
     try {
       // 1. Create the Model from the Entity here
@@ -156,13 +227,13 @@ class CalendarLocalDataSource {
   Future<List<TaskModel>> getTasksByCondition({
     DateTime? start,
     DateTime? end,
+    TaskCategory? category,
     TaskType? type,
     TaskStatus? status,
     String? tag,
     TaskPriority? priority,
   }) async {
     var query = isar.taskModels.filter().originalIdIsNotEmpty();
-
     if (type != null) query = query.typeEqualTo(type);
     if (status != null) query = query.statusEqualTo(status);
     if (tag != null) query = query.tagsElementEqualTo(tag);
@@ -194,60 +265,6 @@ class CalendarLocalDataSource {
     // `isDeleted == false`, preventing the sync service from sending
     // delete updates to Supabase.
     return isar.taskModels.filter().isSyncedEqualTo(false).findAll();
-  }
-
-  Future<void> markTasksAsSynced(String originalId) async {
-    await isar.writeTxn(() async {
-      final tasks = await isar.taskModels
-          .filter()
-          .originalIdEqualTo(originalId)
-          .findAll();
-
-      for (var task in tasks) {
-        task.isSynced = true;
-        await isar.taskModels.put(task);
-      }
-    });
-  }
-
-  Future<void> updateTasksFromCloud(List<TaskModel> cloudTasks) async {
-    await isar.writeTxn(() async {
-      print("saving tasks from cloud");
-      for (var cloudTask in cloudTasks) {
-        final localTask = await isar.taskModels
-            .filter()
-            .originalIdEqualTo(cloudTask.originalId)
-            .findFirst();
-
-        if (localTask != null) {
-          // Task exists locally → update fields
-          cloudTask.id = localTask.id; // preserve local Isar ID
-          cloudTask.isSynced = true;
-          cloudTask.status = TaskStatus.scheduled;
-          cloudTask.updatedAt = DateTime.now();
-        } else {
-          // New task → insert as is
-          cloudTask.isSynced = true;
-          cloudTask.status = TaskStatus.scheduled;
-          cloudTask.updatedAt = DateTime.now();
-        }
-
-        for (final tag in cloudTask.tags) {
-          final existingTag = await isar.taskTagModels
-              .filter()
-              .nameEqualTo(tag)
-              .findFirst();
-
-          if (existingTag == null) {
-            final tagEntity = TaskTag.create(name: tag);
-            final tagModel = TaskTagModel.fromEntity(tagEntity);
-            await isar.taskTagModels.put(tagModel);
-          }
-        }
-        print("saving tasks from cloud for cloud tasks ${cloudTask.title}");
-        await isar.taskModels.put(cloudTask);
-      }
-    });
   }
 
   Future<TaskModel?> getTaskById(String originalId) async {

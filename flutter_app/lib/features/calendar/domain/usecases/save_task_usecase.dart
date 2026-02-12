@@ -1,4 +1,3 @@
-import 'package:flutter_app/core/errors/task_invalid_time_exception.dart';
 import 'package:flutter_app/features/calendar/data/repositories/calendar_repository.dart';
 import 'package:flutter_app/features/calendar/domain/usecases/schedule_task_notification.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_provider.dart';

@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // --- CORE ERRORS ---
 import 'package:flutter_app/core/errors/task_conflict_exception.dart';
-import 'package:flutter_app/core/errors/task_invalid_time_exception.dart';
 
 // --- DOMAIN & CONTROLLERS ---
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
