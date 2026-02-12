@@ -190,6 +190,8 @@ class CalendarBuilder {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w900,
+                    // UPDATED: Added Italic here
+                    fontStyle: isCompleted ? FontStyle.italic : FontStyle.normal,
                     decoration: isCompleted
                         ? TextDecoration.lineThrough
                         : TextDecoration.none,
@@ -300,49 +302,65 @@ class CalendarBuilder {
 }
 
 class TaskDataSource extends CalendarDataSource {
-  TaskDataSource(List<Task> tasks, bool isDark) {
+  final bool showAll; 
+
+  TaskDataSource(List<Task> tasks, bool isDark, {this.showAll = false}) {
     _buildAppointments(tasks, isDark);
   }
 
   void updateData(List<Task> tasks, bool isDark) {
-    // print("DEBUG: [TaskDataSource] Updating data...");
     _buildAppointments(tasks, isDark);
     notifyListeners(CalendarDataSourceAction.reset, appointments!);
   }
 
   void _buildAppointments(List<Task> tasks, bool isDark) {
-    // Filter logic
-    final visibleTasks = tasks
-        .where(
-          (t) =>
-              !t.isAllDay &&
-              t.type != TaskType.birthday &&
-              t.startTime != null &&
-              t.status != TaskStatus.pending,
-        )
-        .toList();
+    final visibleTasks = tasks.where((t) {
+      if (t.status == TaskStatus.pending || t.startTime == null) return false;
+      if (showAll) return true;
+      return !t.isAllDay && t.type != TaskType.birthday;
+    }).toList();
 
     appointments = visibleTasks.map((task) {
       final Color displayColor = _resolveColor(task.colorValue, isDark);
+      final bool isCompleted = task.status == TaskStatus.completed;
 
-      DateTime visualEndTime = task.endTime!;
-      final duration = task.endTime!.difference(task.startTime!);
+      DateTime endTime = task.endTime ?? task.startTime!.add(const Duration(hours: 1));
+      
+      if (endTime.difference(task.startTime!).inMinutes < 15) {
+        endTime = task.startTime!.add(const Duration(minutes: 15));
+      }
 
-      if (duration.inMinutes < 20) {
-        visualEndTime = task.startTime!.add(const Duration(minutes: 20));
+      String? rRule = RRuleUtils.sanitizeRRule(task.recurrenceRule);
+      if (task.type == TaskType.birthday && (rRule == null || rRule.isEmpty || rRule == 'None')) {
+        rRule = 'FREQ=YEARLY';
+      }
+
+      // --- FIX: SMART DEFAULT TITLES ---
+      String displayTitle = task.title;
+      if (displayTitle.isEmpty) {
+        switch (task.type) {
+          case TaskType.birthday:
+            displayTitle = "Birthday";
+            break;
+          case TaskType.event:
+            displayTitle = "Untitled Event";
+            break;
+          case TaskType.task:
+          default:
+            displayTitle = "Untitled Task";
+            break;
+        }
       }
 
       return Appointment(
         id: task.id,
-        subject: task.title,
+        subject: displayTitle, // <--- Now uses the smart default
         startTime: task.startTime!,
-        endTime: visualEndTime,
-        notes: task.status == TaskStatus.completed
-            ? "[COMPLETED]${task.description ?? ''}"
-            : task.description,
-        color: displayColor,
-        isAllDay: task.isAllDay,
-        recurrenceRule: RRuleUtils.sanitizeRRule(task.recurrenceRule),
+        endTime: endTime,
+        notes: task.description,
+        color: isCompleted ? displayColor.withOpacity(0.4) : displayColor,
+        isAllDay: task.isAllDay || task.type == TaskType.birthday, 
+        recurrenceRule: rRule,
       );
     }).toList();
   }

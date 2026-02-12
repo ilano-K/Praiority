@@ -95,11 +95,13 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
       location: _location,
       status: TaskStatus.scheduled,
       colorValue: colorValue,
-      recurrenceRule: RRuleUtils.repeatToRRule("Yearly"),
+      recurrenceRule: RRuleUtils.repeatToRRule("Yearly", start: _birthdayDate),
       isAiMovable: false,
       isConflicting: false,
       isSmartSchedule: false,
     );
+
+    print('🎂 DEBUG: Created birthday task\n  Title: $title\n  StartTime: $_birthdayDate\n  RecurrenceRule: ${baseTask.recurrenceRule}');
 
     return widget.task != null
         ? widget.task!.copyWith(

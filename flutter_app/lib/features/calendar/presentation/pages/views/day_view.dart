@@ -245,11 +245,14 @@ class DayAppointmentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isTaskOnly = task.type == TaskType.task;
+    // 1. Check completion status
+    final bool isCompleted = task.status == TaskStatus.completed;
 
     return Container(
       margin: const EdgeInsets.all(2),
       decoration: BoxDecoration(
-        color: appointment.color,
+        // 2. Lighten background color if completed
+        color: isCompleted ? appointment.color.withOpacity(0.5) : appointment.color,
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
@@ -272,6 +275,9 @@ class DayAppointmentCard extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
                     color: colorScheme.onSurface,
+                    // 3. Apply Strikethrough & Italic to Title
+                    decoration: isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
+                    fontStyle: isCompleted ? FontStyle.italic : FontStyle.normal,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -282,7 +288,13 @@ class DayAppointmentCard extends StatelessWidget {
                       appointment.notes!,
                       style: TextStyle(
                         fontSize: 10,
-                        color: colorScheme.onSurface.withOpacity(0.7),
+                        // 4. Dim the notes color significantly if completed
+                        color: isCompleted 
+                            ? colorScheme.onSurface.withOpacity(0.5) 
+                            : colorScheme.onSurface.withOpacity(0.7),
+                        // 5. Apply Strikethrough & Italic to Notes
+                        decoration: isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
+                        fontStyle: isCompleted ? FontStyle.italic : FontStyle.normal,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -298,7 +310,8 @@ class DayAppointmentCard extends StatelessWidget {
               child: Icon(
                 Icons.flag_rounded,
                 size: 24,
-                color: _getPriorityColor(task.priority),
+                // 6. Dim the flag icon if completed
+                color: _getPriorityColor(task.priority).withOpacity(isCompleted ? 0.5 : 1.0),
               ),
             ),
         ],
