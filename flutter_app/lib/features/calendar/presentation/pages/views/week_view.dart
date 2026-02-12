@@ -88,7 +88,7 @@ class _WeekViewState extends ConsumerState<WeekView> {
         TimeRegion(
           startTime: DateTime(anchor.year, anchor.month, anchor.day, h, 0),
           endTime: DateTime(anchor.year, anchor.month, anchor.day, h, 59),
-          enablePointerInteraction: true,
+          enablePointerInteraction: false,
           // CRITICAL: enablePointerInteraction: true allows taps to be registered by the calendar
           // The IgnorePointer wrapper on the visual element prevents the Container from blocking taps
           recurrenceRule: 'FREQ=DAILY;INTERVAL=1',
@@ -165,74 +165,65 @@ class _WeekViewState extends ConsumerState<WeekView> {
 
             // Uses cached DataSource
             dataSource: _dataSource,
-
-            appointmentBuilder: (context, details) {
+                appointmentBuilder: (context, details) {
               final Appointment appointment = details.appointments.first;
               
-              // Find the actual Task object from widget.tasks
               final task = widget.tasks.firstWhere(
                 (t) => t.id == appointment.id,
-                orElse: () => Task(
-                  id: "temp",
-                  title: "Missing",
-                  startTime: DateTime.now(),
-                ),
+                orElse: () => Task(id: "temp", title: "", startTime: DateTime.now()),
               );
-              
-              if (task.id == "temp") {
-                return Container(color: Colors.red, width: 20, height: 20);
-              }
-              
+
+              if (task.id == "temp") return const SizedBox();
+
               final bool isCompleted = task.status == TaskStatus.completed;
-              
+              // Determine text color based on background brightness
+              final Color textColor = ThemeData.estimateBrightnessForColor(appointment.color) == Brightness.light
+                  ? Colors.black
+                  : Colors.white;
+
               return Container(
-                margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                // 1. Tighter Margins (Less gap between tasks)
+                margin: const EdgeInsets.symmetric(horizontal: 1, vertical: 1),
+                // 2. Skinny Padding (Content hugs the edges)
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                 decoration: BoxDecoration(
                   color: isCompleted ? appointment.color.withOpacity(0.5) : appointment.color,
-                  borderRadius: BorderRadius.circular(8),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.15),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+                  // 3. Smaller Radius (Less "bubbly")
+                  borderRadius: BorderRadius.circular(4),
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        appointment.subject,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                          color: colorScheme.onSurface,
-                          decoration: isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
-                          fontStyle: isCompleted ? FontStyle.italic : FontStyle.normal,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min, // Wrap content tightly
+                  children: [
+                    Text(
+                      appointment.subject,
+                      style: TextStyle(
+                        // 4. Smaller Font for Title
+                        fontSize: 10, 
+                        fontWeight: FontWeight.bold,
+                        color: isCompleted ? textColor.withOpacity(0.6) : textColor,
+                        decoration: isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
+                        fontStyle: isCompleted ? FontStyle.italic : FontStyle.normal,
                       ),
-                      if (appointment.notes != null && appointment.notes!.isNotEmpty)
-                        Expanded(
-                          child: Text(
-                            appointment.notes!,
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: isCompleted 
-                                  ? colorScheme.onSurface.withOpacity(0.5) 
-                                  : colorScheme.onSurface.withOpacity(0.7),
-                              decoration: isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
-                              fontStyle: isCompleted ? FontStyle.italic : FontStyle.normal,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (appointment.notes != null && appointment.notes!.isNotEmpty)
+                      Flexible( // Use Flexible to avoid overflow errors in small slots
+                        child: Text(
+                          appointment.notes!,
+                          style: TextStyle(
+                            // 5. Tiny Font for Notes
+                            fontSize: 9,
+                            color: isCompleted ? textColor.withOpacity(0.5) : textColor.withOpacity(0.8),
+                            decoration: isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
+                            fontStyle: isCompleted ? FontStyle.italic : FontStyle.normal,
                           ),
+                          maxLines: 1, 
+                          overflow: TextOverflow.ellipsis,
                         ),
-                    ],
-                  ),
+                      ),
+                  ],
                 ),
               );
             },
@@ -247,8 +238,9 @@ class _WeekViewState extends ConsumerState<WeekView> {
                 );
                 widget.onTaskTap(tappedTask);
               } else if (details.targetElement == CalendarElement.calendarCell &&
-                  details.date != null) {
-                _handleEmptySlotTap(context, details.date!);
+           details.date != null) {
+                // Only runs if you click an empty time slot
+                _showAddTaskSheet(context, details.date!);
               }
             },
 
@@ -265,46 +257,6 @@ class _WeekViewState extends ConsumerState<WeekView> {
         ),
       ],
     );
-  }
-
-  /// Check if a specific time slot is empty (no existing task)
-  /// Extracts the hour from dateTime and checks that specific hour block
-  bool _isSlotEmpty(DateTime dateTime) {
-    // Extract hour from the tapped time
-    final hour = dateTime.hour;
-    final slotStart = DateTime(dateTime.year, dateTime.month, dateTime.day, hour, 0);
-    final slotEnd = DateTime(dateTime.year, dateTime.month, dateTime.day, hour, 59, 59);
-
-    return !widget.tasks.any((task) {
-      if (task.startTime == null) return false;
-      final taskStart = task.startTime!;
-      final taskEnd = task.endTime ?? taskStart.add(const Duration(hours: 1));
-
-      // Check if task overlaps with this hour slot
-      return taskStart.isBefore(slotEnd) && taskEnd.isAfter(slotStart);
-    });
-  }
-
-  /// Handle empty slot tap - open AddTaskSheet if slot is empty
-  /// Normalizes time to start of hour for accurate task scheduling
-  void _handleEmptySlotTap(BuildContext context, DateTime tappedTime) {
-    if (_isSlotEmpty(tappedTime)) {
-      // Normalize to the exact start of the clicked hour
-      final normalizedTime = DateTime(
-        tappedTime.year,
-        tappedTime.month,
-        tappedTime.day,
-        tappedTime.hour,
-        0,
-        0,
-      );
-      showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (context) => AddTaskSheet(initialDate: normalizedTime),
-      );
-    }
   }
 
   // Extracted Header Builder used inside the Notifier
@@ -448,6 +400,16 @@ class _WeekViewState extends ConsumerState<WeekView> {
             ),
           ),
       ],
+    );
+  }
+  
+  // HERE IT IS: A helper method to show the sheet
+  void _showAddTaskSheet(BuildContext context, DateTime tappedTime) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => AddTaskSheet(initialDate: tappedTime),
     );
   }
 }
