@@ -1,11 +1,9 @@
 // File: lib/features/calendar/presentation/widgets/app_sidebar.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_app/core/errors/app_exceptions.dart';
 import 'package:flutter_app/core/providers/global_providers.dart';
-import 'package:flutter_app/features/auth/data/auth_provider.dart';
 import 'package:flutter_app/features/auth/presentation/manager/auth_controller.dart';
 import 'package:flutter_app/features/auth/presentation/pages/auth_gate.dart';
-// ❌ REMOVE THIS: You don't need to import SignInPage anymore
-// import 'package:flutter_app/features/auth/presentation/pages/sign_in_page.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_controller.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_provider.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/dialogs/app_confirmation_dialog.dart';
@@ -32,6 +30,7 @@ class AppSidebar extends ConsumerStatefulWidget {
 class _AppSidebarState extends ConsumerState<AppSidebar> {
   bool _isExpanded = false;
   bool _isLoggingOut = false;
+  bool _isSyncingGoogle = false; // New state for Google Sync
 
   String _getViewLabel(CalendarView view) {
     switch (view) {
@@ -46,14 +45,54 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
     }
   }
 
-  Future<void> _handleLogout() async {
-    // 1. Prevent multiple clicks if sync is already in progress
-    if (_isLoggingOut) return;
+  /// ✅ NEW: Handle Google Calendar Sync
+  Future<void> _handleGoogleSync() async {
+    if (_isSyncingGoogle) return;
 
-    // 2. Show the centered loading overlay
+    setState(() => _isSyncingGoogle = true);
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    try {
+      final googleSyncNotfier = ref.read(googleSyncNotifierProvider.notifier);
+      await googleSyncNotfier.performSync();
+
+      if (mounted) {
+        scaffoldMessenger.showSnackBar(
+          const SnackBar(
+            content: Text("Google Calendar synced successfully!"),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint("[Google Sync Error]: $e");
+      if (mounted) {
+        final appError = parseError(e);
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Text(appError.title),
+            content: Text(appError.message),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text("OK"),
+              ),
+            ],
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSyncingGoogle = false);
+      }
+    }
+  }
+
+  Future<void> _handleLogout() async {
+    if (_isLoggingOut) return;
     setState(() => _isLoggingOut = true);
 
-    // Capture the navigator and scaffoldMessenger before the async gap
     final navigator = Navigator.of(context);
     final scaffoldMessenger = ScaffoldMessenger.of(context);
 
@@ -63,29 +102,22 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
       final taskSyncService = ref.read(taskSyncServiceProvider);
       final userPrefsSyncService = ref.read(userPrefSyncServiceProvider);
 
-      // 3. Perform background sync and cleanup
-      // We await these to ensure data is saved to Supabase before the local DB is wiped
       await taskSyncService.pushLocalChanges();
       await userPrefsSyncService.pushLocalChanges();
       await dbProvider.clearDatabase();
       await authController.signOut();
 
-      // 4. Navigate to AuthGate and trigger the success Snackbar
       if (!mounted) return;
       navigator.pushAndRemoveUntil(
         MaterialPageRoute(
           builder: (context) => const AuthGate(showLogoutMessage: true),
         ),
-        (route) => false, // Clears the entire navigation stack
+        (route) => false,
       );
     } catch (e) {
       debugPrint("[Logout Error]: $e");
-
       if (mounted) {
-        // 5. Hide the loading screen so user can try again
         setState(() => _isLoggingOut = false);
-
-        // Notify the user that something went wrong during sync
         scaffoldMessenger.showSnackBar(
           SnackBar(
             content: const Text(
@@ -97,10 +129,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
         );
       }
     } finally {
-      // Safety check to ensure state is reset if navigation didn't happen
-      if (mounted) {
-        setState(() => _isLoggingOut = false);
-      }
+      if (mounted) setState(() => _isLoggingOut = false);
     }
   }
 
@@ -113,145 +142,159 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
       backgroundColor: colorScheme.surface,
       width: MediaQuery.of(context).size.width * 0.75,
       child: SafeArea(
-        child: Column(
+        child: Stack(
           children: [
-            // --- USER PROFILE SECTION ---
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 40),
-              child: Column(
-                children: [
-                  CircleAvatar(
-                    radius: 55,
-                    backgroundColor: colorScheme.primary.withOpacity(0.1),
-                    child: Icon(
-                      Icons.person,
-                      size: 70,
-                      color: colorScheme.primary,
-                    ),
+            Column(
+              children: [
+                // --- USER PROFILE SECTION ---
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 40),
+                  child: Column(
+                    children: [
+                      CircleAvatar(
+                        radius: 55,
+                        backgroundColor: colorScheme.primary.withOpacity(0.1),
+                        child: Icon(
+                          Icons.person,
+                          size: 70,
+                          color: colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 15),
+                      Text(
+                        "Juan Dela Cruz",
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                      Text(
+                        "juandelacruz@gmail.com",
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: colorScheme.onSurface.withOpacity(0.4),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 15),
-                  Text(
-                    "Juan Dela Cruz",
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w900,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  Text(
-                    "juandelacruz@gmail.com",
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: colorScheme.onSurface.withOpacity(0.4),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 25),
-              child: Divider(
-                thickness: 1,
-                color: colorScheme.onSurface.withOpacity(0.1),
-              ),
-            ),
-
-            // --- NAVIGATION LIST ---
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 15,
-                  vertical: 10,
                 ),
-                children: [
-                  _buildExpandableItem(
-                    context,
-                    lightIcon: 'assets/icons/view.png',
-                    darkIcon: 'assets/icons/viewDark.png',
-                    label: _isExpanded
-                        ? "View"
-                        : _getViewLabel(widget.currentView),
-                    isDark: isDark,
-                  ),
-                  _buildDrawerItem(
-                    context,
-                    icon: Icons.access_time_outlined,
-                    label: "Working Hours",
-                    onTap: () {
-                      // 1. Close the drawer first to prevent UI overlap
-                      Navigator.pop(context);
 
-                      // 2. Navigate to WorkHours with the isFromSidebar flag set to true
-                      Navigator.push(
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 25),
+                  child: Divider(
+                    thickness: 1,
+                    color: colorScheme.onSurface.withOpacity(0.1),
+                  ),
+                ),
+
+                // --- NAVIGATION LIST ---
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 15,
+                      vertical: 10,
+                    ),
+                    children: [
+                      _buildExpandableItem(
                         context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              const WorkHours(isFromSidebar: true),
-                        ),
-                      );
-                    },
-                  ),
-
-                  // Google Sync Item
-                  ListTile(
-                    leading: Padding(
-                      padding: const EdgeInsets.only(left: 2.0),
-                      child: Image.asset(
-                        'assets/images/G.png',
-                        width: 24,
-                        height: 24,
+                        lightIcon: 'assets/icons/view.png',
+                        darkIcon: 'assets/icons/viewDark.png',
+                        label: _isExpanded
+                            ? "View"
+                            : _getViewLabel(widget.currentView),
+                        isDark: isDark,
                       ),
-                    ),
-                    title: Text(
-                      "Google Sync",
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w600,
-                        color: colorScheme.onSurface,
+                      _buildDrawerItem(
+                        context,
+                        icon: Icons.access_time_outlined,
+                        label: "Working Hours",
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const WorkHours(isFromSidebar: true),
+                            ),
+                          );
+                        },
                       ),
-                    ),
-                    onTap: () => Navigator.pop(context),
-                  ),
 
-                  // ✅ FIXED LOG OUT LOGIC
-                  _buildDrawerItem(
-                    context,
-                    icon: Icons.logout_outlined,
-                    label: "Log Out",
-                    onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => AppConfirmationDialog(
-                          title: "Log Out",
-                          message: "Are you sure you want to log out?",
-                          confirmLabel: "Log Out",
-                          isDestructive: true,
-                          onConfirm: _handleLogout, // Calls the method above
+                      // ✅ UPDATED: Google Sync Item with Loading State
+                      ListTile(
+                        leading: _isSyncingGoogle
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Padding(
+                                padding: const EdgeInsets.only(left: 2.0),
+                                child: Image.asset(
+                                  'assets/images/G.png',
+                                  width: 24,
+                                  height: 24,
+                                ),
+                              ),
+                        title: Text(
+                          _isSyncingGoogle ? "Syncing..." : "Google Sync",
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurface,
+                          ),
                         ),
-                      );
-                    },
+                        onTap: _isSyncingGoogle ? null : _handleGoogleSync,
+                      ),
+
+                      _buildDrawerItem(
+                        context,
+                        icon: Icons.logout_outlined,
+                        label: "Log Out",
+                        onTap: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => AppConfirmationDialog(
+                              title: "Log Out",
+                              message: "Are you sure you want to log out?",
+                              confirmLabel: "Log Out",
+                              isDestructive: true,
+                              onConfirm: _handleLogout,
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+
+                // --- THEME TOGGLE ---
+                Padding(
+                  padding: const EdgeInsets.all(25.0),
+                  child: Align(
+                    alignment: Alignment.bottomRight,
+                    child: _buildThemeToggle(context, ref, isDark),
+                  ),
+                ),
+              ],
             ),
 
-            // --- THEME TOGGLE ---
-            Padding(
-              padding: const EdgeInsets.all(25.0),
-              child: Align(
-                alignment: Alignment.bottomRight,
-                child: _buildThemeToggle(context, ref, isDark),
+            // Global Logout Loading Overlay
+            if (_isLoggingOut)
+              Container(
+                color: Colors.black45,
+                child: const Center(child: CircularProgressIndicator()),
               ),
-            ),
           ],
         ),
       ),
     );
   }
 
-  // ... (Keep your helper widgets: _buildDrawerItem, _buildExpandableItem, _buildSubItem, _buildThemeToggle exactly as they are) ...
-
+  // Helper Widgets
   Widget _buildDrawerItem(
     BuildContext context, {
     required IconData icon,
@@ -284,9 +327,8 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
     return Theme(
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
       child: ExpansionTile(
-        onExpansionChanged: (expanded) {
-          setState(() => _isExpanded = expanded);
-        },
+        onExpansionChanged: (expanded) =>
+            setState(() => _isExpanded = expanded),
         leading: Image.asset(
           isDark ? darkIcon : lightIcon,
           width: 28,
@@ -360,33 +402,21 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
         ),
       ),
       onTap: () async {
-        // 1. If it's already selected, just close the drawer immediately
         if (isSelected) {
           Navigator.pop(context);
           return;
         }
-        // 3. TRIGGER THE VIEW CHANGE
         widget.onViewSelected(view);
-
-        // 4. THE MAGIC DELAY:
-        // We wait 250ms-300ms. This is the "sweet spot" where the calendar
-        // performs its heavy layout logic behind the drawer while the
-        // drawer is still opaque, hiding the "jumpy" update.
         await Future.delayed(const Duration(milliseconds: 300));
-
-        // 5. Finally, slide the drawer away
-        if (context.mounted) {
-          Navigator.pop(context);
-        }
+        if (context.mounted) Navigator.pop(context);
       },
     );
   }
 
   Widget _buildThemeToggle(BuildContext context, WidgetRef ref, bool isDark) {
     final colorScheme = Theme.of(context).colorScheme;
-
     return Container(
-      width: 90, // Compact but accessible
+      width: 90,
       height: 44,
       decoration: BoxDecoration(
         color: colorScheme.surface,
@@ -424,25 +454,16 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
     required VoidCallback onTap,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
-
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
-        child: AnimatedDefaultTextStyle(
-          duration: const Duration(milliseconds: 200),
-          style: TextStyle(
-            color: isActive
-                ? colorScheme.primary
-                : colorScheme.onSurface.withOpacity(0.3),
-          ),
-          child: Icon(
-            icon,
-            size: 24, // Standard "comfortable" size
-            color: isActive
-                ? colorScheme.primary
-                : colorScheme.onSurface.withOpacity(0.3),
-          ),
+        child: Icon(
+          icon,
+          size: 24,
+          color: isActive
+              ? colorScheme.primary
+              : colorScheme.onSurface.withOpacity(0.3),
         ),
       ),
     );

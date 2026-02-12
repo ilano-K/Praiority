@@ -1,3 +1,4 @@
+import 'package:flutter_app/core/consants/auth_constants.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -6,8 +7,7 @@ class AuthService {
   final SupabaseClient _supabase = Supabase.instance.client;
 
   // Note: Ensure this is the "Web Client ID" from Google Cloud Console
-  static const String _webClientId =
-      "863361017196-70lclvjrohu7mtio0kpb9d4oblrjusd5.apps.googleusercontent.com";
+  static const String _webClientId = AuthConstants.webClientId;
 
   // ✅ FIX 1: Use the Singleton Instance
   // The constructor GoogleSignIn() was removed in your version. You must use .instance

@@ -31,6 +31,7 @@ class CalendarStateController extends AsyncNotifier<List<Task>> {
       final isSameEnd = _currentRange!.end.isAtSameMomentAs(range.end);
 
       if (isSameStart && isSameEnd) {
+        print("this mf is triggering");
         return;
       }
     }
@@ -44,6 +45,8 @@ class CalendarStateController extends AsyncNotifier<List<Task>> {
       _currentRange!.end,
     );
 
+    print("updating list now... heres the updated list");
+    print(updatedList);
     state = AsyncData(updatedList);
   }
 
