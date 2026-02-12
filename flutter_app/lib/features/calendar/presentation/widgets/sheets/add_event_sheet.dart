@@ -335,6 +335,9 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
   }
 
   void _showRepeatSelector(BuildContext context) async {
+    // Convert selected type string to TaskType enum
+    final taskType = _selectedType == 'Event' ? TaskType.event : TaskType.task;
+    
     final result = await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -346,10 +349,11 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
         initialInterval: _customInterval,
         initialUnit: _customUnit,
         initialDays: _customDays,
-        initialEndOption: _customEndOption, // Check this name in your state
+        initialEndOption: _customEndOption,
         initialEndDate: _customEndDate,
         initialOccurrences: _customCount,
         initialMonthlyType: _monthlyType,
+        taskType: taskType,
         onRepeatSelected: (val) {
           // This handles simple presets (Daily, Weekly, etc.)
           setState(() {
@@ -371,7 +375,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
           _customInterval = result['interval'];
           _customUnit = result['unit'];
           _customDays = result['days'];
-          _customEndOption = result['endOption']; // Matches your button key
+          _customEndOption = result['endOption'];
           _customEndDate = result['endDate'];
           _customCount = result['occurrences'];
           _monthlyType = result['monthlyType'];
@@ -546,13 +550,6 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                     onTapValue: () => _showRepeatSelector(
                       context,
                     ), // <--- Use the new method here
-                  ),
-
-                  // --- LOCATION & TAGS ---
-                  InteractiveInputRow(
-                    label: "Location",
-                    value: _location,
-                    onTapValue: () => _showLocationDialog(context, colorScheme),
                   ),
 
 

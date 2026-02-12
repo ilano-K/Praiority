@@ -82,7 +82,6 @@ class CalendarStateController extends AsyncNotifier<List<Task>> {
   Future<void> addTask(Task task) async {
     final saveTask = ref.read(saveTaskUseCaseProvider);
     await saveTask.execute(task);
-    print('💾 DEBUG: Task saved - ID: ${task.id}, Type: ${task.type}, Title: ${task.title}');
 
     if (task.isSmartSchedule == true) {
       await _runSmartSchedule(task);
@@ -90,16 +89,6 @@ class CalendarStateController extends AsyncNotifier<List<Task>> {
       final syncService = ref.read(taskSyncServiceProvider);
 
       await refreshUi();
-      
-      // Debug: Check what's in the provider state after refresh
-      final currentState = state.valueOrNull ?? [];
-      final birthdays = currentState.where((t) => t.type == TaskType.birthday).toList();
-      print('📋 DEBUG: After refreshUi - Total tasks: ${currentState.length}, Birthdays: ${birthdays.length}');
-      if (birthdays.isNotEmpty) {
-        for (var b in birthdays) {
-          print('   - "${b.title}" (${b.startTime})');
-        }
-      }
 
       unawaited(syncService.pushLocalChanges());
     }

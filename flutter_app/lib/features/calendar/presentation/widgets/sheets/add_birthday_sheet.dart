@@ -101,7 +101,6 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
       isSmartSchedule: false,
     );
 
-    print('🎂 DEBUG: Created birthday task\n  Title: $title\n  StartTime: $_birthdayDate\n  RecurrenceRule: ${baseTask.recurrenceRule}');
 
     return widget.task != null
         ? widget.task!.copyWith(

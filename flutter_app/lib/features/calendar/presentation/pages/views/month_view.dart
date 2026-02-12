@@ -239,13 +239,9 @@ class MonthDataSource extends CalendarDataSource {
     // Filter: Allow Birthdays + Scheduled Non-Pending Tasks
     final visibleTasks = tasks.where((t) {
       if (t.startTime == null) return false;
-      if (t.type == TaskType.birthday) {
-        print('✅ DEBUG: Found birthday "${t.title}" with startTime: ${t.startTime}, recurrenceRule: ${t.recurrenceRule}');
-        return true;
-      }
+      if (t.type == TaskType.birthday) return true; // Always show birthdays
       return t.status != TaskStatus.pending;
     }).toList();
-    print('📊 DEBUG: MonthDataSource has ${tasks.length} total tasks, ${visibleTasks.length} visible tasks');
 
     appointments = visibleTasks.map((task) {
       final Color displayColor = _resolveColor(task.colorValue, isDark);
@@ -265,9 +261,6 @@ class MonthDataSource extends CalendarDataSource {
       if (task.type == TaskType.birthday) {
         if (rRule == null || rRule.isEmpty || rRule == 'None') {
           rRule = 'FREQ=YEARLY;BYMONTH=${task.startTime!.month};BYMONTHDAY=${task.startTime!.day}';
-          print('⚠️ DEBUG: Birthday "${task.title}" had empty recurrenceRule, setting to: $rRule');
-        } else {
-          print('✅ DEBUG: Birthday "${task.title}" has recurrenceRule: $rRule');
         }
       }
 

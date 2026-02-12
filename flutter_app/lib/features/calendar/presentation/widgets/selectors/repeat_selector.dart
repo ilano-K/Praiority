@@ -1,6 +1,7 @@
 // lib/features/calendar/presentation/widgets/selectors/repeat_selector.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'custom_selector.dart';
 
 class RepeatSelector extends StatelessWidget {
@@ -16,6 +17,9 @@ class RepeatSelector extends StatelessWidget {
   final DateTime? initialEndDate;
   final int? initialOccurrences;
   final String? initialMonthlyType;
+  
+  // New parameter to customize options based on task type
+  final TaskType taskType;
 
   const RepeatSelector({
     super.key,
@@ -29,12 +33,18 @@ class RepeatSelector extends StatelessWidget {
     this.initialEndDate,
     this.initialOccurrences,
     this.initialMonthlyType,
+    this.taskType = TaskType.task,
   });
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     
+    // For birthdays, only show Yearly and Custom options
+    final isBirthday = taskType == TaskType.birthday;
+    final allDayRepeatOptions = isBirthday 
+        ? ['None', 'Yearly', 'Custom']
+        : ['None', 'Daily', 'Weekly', 'Monthly', 'Yearly', 'Custom'];
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 20),
@@ -58,13 +68,8 @@ class RepeatSelector extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 15),
-          _buildOption(context, "None"),
-          _buildOption(context, "Daily"),
-          _buildOption(context, "Weekly"),
-          _buildOption(context, "Monthly"),
-          _buildOption(context, "Yearly"),
-          const Divider(),
-          _buildOption(context, "Custom"),
+          ...allDayRepeatOptions.map((option) => _buildOption(context, option)),
+          if (!isBirthday) const Divider(),
         ],
       ),
     );
@@ -80,7 +85,7 @@ Widget _buildOption(BuildContext context, String label) {
           // Open the CustomSelector as a bottom sheet
           final customData = await showModalBottomSheet(
             context: context,
-            isScrollControlled: true, // Necessary for the selector's height
+            isScrollControlled: true,
             backgroundColor: Colors.transparent,
             builder: (context) => CustomSelector(
               eventStartDate: eventStartDate,
@@ -91,15 +96,14 @@ Widget _buildOption(BuildContext context, String label) {
               initialEndDate: initialEndDate,
               initialOccurrences: initialOccurrences,
               initialMonthlyType: initialMonthlyType,
+              taskType: taskType,
             ),
           );
 
-          // If the user pressed "Save" in CustomSelector, it returns a Map
           if (customData != null && context.mounted) {
             Navigator.pop(context, customData);
           }
         } else {
-          // Standard preset: just pass the string (e.g., "Daily")
           Navigator.pop(context, label);
         }
       },

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'date_picker.dart';
 
 class CustomSelector extends StatefulWidget {
@@ -11,6 +12,7 @@ class CustomSelector extends StatefulWidget {
   final DateTime? initialEndDate;
   final int? initialOccurrences;
   final String? initialMonthlyType;
+  final TaskType taskType;
 
   const CustomSelector({
     super.key,
@@ -22,6 +24,7 @@ class CustomSelector extends StatefulWidget {
     this.initialEndDate,
     this.initialOccurrences,
     this.initialMonthlyType,
+    this.taskType = TaskType.task,
   });
 
   @override
@@ -42,7 +45,9 @@ class _CustomSelectorState extends State<CustomSelector> {
   @override
   void initState() {
     super.initState();
-    // 1. RE-POPULATE THE TEXT FIELDS FROM PREVIOUS STATE
+    // For birthdays, default to yearly unit
+    final isBirthday = widget.taskType == TaskType.birthday;
+    
     _repeatController = TextEditingController(
       text: (widget.initialInterval ?? 1).toString()
     );
@@ -51,8 +56,7 @@ class _CustomSelectorState extends State<CustomSelector> {
       text: (widget.initialOccurrences ?? 1).toString()
     );
     
-    // 2. RE-POPULATE DROPDOWNS AND OPTIONS
-    _repeatUnit = widget.initialUnit ?? 'day';
+    _repeatUnit = isBirthday ? 'year' : (widget.initialUnit ?? 'day');
     _monthlyType = widget.initialMonthlyType ?? 'day';
     _selectedDays = widget.initialDays ?? {widget.eventStartDate.weekday % 7};
     _endOption = widget.initialEndOption ?? 'never';
@@ -74,6 +78,7 @@ class _CustomSelectorState extends State<CustomSelector> {
     final dayName = DateFormat('EEEE').format(referenceDate);
     final weekNum = ((referenceDate.day - 1) / 7).floor() + 1;
     final ordinal = ["", "first", "second", "third", "fourth", "fifth"][weekNum];
+    final isBirthday = widget.taskType == TaskType.birthday;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -128,6 +133,7 @@ class _CustomSelectorState extends State<CustomSelector> {
               RepeatUnitDropdown(
                 currentUnit: _repeatUnit,
                 onUnitChanged: (val) => setState(() => _repeatUnit = val),
+                isBirthdayOnly: isBirthday,
               ),
             ],
           ),
@@ -152,7 +158,7 @@ class _CustomSelectorState extends State<CustomSelector> {
                 );
               }),
             ),
-          ] else if (_repeatUnit == 'month') ...[
+          ] else if (_repeatUnit == 'month' && !isBirthday) ...[
             const SizedBox(height: 20),
             MonthlyTypeSelector(
               currentType: _monthlyType,
@@ -168,37 +174,39 @@ class _CustomSelectorState extends State<CustomSelector> {
 
           const SizedBox(height: 25),
 
-          const SectionTitle(title: "Ends"),
-          EndRow(
-            label: "Never",
-            isSelected: _endOption == 'never',
-            onTap: () => setState(() => _endOption = 'never'),
-          ),
-          EndRow(
-            label: "On",
-            isSelected: _endOption == 'on',
-            onTap: () => setState(() => _endOption = 'on'),
-            trailing: GestureDetector(
-              onTap: () async {
-                setState(() => _endOption = 'on');
-                final date = await pickDate(context, initialDate: _selectedEndDate);
-                if (date != null) setState(() => _selectedEndDate = date);
-              },
-              child: StaticBox(text: DateFormat('MMM d, yyyy').format(_selectedEndDate)),
+          if (!isBirthday) ...[
+            const SectionTitle(title: "Ends"),
+            EndRow(
+              label: "Never",
+              isSelected: _endOption == 'never',
+              onTap: () => setState(() => _endOption = 'never'),
             ),
-          ),
-          EndRow(
-            label: "After",
-            isSelected: _endOption == 'after',
-            onTap: () => setState(() => _endOption = 'after'),
-            trailing: Row(
-              children: [
-                TypeableBox(controller: _occurrenceController, width: 50),
-                const SizedBox(width: 10),
-                Text("occurrence(s)", style: TextStyle(fontWeight: FontWeight.bold, color: colors.onSurface)),
-              ],
+            EndRow(
+              label: "On",
+              isSelected: _endOption == 'on',
+              onTap: () => setState(() => _endOption = 'on'),
+              trailing: GestureDetector(
+                onTap: () async {
+                  setState(() => _endOption = 'on');
+                  final date = await pickDate(context, initialDate: _selectedEndDate);
+                  if (date != null) setState(() => _selectedEndDate = date);
+                },
+                child: StaticBox(text: DateFormat('MMM d, yyyy').format(_selectedEndDate)),
+              ),
             ),
-          ),
+            EndRow(
+              label: "After",
+              isSelected: _endOption == 'after',
+              onTap: () => setState(() => _endOption = 'after'),
+              trailing: Row(
+                children: [
+                  TypeableBox(controller: _occurrenceController, width: 50),
+                  const SizedBox(width: 10),
+                  Text("occurrence(s)", style: TextStyle(fontWeight: FontWeight.bold, color: colors.onSurface)),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -278,14 +286,23 @@ class StaticBox extends StatelessWidget {
 class RepeatUnitDropdown extends StatelessWidget {
   final String currentUnit;
   final ValueChanged<String> onUnitChanged;
-  const RepeatUnitDropdown({super.key, required this.currentUnit, required this.onUnitChanged});
+  final bool isBirthdayOnly;
+  
+  const RepeatUnitDropdown({
+    super.key, 
+    required this.currentUnit, 
+    required this.onUnitChanged,
+    this.isBirthdayOnly = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final availableUnits = isBirthdayOnly ? ["year"] : ["day", "week", "month", "year"];
+    
     return PopupMenuButton<String>(
       onSelected: onUnitChanged,
-      itemBuilder: (context) => ["day", "week", "month", "year"]
+      itemBuilder: (context) => availableUnits
           .map((u) => PopupMenuItem(
                 value: u, 
                 child: Text(u, style: TextStyle(fontWeight: currentUnit == u ? FontWeight.bold : FontWeight.normal))
