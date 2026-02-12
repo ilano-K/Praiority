@@ -1,6 +1,7 @@
 // File: lib/features/calendar/presentation/widgets/calendars/week_view.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/calendars/calendar_builder.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/sheets/add_task_sheet.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 import 'package:intl/intl.dart';
@@ -10,7 +11,6 @@ import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/components/appointment_card.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/components/task_summary_view.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/selectors/color_selector.dart';
-import 'package:flutter_app/features/calendar/presentation/widgets/sheets/add_task_sheet.dart';
 // Import DayView to share the TaskDataSource logic
 import 'day_view.dart';
 
@@ -88,9 +88,8 @@ class _WeekViewState extends ConsumerState<WeekView> {
         TimeRegion(
           startTime: DateTime(anchor.year, anchor.month, anchor.day, h, 0),
           endTime: DateTime(anchor.year, anchor.month, anchor.day, h, 59),
-          enablePointerInteraction: false,
-          // CRITICAL: enablePointerInteraction: true allows taps to be registered by the calendar
-          // The IgnorePointer wrapper on the visual element prevents the Container from blocking taps
+          enablePointerInteraction: true,
+          // CRITICAL: This makes the blocks repeat every day forever
           recurrenceRule: 'FREQ=DAILY;INTERVAL=1',
         ),
       );
@@ -146,84 +145,90 @@ class _WeekViewState extends ConsumerState<WeekView> {
 
             // --- GRID LOOK ---
             timeRegionBuilder: (context, details) {
-              return IgnorePointer(
-                ignoring: true,
-                child: Container(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 1,
-                    vertical: 0.5,
+              return Container(
+                margin: const EdgeInsets.symmetric(
+                  horizontal: 1,
+                  vertical: 0.5,
+                ),
+                decoration: BoxDecoration(
+                  color: colorScheme.onSurface.withOpacity(
+                    isDark ? 0.05 : 0.08,
                   ),
-                  decoration: BoxDecoration(
-                    color: colorScheme.onSurface.withOpacity(
-                      isDark ? 0.05 : 0.08,
-                    ),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+                  borderRadius: BorderRadius.circular(8),
                 ),
               );
             },
 
             // Uses cached DataSource
             dataSource: _dataSource,
-                appointmentBuilder: (context, details) {
+
+            appointmentBuilder: (context, details) {
               final Appointment appointment = details.appointments.first;
               
+              // Find the actual Task object from widget.tasks
               final task = widget.tasks.firstWhere(
                 (t) => t.id == appointment.id,
-                orElse: () => Task(id: "temp", title: "", startTime: DateTime.now()),
+                orElse: () => Task(
+                  id: "temp",
+                  title: "Missing",
+                  startTime: DateTime.now(),
+                ),
               );
-
-              if (task.id == "temp") return const SizedBox();
-
+              
+              if (task.id == "temp") {
+                return Container(color: Colors.red, width: 20, height: 20);
+              }
+              
               final bool isCompleted = task.status == TaskStatus.completed;
-              // Determine text color based on background brightness
-              final Color textColor = ThemeData.estimateBrightnessForColor(appointment.color) == Brightness.light
-                  ? Colors.black
-                  : Colors.white;
-
+              
               return Container(
-                // 1. Tighter Margins (Less gap between tasks)
-                margin: const EdgeInsets.symmetric(horizontal: 1, vertical: 1),
-                // 2. Skinny Padding (Content hugs the edges)
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                 decoration: BoxDecoration(
                   color: isCompleted ? appointment.color.withOpacity(0.5) : appointment.color,
-                  // 3. Smaller Radius (Less "bubbly")
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min, // Wrap content tightly
-                  children: [
-                    Text(
-                      appointment.subject,
-                      style: TextStyle(
-                        // 4. Smaller Font for Title
-                        fontSize: 10, 
-                        fontWeight: FontWeight.bold,
-                        color: isCompleted ? textColor.withOpacity(0.6) : textColor,
-                        decoration: isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
-                        fontStyle: isCompleted ? FontStyle.italic : FontStyle.normal,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
                     ),
-                    if (appointment.notes != null && appointment.notes!.isNotEmpty)
-                      Flexible( // Use Flexible to avoid overflow errors in small slots
-                        child: Text(
-                          appointment.notes!,
-                          style: TextStyle(
-                            // 5. Tiny Font for Notes
-                            fontSize: 9,
-                            color: isCompleted ? textColor.withOpacity(0.5) : textColor.withOpacity(0.8),
-                            decoration: isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
-                            fontStyle: isCompleted ? FontStyle.italic : FontStyle.normal,
-                          ),
-                          maxLines: 1, 
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
                   ],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        appointment.subject,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                          color: colorScheme.onSurface,
+                          decoration: isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
+                          fontStyle: isCompleted ? FontStyle.italic : FontStyle.normal,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (appointment.notes != null && appointment.notes!.isNotEmpty)
+                        Expanded(
+                          child: Text(
+                            appointment.notes!,
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: isCompleted 
+                                  ? colorScheme.onSurface.withOpacity(0.5) 
+                                  : colorScheme.onSurface.withOpacity(0.7),
+                              decoration: isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
+                              fontStyle: isCompleted ? FontStyle.italic : FontStyle.normal,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               );
             },
@@ -237,10 +242,9 @@ class _WeekViewState extends ConsumerState<WeekView> {
                   (t) => t.id == details.appointments!.first.id,
                 );
                 widget.onTaskTap(tappedTask);
-              } else if (details.targetElement == CalendarElement.calendarCell &&
-           details.date != null) {
-                // Only runs if you click an empty time slot
-                _showAddTaskSheet(context, details.date!);
+              } else if (details.date != null) {
+                // User clicked on a gray block or empty cell
+                _handleTimeRegionTap(context, details.date!);
               }
             },
 
@@ -403,7 +407,29 @@ class _WeekViewState extends ConsumerState<WeekView> {
     );
   }
   
-  // HERE IT IS: A helper method to show the sheet
+  void _handleTimeRegionTap(BuildContext context, DateTime tappedTime) {
+    // Check if there's already a task at this time
+    final existingTask = widget.tasks.firstWhere(
+      (t) =>
+          t.startTime != null &&
+          DateUtils.isSameDay(t.startTime!, tappedTime) &&
+          t.startTime!.hour == tappedTime.hour,
+      orElse: () => Task(
+        id: "none",
+        title: "",
+        startTime: tappedTime,
+      ),
+    );
+
+    if (existingTask.id != "none") {
+      // Show existing task
+      widget.onTaskTap(existingTask);
+    } else {
+      // Open add task sheet with the tapped time
+      _showAddTaskSheet(context, tappedTime);
+    }
+  }
+
   void _showAddTaskSheet(BuildContext context, DateTime tappedTime) {
     showModalBottomSheet(
       context: context,
