@@ -30,7 +30,6 @@ class TaskViewStateController extends AutoDisposeAsyncNotifier<List<Task>> {
     return repository.getTasksByCondition(
       start: start,
       end: end,
-      category: category,
       priority: priority,
       tag: tag,
     );

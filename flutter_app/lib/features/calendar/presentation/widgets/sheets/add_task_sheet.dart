@@ -97,7 +97,6 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
     _deadlineTime = TimeOfDay.fromDateTime(task.deadline ?? DateTime.now());
     _selectedTags = task.tags;
     _priority = _enumToString(task.priority);
-    _category = _enumToString(task.category);
     _movableByAI = task.isAiMovable;
     _setNonConfliction = task.isConflicting;
 
@@ -197,7 +196,6 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
             endTime: baseTask.endTime,
             deadline: baseTask.deadline,
             priority: baseTask.priority,
-            category: baseTask.category,
             tags: baseTask.tags,
             status: baseTask.status,
             colorValue: baseTask.colorValue,

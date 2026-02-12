@@ -3,6 +3,7 @@ import 'dart:io'; // For SocketException
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_app/features/calendar/data/datasources/calendar_local_data_source.dart';
 import 'package:flutter_app/features/calendar/data/models/task_model.dart';
+import 'package:flutter_app/features/calendar/data/models/task_model_mapper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:retry/retry.dart'; // Import this
 
@@ -52,7 +53,7 @@ class TaskSyncService {
 
     // 1. Prepare the BATCH (Much faster than looping)
     final List<Map<String, dynamic>> batchData = unsyncedTasks.map((task) {
-      final taskMap = task.toCloudJsonFormat();
+      final taskMap = task.toCloudJson();
 
       taskMap["user_id"] = _supabase.auth.currentUser!.id;
       return taskMap;
@@ -113,7 +114,7 @@ class TaskSyncService {
 
       // Map data
       final List<TaskModel> models = (response as List)
-          .map((e) => TaskModel.fromCloudJson(e))
+          .map((e) => TaskModelFactory.fromCloudJson(e as Map<String, dynamic>))
           .toList();
 
       debugPrint("[pullRemoteChanges]: SUCCESFULLY PULLED : ${models.length}");

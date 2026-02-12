@@ -149,14 +149,13 @@ class CalendarLocalDataSource {
         .isDeletedEqualTo(false)
         .sortByStartTime()
         .findAll();
-  
+
     return tasks.toList();
   }
 
   Future<List<TaskModel>> getTasksByCondition({
     DateTime? start,
     DateTime? end,
-    TaskCategory? category,
     TaskType? type,
     TaskStatus? status,
     String? tag,
@@ -164,7 +163,6 @@ class CalendarLocalDataSource {
   }) async {
     var query = isar.taskModels.filter().originalIdIsNotEmpty();
 
-    if (category != null) query = query.categoryEqualTo(category);
     if (type != null) query = query.typeEqualTo(type);
     if (status != null) query = query.statusEqualTo(status);
     if (tag != null) query = query.tagsElementEqualTo(tag);

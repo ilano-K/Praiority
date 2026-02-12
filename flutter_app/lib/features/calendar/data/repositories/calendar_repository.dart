@@ -45,7 +45,6 @@ class CalendarRepository {
   Future<List<Task>> getTasksByCondition({
     DateTime? start,
     DateTime? end,
-    TaskCategory? category,
     TaskType? type,
     TaskStatus? status,
     String? tag,
@@ -54,7 +53,6 @@ class CalendarRepository {
     final models = await localDataSource.getTasksByCondition(
       start: start,
       end: end,
-      category: category,
       type: type,
       priority: priority,
       status: status,

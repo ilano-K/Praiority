@@ -4,76 +4,107 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class AuthService {
   // supabase client
   final SupabaseClient _supabase = Supabase.instance.client;
-  static const String _webClientId = "863361017196-70lclvjrohu7mtio0kpb9d4oblrjusd5.apps.googleusercontent.com";
 
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    serverClientId: _webClientId,
-  );
+  // Note: Ensure this is the "Web Client ID" from Google Cloud Console
+  static const String _webClientId =
+      "863361017196-70lclvjrohu7mtio0kpb9d4oblrjusd5.apps.googleusercontent.com";
 
-  // account creation 
-  Future<AuthResponse> signUp(String username, String email, String password) async {
-    try{
+  // ✅ FIX 1: Use the Singleton Instance
+  // The constructor GoogleSignIn() was removed in your version. You must use .instance
+  final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
+
+  // Helper to ensure we only initialize once
+  bool _isGoogleInitialized = false;
+
+  /// ✅ FIX 2: Configuration Logic
+  /// Since we can't pass config to the constructor, we use the initialize method.
+  Future<void> _ensureGoogleInitialized() async {
+    if (_isGoogleInitialized) return;
+
+    try {
+      await _googleSignIn.initialize(
+        serverClientId: _webClientId,
+        // Note: 'scopes' are not available in initialize() in this version.
+        // You will request calendar permissions later using requestScopes() if needed.
+      );
+      _isGoogleInitialized = true;
+    } catch (e) {
+      // If it throws, it likely means it was already initialized elsewhere.
+      // We catch it so the app doesn't crash.
+      print("[AuthService] Warning: GoogleSignIn init check: $e");
+      _isGoogleInitialized = true;
+    }
+  }
+
+  // account creation
+  Future<AuthResponse> signUp(
+    String username,
+    String email,
+    String password,
+  ) async {
+    try {
       final response = await _supabase.auth.signUp(
-
         email: email,
         password: password,
         emailRedirectTo: 'praiority.scheduler://login-callback',
-        data: {
-          "username": username,
-        }
+        data: {"username": username},
       );
       return response;
-    }catch (e){
-      // handle errors 
+    } catch (e) {
+      // handle errors
       rethrow;
     }
   }
 
-  // sign in 
+  // sign in
   Future<AuthResponse> signIn(String email, String password) async {
-    try{
+    try {
       final response = await _supabase.auth.signInWithPassword(
         email: email,
-        password: password
+        password: password,
       );
       return response;
-    }catch (e){
-       // handle errors 
+    } catch (e) {
+      // handle errors
       rethrow;
     }
   }
 
   Future<AuthResponse> signInWithGoogle() async {
-    try{
+    try {
+      // ✅ FIX 3: Initialize before signing in
+      await _ensureGoogleInitialized();
+
       // trigger login pop up
-      final googleUser = await _googleSignIn.signIn();
+      final GoogleSignInAccount googleUser = await _googleSignIn.authenticate();
 
-      if(googleUser == null){
-        throw 'Login canceled';
-      }
-
-      final googleAuth = await googleUser.authentication;
-      final accessToken = googleAuth.accessToken;
+      final googleAuth = googleUser.authentication;
       final idToken = googleAuth.idToken;
 
-      if(idToken == null)throw  'No Id Token Found';
+      if (idToken == null) throw 'No Id Token Found. Check Web Client ID.';
 
       return await _supabase.auth.signInWithIdToken(
-        provider: OAuthProvider.google, 
-        idToken: idToken, 
-        accessToken: accessToken
-      ); 
-    }catch (e){
+        provider: OAuthProvider.google,
+        idToken: idToken,
+        accessToken: null,
+      );
+    } on GoogleSignInException catch (e) {
+      if (e.code == GoogleSignInExceptionCode.canceled) {
+        throw 'Login canceled';
+      }
+      rethrow;
+    } catch (e) {
       print("[DEBUG]: 1. AuthService - SIGN IN FAILED WITH ERROR: $e");
       rethrow;
     }
   }
+
   //sign out
   Future<void> signOut() async {
-    print("[DEBUG]: 1. AuthService - Starting Google SignOut"); 
+    print("[DEBUG]: 1. AuthService - Starting Google SignOut");
     try {
       await _googleSignIn.signOut();
-      print("[DEBUG]: 2. AuthService - Google SignOut DONE"); 
+      print("[DEBUG]: 2. AuthService - Google SignOut DONE");
     } catch (e) {
       print("[DEBUG]: 2. AuthService - Google SignOut FAILED: $e");
     }

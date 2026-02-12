@@ -3,8 +3,9 @@ import 'package:uuid/uuid.dart';
 import 'enums.dart';
 
 const unset = Object();
-// Equatable--useful for editing a task. 
-class Task extends Equatable{
+
+// Equatable--useful for editing a task.
+class Task extends Equatable {
   final String id;
   final TaskType type;
   final int? colorValue;
@@ -18,21 +19,22 @@ class Task extends Equatable{
   final DateTime? startTime; //may be null if smart scheduled
   final DateTime? endTime; // may be null if smart scheduled
   final DateTime? deadline; // if none, will be defaulted to today
-  
+
   final TaskPriority priority;
-  final TaskCategory category;
-  final List<String>tags;
-  final String?recurrenceRule; // using RRULE
+  final List<String> tags;
+  final String? recurrenceRule; // using RRULE
   final String? location;
 
   // advanced
   final bool isAiMovable; // can be moved automatically by AI
   final bool isConflicting;
   final List<Duration> reminderOffsets;
- 
+
   //flags
   final TaskStatus status;
-  final bool isSynced; 
+  final bool isSynced;
+
+  final String? googleEventId;
 
   const Task({
     required this.id,
@@ -47,15 +49,15 @@ class Task extends Equatable{
     this.endTime,
     this.deadline,
     this.priority = TaskPriority.medium,
-    this.category = TaskCategory.none,
     this.tags = const [],
     this.recurrenceRule,
     this.location,
     this.isAiMovable = true,
-    this.isConflicting = true ,
+    this.isConflicting = true,
     this.status = TaskStatus.unscheduled,
     this.isSynced = false,
     this.reminderOffsets = const [],
+    this.googleEventId,
   });
 
   factory Task.create({
@@ -93,7 +95,6 @@ class Task extends Equatable{
       endTime: endTime,
       deadline: deadline,
       priority: priority,
-      category: category,
       tags: tags,
       recurrenceRule: recurrenceRule,
       location: location,
@@ -122,11 +123,12 @@ class Task extends Equatable{
     Object? recurrenceRule = unset,
     String? location,
     bool? isAiMovable,
-    bool? isConflicting, 
+    bool? isConflicting,
     TaskStatus? status,
     bool? isSynced,
     List<Duration>? reminderOffsets,
-  }){
+    String? googleEventId,
+  }) {
     return Task(
       id: id ?? this.id,
       type: type ?? this.type,
@@ -138,46 +140,44 @@ class Task extends Equatable{
       isSmartSchedule: isSmartSchedule ?? this.isSmartSchedule,
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,
-      deadline: deadline == unset ? this.deadline: deadline as DateTime?,
+      deadline: deadline == unset ? this.deadline : deadline as DateTime?,
       priority: priority ?? this.priority,
-      category: category ?? this.category,
       tags: tags ?? this.tags,
       recurrenceRule: recurrenceRule == unset
-        ? this.recurrenceRule
-        : recurrenceRule as String?, 
+          ? this.recurrenceRule
+          : recurrenceRule as String?,
       location: location ?? this.location,
       isAiMovable: isAiMovable ?? this.isAiMovable,
       isConflicting: isConflicting ?? this.isConflicting,
       status: status ?? this.status,
       isSynced: isSynced ?? this.isSynced,
-      reminderOffsets: reminderOffsets ?? this.reminderOffsets
+      reminderOffsets: reminderOffsets ?? this.reminderOffsets,
+      googleEventId: googleEventId ?? this.googleEventId,
     );
   }
 
   @override
   List<Object?> get props => [
-        id,
-        type,
-        colorValue,
-        isAllDay,
-        title,
-        description,
-        aiTip,
-        isSmartSchedule,
-        startTime,
-        endTime,
-        deadline,
-        priority,
-        category,
-        tags,
-        recurrenceRule,
-        location,
-        isAiMovable,
-        isConflicting,
-        status,
-        isSynced,
-        reminderOffsets
-      ];
-  
+    id,
+    type,
+    colorValue,
+    isAllDay,
+    title,
+    description,
+    aiTip,
+    isSmartSchedule,
+    startTime,
+    endTime,
+    deadline,
+    priority,
+    tags,
+    recurrenceRule,
+    location,
+    isAiMovable,
+    isConflicting,
+    status,
+    isSynced,
+    reminderOffsets,
+    googleEventId,
+  ];
 }
-
