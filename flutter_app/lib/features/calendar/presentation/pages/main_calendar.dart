@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/domain/entities/date_range.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/components/reorganize.dart';
+import 'package:flutter_app/features/calendar/presentation/widgets/components/smart_Sched.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
@@ -339,6 +340,21 @@ class _MainCalendarState extends ConsumerState<MainCalendar>
                   child: Material(
                     color: Colors.transparent,
                     child: const Reschedule(),
+                  ),
+                ),
+              ),
+            );
+          }
+
+          else if (key == "smart schedule") {
+            showDialog(
+              context: context,
+              barrierColor: Colors.black.withOpacity(0.3),
+              builder: (context) => Center(
+                child: SingleChildScrollView(
+                  child: Material(
+                    color: Colors.transparent,
+                    child: const SmartSchedule(), // <--- Opens new class
                   ),
                 ),
               ),
