@@ -391,11 +391,30 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                       value: DateFormat('MMMM d, y').format(_startDate),
                       trailing: _endTime.format(context),
                       onTapValue: () async {
+                        final picked = await pickDate(
+                          context,
+                          initialDate: _startDate,
+                        );
+                        if (picked != null) setState(() => _startDate = picked);
+                      },
+                      onTapTrailing: () async {
                         final picked = await pickTime(
                           context,
-                          initialTime: _endTime,
+                          initialTime: _startTime,
                         );
-                        if (picked != null) setState(() => _endTime = picked);
+                        if (picked != null) {
+                          setState(() {
+                            _startTime = picked;
+                            // Auto-adjust end time if it's now equal to or before start time
+                            if (_endTime.hour <= _startTime.hour && 
+                                _endTime.minute <= _startTime.minute) {
+                              _endTime = TimeOfDay(
+                                hour: (_startTime.hour + 1) % 24,
+                                minute: _startTime.minute,
+                              );
+                            }
+                          });
+                        }
                       },
                     ),
                   ],
