@@ -1,4 +1,3 @@
-
 import 'package:flutter_app/features/calendar/presentation/utils/date_time_utils.dart';
 import 'package:flutter_app/features/settings/domain/entities/user_preferences.dart';
 import 'package:isar/isar.dart';
@@ -6,7 +5,7 @@ import 'package:uuid/uuid.dart';
 
 part 'user_preferences_model.g.dart';
 
-@collection 
+@collection
 class UserPreferencesModel {
   Id id = Isar.autoIncrement;
   String? cloudId;
@@ -18,8 +17,8 @@ class UserPreferencesModel {
   bool isSetupComplete = false;
 }
 
-extension UserPreferencesModelMapper on UserPreferencesModel{
-  UserPreferences toDomain(){
+extension UserPreferencesModelMapper on UserPreferencesModel {
+  UserPreferences toDomain() {
     return UserPreferences(
       id: id,
       cloudId: cloudId,
@@ -28,13 +27,13 @@ extension UserPreferencesModelMapper on UserPreferencesModel{
       customPrompt: customPrompt,
       isDarkMode: isDarkMode,
       isSynced: isSynced,
-      isSetupComplete: isSetupComplete
+      isSetupComplete: isSetupComplete,
     );
   }
 }
 
-extension UserPreferencesMapper on UserPreferences{
-  UserPreferencesModel toModel(){
+extension UserPreferencesMapper on UserPreferences {
+  UserPreferencesModel toModel() {
     return UserPreferencesModel()
       ..id = id ?? Isar.autoIncrement
       ..cloudId = cloudId
@@ -56,7 +55,7 @@ extension UserPreferencesModelJson on UserPreferencesModel {
       'end_work_hours': toUtcHourMinute(endWorkHours!),
       'custom_prompt': customPrompt,
       "timezone": getUtcOffsetString(),
-      'is_dark_mode' : isDarkMode,
+      'is_dark_mode': isDarkMode,
     };
   }
 

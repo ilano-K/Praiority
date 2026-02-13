@@ -21,7 +21,6 @@ class UserPrefSyncService {
     final userPrefsModel = await _localDb.getPreferences();
 
     debugPrint("[DEBUG] MODEL: $userPrefsModel");
-
     if (userPrefsModel == null) return;
     // if null or already synced, return
     if (userPrefsModel.isSynced == true) return;

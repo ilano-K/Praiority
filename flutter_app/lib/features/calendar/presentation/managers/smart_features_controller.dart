@@ -1,5 +1,6 @@
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_provider.dart';
 import 'package:flutter_app/features/smart_features/data/models/smart_advice_request.dart';
+import 'package:flutter_app/features/smart_features/data/models/smart_generate_request.dart';
 import 'package:flutter_app/features/smart_features/data/models/smart_organize_request.dart';
 import 'package:flutter_app/features/smart_features/data/models/smart_schedule_request.dart';
 import 'package:flutter_app/features/smart_features/services/smart_service.dart';
@@ -33,6 +34,26 @@ class SmartFeaturesController {
       );
 
       await _ref.read(smartServiceProvider).smartSchedule(request: request);
+    } catch (e) {
+      print(e);
+      rethrow;
+    }
+  }
+
+  Future<void> executeSmartGenerate(
+    DateTime targetDate,
+    DateTime currentTime, {
+    String? instruction,
+  }) async {
+    print("[DEBUG] Executing request: Smart Generate Task");
+    try {
+      final request = SmartGenerateRequest(
+        targetDate: targetDate,
+        currentTime: currentTime,
+        instruction: instruction,
+      );
+
+      await _ref.read(smartServiceProvider).smartGenerateTask(request: request);
     } catch (e) {
       print(e);
       rethrow;

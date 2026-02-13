@@ -64,12 +64,12 @@ class _SmartScheduleState extends ConsumerState<SmartSchedule> {
             ),
           ),
           const SizedBox(height: 24),
-          
+
           // --- TARGET DATE ROW (Clickable) ---
           InkWell(
             onTap: () async {
               final DateTime? picked = await pickDate(
-                context, 
+                context,
                 initialDate: _targetDate,
               );
               if (picked != null && picked != _targetDate) {
@@ -98,7 +98,7 @@ class _SmartScheduleState extends ConsumerState<SmartSchedule> {
               ],
             ),
           ),
-          
+
           const SizedBox(height: 12),
           Divider(color: colorScheme.onSurface.withOpacity(0.1)),
           const SizedBox(height: 20),
@@ -113,7 +113,8 @@ class _SmartScheduleState extends ConsumerState<SmartSchedule> {
               maxLines: 3,
               decoration: InputDecoration(
                 border: InputBorder.none,
-                hintText: "e.g., High priority: Fix the login bug today. Group it with other coding tasks and set the deadline for 5 PM.",
+                hintText:
+                    "e.g., High priority: Fix the login bug today. Group it with other coding tasks and set the deadline for 5 PM.",
                 hintStyle: TextStyle(
                   color: colorScheme.onSurface.withOpacity(0.5),
                   fontSize: 14,
@@ -128,20 +129,22 @@ class _SmartScheduleState extends ConsumerState<SmartSchedule> {
             child: ElevatedButton(
               onPressed: () async {
                 final instruction = _instructionController.text.trim();
-                final calendarController = ref.read(calendarControllerProvider.notifier);
-                
+                final calendarController = ref.read(
+                  calendarControllerProvider.notifier,
+                );
+
                 try {
                   final targetDateOnly = dateOnly(_targetDate);
-                  await calendarController.reorganizeTask(
-                    targetDateOnly, 
-                    instruction.isEmpty ? null : instruction
+                  await calendarController.generateTask(
+                    targetDateOnly,
+                    instruction.isEmpty ? null : instruction,
                   );
                   if (context.mounted) Navigator.pop(context);
                 } catch (e) {
                   if (context.mounted) {
                     AppDialogs.showWarning(
-                      context, 
-                      title: "Error", 
+                      context,
+                      title: "Error",
                       message: "An unexpected error occurred",
                     );
                   }
@@ -156,10 +159,10 @@ class _SmartScheduleState extends ConsumerState<SmartSchedule> {
                 elevation: 0,
               ),
               child: Text(
-                "Optimize Schedule",
+                "Generate a task",
                 style: TextStyle(
-                  fontSize: 16, 
-                  fontWeight: FontWeight.bold, 
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
                   color: colorScheme.onSurface,
                 ),
               ),

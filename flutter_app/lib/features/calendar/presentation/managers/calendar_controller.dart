@@ -112,6 +112,21 @@ class CalendarStateController extends AsyncNotifier<List<Task>> {
     await refreshUi();
   }
 
+  Future<void> generateTask(DateTime targetDate, String? instruction) async {
+    final smartController = ref.read(smartFeaturesControllerProvider);
+
+    final currentTime = DateTime.now();
+    await smartController.executeSmartGenerate(
+      targetDate,
+      currentTime,
+      instruction: instruction,
+    );
+
+    final syncService = ref.read(taskSyncServiceProvider);
+    await syncService.pullRemoteChanges();
+    await refreshUi();
+  }
+
   Future<void> deleteTask(Task task) async {
     final deleteTask = ref.read(deleteTaskUseCaseProvider);
     await deleteTask.execute(task);
