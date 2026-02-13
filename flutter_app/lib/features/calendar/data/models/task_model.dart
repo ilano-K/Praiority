@@ -22,7 +22,6 @@ class TaskModel {
 
   String? description;
   String? aiTip;
-  String? location;
   int? colorValue;
 
   DateTime? startTime;
@@ -63,7 +62,6 @@ class TaskModel {
       title: title,
       description: description,
       aiTip: aiTip,
-      location: location,
       colorValue: colorValue,
       startTime: startTime,
       endTime: endTime,
@@ -89,7 +87,6 @@ class TaskModel {
       ..tags = task.tags
       ..title = task.title
       ..description = task.description
-      ..location = task.location
       ..colorValue = task.colorValue
       ..startTime = task.startTime
       ..endTime = task.endTime

@@ -48,7 +48,6 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
     _titleController.text = birthday.title;
     _descController.text = birthday.description ?? "";
     _birthdayDate = birthday.startTime ?? DateTime.now();
-    _location = birthday.location ?? "None";
 
     if (birthday.colorValue != null) {
       _selectedColor = appEventColors.firstWhere(
@@ -92,7 +91,6 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
       startTime: _birthdayDate, // Birthdays usually start on the selected date
       endTime: endOfDay,
       isAllDay: true,
-      location: _location,
       status: TaskStatus.scheduled,
       colorValue: colorValue,
       recurrenceRule: RRuleUtils.repeatToRRule("Yearly", start: _birthdayDate),
@@ -101,7 +99,6 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
       isSmartSchedule: false,
     );
 
-
     return widget.task != null
         ? widget.task!.copyWith(
             title: baseTask.title,
@@ -109,7 +106,6 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
             startTime: baseTask.startTime,
             endTime: baseTask.endTime,
             isAllDay: baseTask.isAllDay,
-            location: baseTask.location,
             colorValue: baseTask.colorValue,
             recurrenceRule: baseTask.recurrenceRule,
             deadline: null,
@@ -179,5 +175,4 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
       ),
     );
   }
-
 }

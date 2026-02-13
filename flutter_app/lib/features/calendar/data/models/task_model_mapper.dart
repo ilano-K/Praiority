@@ -14,7 +14,6 @@ extension TaskModelMapper on TaskModel {
       "title": title,
       "description": description,
       "ai_tip": aiTip,
-      "location": location,
       "status": status.name,
       "color_value": colorValue,
       "start_time": startTime?.toUtc().toIso8601String(),
@@ -45,7 +44,6 @@ extension TaskModelFactory on TaskModel {
       ..title = json["title"] as String
       ..description = json["description"] as String?
       ..aiTip = json["ai_tip"] as String?
-      ..location = json["location"] as String?
       ..colorValue = json["color_value"] as int?
       ..startTime = json["start_time"] != null
           ? DateTime.parse(json["start_time"] as String).toLocal()

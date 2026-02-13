@@ -77,61 +77,56 @@ const TaskModelSchema = CollectionSchema(
       name: r'isSynced',
       type: IsarType.bool,
     ),
-    r'location': PropertySchema(
-      id: 12,
-      name: r'location',
-      type: IsarType.string,
-    ),
     r'originalId': PropertySchema(
-      id: 13,
+      id: 12,
       name: r'originalId',
       type: IsarType.string,
     ),
     r'priority': PropertySchema(
-      id: 14,
+      id: 13,
       name: r'priority',
       type: IsarType.string,
       enumMap: _TaskModelpriorityEnumValueMap,
     ),
     r'recurrenceRule': PropertySchema(
-      id: 15,
+      id: 14,
       name: r'recurrenceRule',
       type: IsarType.string,
     ),
     r'reminderMinutes': PropertySchema(
-      id: 16,
+      id: 15,
       name: r'reminderMinutes',
       type: IsarType.longList,
     ),
     r'startTime': PropertySchema(
-      id: 17,
+      id: 16,
       name: r'startTime',
       type: IsarType.dateTime,
     ),
     r'status': PropertySchema(
-      id: 18,
+      id: 17,
       name: r'status',
       type: IsarType.string,
       enumMap: _TaskModelstatusEnumValueMap,
     ),
     r'tags': PropertySchema(
-      id: 19,
+      id: 18,
       name: r'tags',
       type: IsarType.stringList,
     ),
     r'title': PropertySchema(
-      id: 20,
+      id: 19,
       name: r'title',
       type: IsarType.string,
     ),
     r'type': PropertySchema(
-      id: 21,
+      id: 20,
       name: r'type',
       type: IsarType.string,
       enumMap: _TaskModeltypeEnumValueMap,
     ),
     r'updatedAt': PropertySchema(
-      id: 22,
+      id: 21,
       name: r'updatedAt',
       type: IsarType.dateTime,
     )
@@ -214,12 +209,6 @@ int _taskModelEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
-  {
-    final value = object.location;
-    if (value != null) {
-      bytesCount += 3 + value.length * 3;
-    }
-  }
   bytesCount += 3 + object.originalId.length * 3;
   bytesCount += 3 + object.priority.name.length * 3;
   {
@@ -265,17 +254,16 @@ void _taskModelSerialize(
   writer.writeBool(offsets[9], object.isConflicting);
   writer.writeBool(offsets[10], object.isDeleted);
   writer.writeBool(offsets[11], object.isSynced);
-  writer.writeString(offsets[12], object.location);
-  writer.writeString(offsets[13], object.originalId);
-  writer.writeString(offsets[14], object.priority.name);
-  writer.writeString(offsets[15], object.recurrenceRule);
-  writer.writeLongList(offsets[16], object.reminderMinutes);
-  writer.writeDateTime(offsets[17], object.startTime);
-  writer.writeString(offsets[18], object.status.name);
-  writer.writeStringList(offsets[19], object.tags);
-  writer.writeString(offsets[20], object.title);
-  writer.writeString(offsets[21], object.type.name);
-  writer.writeDateTime(offsets[22], object.updatedAt);
+  writer.writeString(offsets[12], object.originalId);
+  writer.writeString(offsets[13], object.priority.name);
+  writer.writeString(offsets[14], object.recurrenceRule);
+  writer.writeLongList(offsets[15], object.reminderMinutes);
+  writer.writeDateTime(offsets[16], object.startTime);
+  writer.writeString(offsets[17], object.status.name);
+  writer.writeStringList(offsets[18], object.tags);
+  writer.writeString(offsets[19], object.title);
+  writer.writeString(offsets[20], object.type.name);
+  writer.writeDateTime(offsets[21], object.updatedAt);
 }
 
 TaskModel _taskModelDeserialize(
@@ -298,23 +286,22 @@ TaskModel _taskModelDeserialize(
   object.isConflicting = reader.readBool(offsets[9]);
   object.isDeleted = reader.readBool(offsets[10]);
   object.isSynced = reader.readBool(offsets[11]);
-  object.location = reader.readStringOrNull(offsets[12]);
-  object.originalId = reader.readString(offsets[13]);
+  object.originalId = reader.readString(offsets[12]);
   object.priority =
-      _TaskModelpriorityValueEnumMap[reader.readStringOrNull(offsets[14])] ??
+      _TaskModelpriorityValueEnumMap[reader.readStringOrNull(offsets[13])] ??
           TaskPriority.none;
-  object.recurrenceRule = reader.readStringOrNull(offsets[15]);
-  object.reminderMinutes = reader.readLongList(offsets[16]);
-  object.startTime = reader.readDateTimeOrNull(offsets[17]);
+  object.recurrenceRule = reader.readStringOrNull(offsets[14]);
+  object.reminderMinutes = reader.readLongList(offsets[15]);
+  object.startTime = reader.readDateTimeOrNull(offsets[16]);
   object.status =
-      _TaskModelstatusValueEnumMap[reader.readStringOrNull(offsets[18])] ??
+      _TaskModelstatusValueEnumMap[reader.readStringOrNull(offsets[17])] ??
           TaskStatus.unscheduled;
-  object.tags = reader.readStringList(offsets[19]) ?? [];
-  object.title = reader.readString(offsets[20]);
+  object.tags = reader.readStringList(offsets[18]) ?? [];
+  object.title = reader.readString(offsets[19]);
   object.type =
-      _TaskModeltypeValueEnumMap[reader.readStringOrNull(offsets[21])] ??
+      _TaskModeltypeValueEnumMap[reader.readStringOrNull(offsets[20])] ??
           TaskType.task;
-  object.updatedAt = reader.readDateTimeOrNull(offsets[22]);
+  object.updatedAt = reader.readDateTimeOrNull(offsets[21]);
   return object;
 }
 
@@ -350,29 +337,27 @@ P _taskModelDeserializeProp<P>(
     case 11:
       return (reader.readBool(offset)) as P;
     case 12:
-      return (reader.readStringOrNull(offset)) as P;
-    case 13:
       return (reader.readString(offset)) as P;
-    case 14:
+    case 13:
       return (_TaskModelpriorityValueEnumMap[reader.readStringOrNull(offset)] ??
           TaskPriority.none) as P;
-    case 15:
+    case 14:
       return (reader.readStringOrNull(offset)) as P;
-    case 16:
+    case 15:
       return (reader.readLongList(offset)) as P;
-    case 17:
+    case 16:
       return (reader.readDateTimeOrNull(offset)) as P;
-    case 18:
+    case 17:
       return (_TaskModelstatusValueEnumMap[reader.readStringOrNull(offset)] ??
           TaskStatus.unscheduled) as P;
-    case 19:
+    case 18:
       return (reader.readStringList(offset) ?? []) as P;
-    case 20:
+    case 19:
       return (reader.readString(offset)) as P;
-    case 21:
+    case 20:
       return (_TaskModeltypeValueEnumMap[reader.readStringOrNull(offset)] ??
           TaskType.task) as P;
-    case 22:
+    case 21:
       return (reader.readDateTimeOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1546,154 +1531,6 @@ extension TaskModelQueryFilter
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'isSynced',
         value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> locationIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'location',
-      ));
-    });
-  }
-
-  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition>
-      locationIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'location',
-      ));
-    });
-  }
-
-  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> locationEqualTo(
-    String? value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'location',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> locationGreaterThan(
-    String? value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'location',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> locationLessThan(
-    String? value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'location',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> locationBetween(
-    String? lower,
-    String? upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'location',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> locationStartsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'location',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> locationEndsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'location',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> locationContains(
-      String value,
-      {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.contains(
-        property: r'location',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> locationMatches(
-      String pattern,
-      {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.matches(
-        property: r'location',
-        wildcard: pattern,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> locationIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'location',
-        value: '',
-      ));
-    });
-  }
-
-  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition>
-      locationIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'location',
-        value: '',
       ));
     });
   }
@@ -3183,18 +3020,6 @@ extension TaskModelQuerySortBy on QueryBuilder<TaskModel, TaskModel, QSortBy> {
     });
   }
 
-  QueryBuilder<TaskModel, TaskModel, QAfterSortBy> sortByLocation() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'location', Sort.asc);
-    });
-  }
-
-  QueryBuilder<TaskModel, TaskModel, QAfterSortBy> sortByLocationDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'location', Sort.desc);
-    });
-  }
-
   QueryBuilder<TaskModel, TaskModel, QAfterSortBy> sortByOriginalId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'originalId', Sort.asc);
@@ -3450,18 +3275,6 @@ extension TaskModelQuerySortThenBy
     });
   }
 
-  QueryBuilder<TaskModel, TaskModel, QAfterSortBy> thenByLocation() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'location', Sort.asc);
-    });
-  }
-
-  QueryBuilder<TaskModel, TaskModel, QAfterSortBy> thenByLocationDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'location', Sort.desc);
-    });
-  }
-
   QueryBuilder<TaskModel, TaskModel, QAfterSortBy> thenByOriginalId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'originalId', Sort.asc);
@@ -3637,13 +3450,6 @@ extension TaskModelQueryWhereDistinct
     });
   }
 
-  QueryBuilder<TaskModel, TaskModel, QDistinct> distinctByLocation(
-      {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'location', caseSensitive: caseSensitive);
-    });
-  }
-
   QueryBuilder<TaskModel, TaskModel, QDistinct> distinctByOriginalId(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -3789,12 +3595,6 @@ extension TaskModelQueryProperty
   QueryBuilder<TaskModel, bool, QQueryOperations> isSyncedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isSynced');
-    });
-  }
-
-  QueryBuilder<TaskModel, String?, QQueryOperations> locationProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'location');
     });
   }
 

@@ -23,7 +23,6 @@ class Task extends Equatable {
   final TaskPriority priority;
   final List<String> tags;
   final String? recurrenceRule; // using RRULE
-  final String? location;
 
   // advanced
   final bool isAiMovable; // can be moved automatically by AI
@@ -51,7 +50,6 @@ class Task extends Equatable {
     this.priority = TaskPriority.none,
     this.tags = const [],
     this.recurrenceRule,
-    this.location,
     this.isAiMovable = true,
     this.isConflicting = true,
     this.status = TaskStatus.unscheduled,
@@ -74,7 +72,6 @@ class Task extends Equatable {
     TaskPriority? priority,
     List<String> tags = const [],
     String? recurrenceRule,
-    String? location,
     bool? isAiMovable,
     bool? isConflicting,
     TaskStatus status = TaskStatus.unscheduled,
@@ -96,7 +93,6 @@ class Task extends Equatable {
       priority: priority ?? TaskPriority.none,
       tags: tags,
       recurrenceRule: recurrenceRule,
-      location: location,
       isAiMovable: isAiMovable ?? false,
       isConflicting: isConflicting ?? true,
       status: status,
@@ -120,7 +116,6 @@ class Task extends Equatable {
     TaskCategory? category,
     List<String>? tags,
     Object? recurrenceRule = unset,
-    String? location,
     bool? isAiMovable,
     bool? isConflicting,
     TaskStatus? status,
@@ -145,7 +140,6 @@ class Task extends Equatable {
       recurrenceRule: recurrenceRule == unset
           ? this.recurrenceRule
           : recurrenceRule as String?,
-      location: location ?? this.location,
       isAiMovable: isAiMovable ?? this.isAiMovable,
       isConflicting: isConflicting ?? this.isConflicting,
       status: status ?? this.status,
@@ -171,7 +165,6 @@ class Task extends Equatable {
     priority,
     tags,
     recurrenceRule,
-    location,
     isAiMovable,
     isConflicting,
     status,

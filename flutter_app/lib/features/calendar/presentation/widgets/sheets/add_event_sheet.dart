@@ -53,7 +53,6 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
   int? _customCount;
   String? _monthlyType;
 
-  String _location = "None";
   List<String> _selectedTags = [];
   CalendarColor _selectedColor = appEventColors[0];
   List<String> _tagsList = [];
@@ -90,7 +89,6 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
       _endDate = event.endTime ?? DateTime.now();
       _endTime = TimeOfDay.fromDateTime(event.endTime ?? DateTime.now());
       _selectedTags = event.tags;
-      _location = event.location ?? "None";
       _movableByAI = event.isAiMovable;
       _setNonConfliction = event.isConflicting;
 
@@ -257,7 +255,6 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
       deadline: null,
       isAllDay: _isAllDay,
       tags: _selectedTags,
-      location: _location,
       status: TaskStatus.scheduled,
       recurrenceRule: RRuleUtils.repeatToRRule(
         _repeat,
@@ -287,7 +284,6 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
             deadline: baseTask.deadline,
             isAllDay: baseTask.isAllDay,
             tags: baseTask.tags,
-            location: baseTask.location,
             recurrenceRule: baseTask.recurrenceRule,
             colorValue: baseTask.colorValue,
             isAiMovable: baseTask.isAiMovable,
