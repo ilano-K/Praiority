@@ -7,10 +7,13 @@ class ForgotPassPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Access the current theme color scheme
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+      decoration: BoxDecoration(
+        color: colorScheme.surface, // ✅ Adapted background (White or Dark Grey)
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
       child: Column(
@@ -22,18 +25,19 @@ class ForgotPassPage extends StatelessWidget {
             children: [
               IconButton(
                 onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.close, color: Colors.black, size: 28),
+                // ✅ Icon matches text color (Black or White)
+                icon: Icon(Icons.close, color: colorScheme.onSurface, size: 28),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
               ),
-              const Expanded(
+              Expanded(
                 child: Center(
                   child: Text(
                     "Forgot Password",
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w900,
-                      color: Colors.black,
+                      color: colorScheme.onSurface, // ✅ Adapted text color
                     ),
                   ),
                 ),
@@ -43,36 +47,39 @@ class ForgotPassPage extends StatelessWidget {
           ),
           const SizedBox(height: 35),
 
-          const Text(
+          Text(
             "Enter your email for the authentication process",
             style: TextStyle(
               fontSize: 16,
-              color: Colors.black54,
+              // ✅ Uses text color with opacity for subtitle effect
+              color: colorScheme.onSurface.withOpacity(0.6),
               height: 1.4,
             ),
           ),
           const SizedBox(height: 25),
 
+          // --- EMAIL INPUT ---
           TextField(
-            style: const TextStyle(color: Colors.black),
+            style: TextStyle(color: colorScheme.onSurface), // ✅ Input text color
             decoration: InputDecoration(
               hintText: 'Email',
-              hintStyle: const TextStyle(
-                color: Colors.black54, 
-                fontWeight: FontWeight.bold
+              hintStyle: TextStyle(
+                color: colorScheme.onSurface.withOpacity(0.6), // ✅ Hint color
+                fontWeight: FontWeight.bold,
               ),
               contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+              // ✅ Borders adapt to theme (Black in Light, White in Dark)
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(15),
-                borderSide: const BorderSide(color: Colors.black),
+                borderSide: BorderSide(color: colorScheme.onSurface),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(15),
-                borderSide: const BorderSide(color: Colors.black),
+                borderSide: BorderSide(color: colorScheme.onSurface),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(15),
-                borderSide: const BorderSide(color: Colors.black, width: 2),
+                borderSide: BorderSide(color: colorScheme.onSurface, width: 2),
               ),
             ),
           ),
@@ -84,10 +91,7 @@ class ForgotPassPage extends StatelessWidget {
             height: 56,
             child: ElevatedButton(
               onPressed: () {
-                // 1. Close the current Forgot Password sheet
                 Navigator.pop(context);
-
-                // 2. Open the Reset Password sheet
                 showModalBottomSheet(
                   context: context,
                   isScrollControlled: true,
@@ -101,8 +105,10 @@ class ForgotPassPage extends StatelessWidget {
                 );
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
-                foregroundColor: Colors.white,
+                // ✅ Button uses Primary color (Light Blue or Deep Blue)
+                backgroundColor: colorScheme.onSurface,
+                // ✅ Text uses OnSurface (Black on Light Blue, White on Deep Blue)
+                foregroundColor: colorScheme.surface,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(15),
                 ),
