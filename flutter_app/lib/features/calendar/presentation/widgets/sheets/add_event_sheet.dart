@@ -18,7 +18,6 @@ import 'package:syncfusion_flutter_calendar/calendar.dart';
 import '../selectors/tag_selector.dart';
 import '../selectors/repeat_selector.dart';
 import '../selectors/color_selector.dart';
-// ✅ IMPORT THE NEW SELECTOR
 import '../selectors/reminder_selector.dart';
 import 'add_header_sheet.dart';
 
@@ -63,9 +62,9 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
   bool _setNonConfliction = true;
   bool _hasManuallySetConflict = false;
 
-  // ✅ UPDATED REMINDER STATE
+  // --- REMINDER STATE ---
   bool _hasReminder = true;
-  List<Duration> _selectedOffsets = [const Duration(minutes: 10)]; // Default
+  List<Duration> _selectedOffsets = [const Duration(minutes: 10)];
 
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
@@ -105,8 +104,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
         _titleController.text = event.title;
       }
 
-      // If the recurrence was custom, try to parse components back into
-      // the form state so the CustomSelector will show the saved values.
+      // If the recurrence was custom, try to parse components
       if (_repeat == "Custom" && event.recurrenceRule != null) {
         try {
           final rrule = event.recurrenceRule!;
@@ -118,7 +116,6 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
             kv[p.substring(0, idx)] = p.substring(idx + 1);
           }
 
-          // Map FREQ to unit
           final freq = kv['FREQ'];
           switch (freq) {
             case 'DAILY':
@@ -139,7 +136,6 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
 
           _customInterval = int.tryParse(kv['INTERVAL'] ?? '') ?? 1;
 
-          // BYDAY (week or positional month)
           if (kv.containsKey('BYDAY')) {
             final dayCodes = {
               'SU': 0,
@@ -155,22 +151,18 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
               final days = byday.split(',');
               _customDays = days.map((d) => dayCodes[d] ?? 0).toSet();
             } else if (_customUnit == 'month') {
-              // If BYDAY contains a leading number (like 2TU or -1SU) it's a positional monthly rule
               final positional = RegExp(r'^[-0-9]').hasMatch(byday);
               _monthlyType = positional ? 'position' : 'day';
             }
           }
 
-          // BYMONTHDAY -> monthly on a specific day number
           if (kv.containsKey('BYMONTHDAY')) {
             _monthlyType = 'day';
           }
 
-          // End conditions
           if (kv.containsKey('UNTIL')) {
             _customEndOption = 'on';
             try {
-              // UNTIL uses UTC format like 20250210T000000Z
               final untilStr = kv['UNTIL']!;
               _customEndDate = DateFormat(
                 "yyyyMMdd'T'HHmmss'Z'",
@@ -184,14 +176,11 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
           } else {
             _customEndOption = 'never';
           }
-
-          // If BYMONTH/BYMONTHDAY exist for yearly rules, keep unit as year and leave monthlyType alone
         } catch (e) {
-          // Parsing failed: leave custom fields null so UI will fall back to defaults
+          // Parsing failed: leave custom fields null
         }
       }
 
-      // ✅ PREFILL OFFSETS
       if (event.reminderOffsets.isNotEmpty) {
         _selectedOffsets = List.from(event.reminderOffsets);
         _hasReminder = true;
@@ -233,7 +222,6 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
     return DateTime(date.year, date.month, date.day, time.hour, time.minute);
   }
 
-  // ✅ HELPER FOR DISPLAY
   String _formatOffsets() {
     if (_selectedOffsets.isEmpty) return "None";
     final List<String> parts = _selectedOffsets.map((d) {
@@ -246,9 +234,8 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
   }
 
   Task createTaskSaveTemplate(bool isDark) {
-    final colorValue = isDark
-        ? _selectedColor.dark.value
-        : _selectedColor.light.value;
+    final colorValue =
+        isDark ? _selectedColor.dark.value : _selectedColor.light.value;
     final title = _titleController.text.trim();
 
     final DateTime startTime = _isAllDay
@@ -260,7 +247,6 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
     final DateTime startTimeForRule = _isAllDay
         ? startOfDay(_startDate)
         : _combineDateAndTime(_startDate, _startTime);
-
 
     final baseTask = Task.create(
       type: TaskType.event,
@@ -288,12 +274,9 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
       isAiMovable: _movableByAI,
       isConflicting: _setNonConfliction,
       priority: TaskPriority.none,
-      // ✅ SAVE OFFSETS
       reminderOffsets: _hasReminder ? _selectedOffsets : [],
       isSmartSchedule: false,
     );
-
-    print("this is the recurrence rule: ${baseTask.recurrenceRule}");
 
     return widget.task != null
         ? widget.task!.copyWith(
@@ -316,7 +299,6 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
         : baseTask;
   }
 
-  // ✅ HELPER TO SHOW SELECTOR
   void _showReminderSelector(BuildContext context) {
     final taskStart = _isAllDay
         ? startOfDay(_startDate)
@@ -335,9 +317,9 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
   }
 
   void _showRepeatSelector(BuildContext context) async {
-    // Convert selected type string to TaskType enum
-    final taskType = _selectedType == 'Event' ? TaskType.event : TaskType.task;
-    
+    final taskType =
+        _selectedType == 'Event' ? TaskType.event : TaskType.task;
+
     final result = await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -345,7 +327,6 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
       builder: (context) => RepeatSelector(
         currentRepeat: _repeat,
         eventStartDate: _startDate,
-        // Sending existing data DOWN to the selector
         initialInterval: _customInterval,
         initialUnit: _customUnit,
         initialDays: _customDays,
@@ -355,7 +336,6 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
         initialMonthlyType: _monthlyType,
         taskType: taskType,
         onRepeatSelected: (val) {
-          // This handles simple presets (Daily, Weekly, etc.)
           setState(() {
             _repeat = val;
             _resetCustomFields();
@@ -364,7 +344,6 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
       ),
     );
 
-    // Receiving custom data UP from the selector
     if (result != null) {
       setState(() {
         if (result is String) {
@@ -416,51 +395,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  // --- REMINDERS ROW ---
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Reminders",
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: colorScheme.onSurface,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              _hasReminder
-                                  ? "You'll get a notification"
-                                  : "Reminders are turned off",
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: colorScheme.onSurface.withOpacity(0.6),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Transform.scale(
-                        scale: 0.8,
-                        child: Switch(
-                          materialTapTargetSize:
-                              MaterialTapTargetSize.shrinkWrap,
-                          value: _hasReminder,
-                          activeTrackColor: colorScheme.primary,
-                          onChanged: (val) =>
-                              setState(() => _hasReminder = val),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
+                
                   // --- ALL DAY SWITCH ---
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -480,8 +415,9 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                           activeTrackColor: colorScheme.primary,
                           onChanged: (val) => setState(() {
                             _isAllDay = val;
-                            if (_isAllDay && !_hasManuallySetConflict)
+                            if (_isAllDay && !_hasManuallySetConflict) {
                               _setNonConfliction = false;
+                            }
                           }),
                         ),
                       ),
@@ -547,17 +483,13 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                   InteractiveInputRow(
                     label: "Repeat",
                     value: _getRepeatDisplayValue(),
-                    onTapValue: () => _showRepeatSelector(
-                      context,
-                    ), // <--- Use the new method here
+                    onTapValue: () => _showRepeatSelector(context),
                   ),
-
 
                   // --- ADVANCED OPTIONS ---
                   Theme(
-                    data: Theme.of(
-                      context,
-                    ).copyWith(dividerColor: Colors.transparent),
+                    data: Theme.of(context)
+                        .copyWith(dividerColor: Colors.transparent),
                     child: ExpansionTile(
                       tilePadding: EdgeInsets.zero,
                       title: Text(
@@ -569,53 +501,53 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                         ),
                       ),
                       children: [
-
-                         // 6. TAGS
-                  InteractiveInputRow(
-                    label: "Tags",
-                    value: _selectedTags.isEmpty
-                        ? "None"
-                        : _selectedTags.join(", "),
-                    onTap: () => showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (ctx) => StatefulBuilder(
-                        builder: (context, sheetSetState) => TagSelector(
-                          selectedTags: _selectedTags,
-                          availableTags: _tagsList,
-                          onTagsChanged: (newList) {
-                            setState(() => _selectedTags = newList);
-                            sheetSetState(() {});
-                          },
-                          onTagAdded: (newTag) async {
-                            await ref
-                                .read(tagsProvider.notifier)
-                                .addTag(newTag);
-                            setState(() {
-                              if (!_tagsList.contains(newTag))
-                                _tagsList.add(newTag);
-                            });
-                            sheetSetState(() {});
-                          },
-                          onTagRemoved: (removedTag) async {
-                            setState(() {
-                              _tagsList = List<String>.from(_tagsList)
-                                ..remove(removedTag);
-                              _selectedTags = List<String>.from(_selectedTags)
-                                ..remove(removedTag);
-                            });
-                            await ref
-                                .read(tagsProvider.notifier)
-                                .deleteTag(removedTag);
-                            sheetSetState(() {});
-                          },
+                        // 1. Reminders Toggle
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "Reminders",
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: colorScheme.onSurface,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _hasReminder
+                                        ? "You'll get a notification"
+                                        : "Reminders are turned off",
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: colorScheme.onSurface
+                                          .withOpacity(0.6),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Transform.scale(
+                              scale: 0.8,
+                              child: Switch(
+                                materialTapTargetSize:
+                                    MaterialTapTargetSize.shrinkWrap,
+                                value: _hasReminder,
+                                activeTrackColor: colorScheme.primary,
+                                onChanged: (val) =>
+                                    setState(() => _hasReminder = val),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ),
-                  ),
-                  
-                        // ✅ UPDATED ALERT SELECTOR
+                        const SizedBox(height: 16),
+
+                        // 2. Remind Me Selector
                         Opacity(
                           opacity: _hasReminder ? 1.0 : 0.4,
                           child: InteractiveInputRow(
@@ -627,6 +559,54 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                           ),
                         ),
 
+                        // 3. Tags Selector
+                        InteractiveInputRow(
+                          label: "Tags",
+                          value: _selectedTags.isEmpty
+                              ? "None"
+                              : _selectedTags.join(", "),
+                          onTap: () => showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            backgroundColor: Colors.transparent,
+                            builder: (ctx) => StatefulBuilder(
+                              builder: (context, sheetSetState) => TagSelector(
+                                selectedTags: _selectedTags,
+                                availableTags: _tagsList,
+                                onTagsChanged: (newList) {
+                                  setState(() => _selectedTags = newList);
+                                  sheetSetState(() {});
+                                },
+                                onTagAdded: (newTag) async {
+                                  await ref
+                                      .read(tagsProvider.notifier)
+                                      .addTag(newTag);
+                                  setState(() {
+                                    if (!_tagsList.contains(newTag)) {
+                                      _tagsList.add(newTag);
+                                    }
+                                  });
+                                  sheetSetState(() {});
+                                },
+                                onTagRemoved: (removedTag) async {
+                                  setState(() {
+                                    _tagsList = List<String>.from(_tagsList)
+                                      ..remove(removedTag);
+                                    _selectedTags =
+                                        List<String>.from(_selectedTags)
+                                          ..remove(removedTag);
+                                  });
+                                  await ref
+                                      .read(tagsProvider.notifier)
+                                      .deleteTag(removedTag);
+                                  sheetSetState(() {});
+                                },
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // 4. Switch Tiles
                         _buildSwitchTile(
                           'Lock Task',
                           "Exclude from auto-reorganization.",
@@ -670,7 +650,8 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
         title,
         style: TextStyle(
           color: colors.onSurface.withOpacity(0.8),
-          fontSize: 15,
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
         ),
       ),
       subtitle: Text(
@@ -718,44 +699,6 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
             sheetSetState(() {});
           },
         ),
-      ),
-    );
-  }
-
-  void _showLocationDialog(BuildContext context, ColorScheme colorScheme) {
-    TextEditingController locController = TextEditingController(
-      text: _location == "None" ? "" : _location,
-    );
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: colorScheme.surface,
-        title: Text(
-          "Set Location",
-          style: TextStyle(color: colorScheme.onSurface),
-        ),
-        content: TextField(
-          controller: locController,
-          autofocus: true,
-          decoration: InputDecoration(hintText: "Enter location"),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text("Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              setState(
-                () => _location = locController.text.isEmpty
-                    ? "None"
-                    : locController.text,
-              );
-              Navigator.pop(context);
-            },
-            child: const Text("Set"),
-          ),
-        ],
       ),
     );
   }
