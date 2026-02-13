@@ -45,7 +45,7 @@ class _ModeOptionState extends ConsumerState<ModeOption> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    "What do you prefer?",
+                    "Which do you prefer?",
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w500,
