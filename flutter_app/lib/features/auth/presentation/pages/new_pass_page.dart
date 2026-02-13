@@ -25,11 +25,14 @@ class _ResetPassPageState extends State<ResetPassPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Access the current theme color scheme
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       // Matching the rounded corner style from your mockup
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+      decoration: BoxDecoration(
+        color: colorScheme.surface, // ✅ Adapted background
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
       child: Column(
@@ -41,18 +44,19 @@ class _ResetPassPageState extends State<ResetPassPage> {
             children: [
               IconButton(
                 onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.close, color: Colors.black, size: 28),
+                // ✅ Icon matches text color
+                icon: Icon(Icons.close, color: colorScheme.onSurface, size: 28),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
               ),
-              const Expanded(
+              Expanded(
                 child: Center(
                   child: Text(
                     "Reset Password",
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w900,
-                      color: Colors.black,
+                      color: colorScheme.onSurface, // ✅ Adapted text color
                     ),
                   ),
                 ),
@@ -63,39 +67,50 @@ class _ResetPassPageState extends State<ResetPassPage> {
           const SizedBox(height: 30),
 
           // --- DESCRIPTION TEXT ---
-          const Text(
+          Text(
             "Set the new password to your account, to sign in and access all the features",
             style: TextStyle(
               fontSize: 15,
-              color: Colors.black54,
+              // ✅ Uses text color with opacity
+              color: colorScheme.onSurface.withOpacity(0.6),
               height: 1.4,
             ),
           ),
           const SizedBox(height: 25),
 
           // --- NEW PASSWORD SECTION ---
-          const Text(
+          Text(
             "New Password",
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: Colors.black),
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w900,
+              color: colorScheme.onSurface, // ✅ Adapted text color
+            ),
           ),
           const SizedBox(height: 10),
           _buildPasswordField(
             controller: _newPassController,
             isObscured: _isNewPassObscured,
             onToggle: () => setState(() => _isNewPassObscured = !_isNewPassObscured),
+            colorScheme: colorScheme, // ✅ Pass scheme
           ),
           const SizedBox(height: 20),
 
           // --- RE-TYPE PASSWORD SECTION ---
-          const Text(
+          Text(
             "Re-type New Password",
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: Colors.black),
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w900,
+              color: colorScheme.onSurface, // ✅ Adapted text color
+            ),
           ),
           const SizedBox(height: 10),
           _buildPasswordField(
             controller: _confirmPassController,
             isObscured: _isConfirmPassObscured,
             onToggle: () => setState(() => _isConfirmPassObscured = !_isConfirmPassObscured),
+            colorScheme: colorScheme, // ✅ Pass scheme
           ),
           const SizedBox(height: 30),
 
@@ -108,8 +123,10 @@ class _ResetPassPageState extends State<ResetPassPage> {
                 // Logic to update password in your AuthController
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
-                foregroundColor: Colors.white,
+                // ✅ Button uses Primary color
+                backgroundColor: colorScheme.onSurface,
+                // ✅ Text uses OnSurface
+                foregroundColor: colorScheme.surface,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(15),
                 ),
@@ -132,33 +149,37 @@ class _ResetPassPageState extends State<ResetPassPage> {
     required TextEditingController controller,
     required bool isObscured,
     required VoidCallback onToggle,
+    required ColorScheme colorScheme, // ✅ Receive scheme
   }) {
     return TextField(
       controller: controller,
       obscureText: isObscured,
-      style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+      // ✅ Input text matches theme
+      style: TextStyle(color: colorScheme.onSurface, fontWeight: FontWeight.bold),
       decoration: InputDecoration(
         hintText: 'Password',
-        hintStyle: const TextStyle(color: Colors.black38),
+        // ✅ Hint text uses opacity
+        hintStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.4)),
         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
         suffixIcon: IconButton(
           icon: Icon(
             isObscured ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-            color: Colors.black,
+            color: colorScheme.onSurface, // ✅ Icon color matches theme
           ),
           onPressed: onToggle,
         ),
+        // ✅ Borders adapt to theme
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(15),
-          borderSide: const BorderSide(color: Colors.black),
+          borderSide: BorderSide(color: colorScheme.onSurface),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(15),
-          borderSide: const BorderSide(color: Colors.black),
+          borderSide: BorderSide(color: colorScheme.onSurface),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(15),
-          borderSide: const BorderSide(color: Colors.black, width: 2),
+          borderSide: BorderSide(color: colorScheme.onSurface, width: 2),
         ),
       ),
     );

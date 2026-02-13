@@ -425,17 +425,30 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                             ),
                           ],
                         ),
+                        const SizedBox(height: 16),
 
-                        // 2. Remind Me Selector
-                        Opacity(
-                          opacity: _hasReminder ? 1.0 : 0.4,
-                          child: InteractiveInputRow(
+                        // 2. Remind Me Selector (Only show if reminders ON)
+                        if (_hasReminder)
+                          InteractiveInputRow(
                             label: "Remind me",
                             value: _formatOffsets(),
-                            onTap: _hasReminder
-                                ? () => _showOffsetSelector(context)
-                                : null,
+                            onTap: () => _showOffsetSelector(context),
                           ),
+
+                          // 5. Switch Tiles (Refactored)
+                        _buildSwitchTile(
+                          'Lock Task',
+                          "Exclude from auto-reorganization.",
+                          _movableByAI,
+                          (v) => setState(() => _movableByAI = v),
+                          colorScheme,
+                        ),
+                        _buildSwitchTile(
+                          'No Overlaps',
+                          "Ensures no overlapping tasks.",
+                          _setNonConfliction,
+                          (v) => setState(() => _setNonConfliction = v),
+                          colorScheme,
                         ),
 
                         // 3. Tags Selector
@@ -509,22 +522,6 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                             }
                           },
                         ),
-
-                        // 5. Switch Tiles (Refactored)
-                        _buildSwitchTile(
-                          'Lock Task',
-                          "Exclude from auto-reorganization.",
-                          _movableByAI,
-                          (v) => setState(() => _movableByAI = v),
-                          colorScheme,
-                        ),
-                        _buildSwitchTile(
-                          'No Overlaps',
-                          "Ensures no overlapping tasks.",
-                          _setNonConfliction,
-                          (v) => setState(() => _setNonConfliction = v),
-                          colorScheme,
-                        ),
                       ],
                     ),
                   ),
@@ -550,7 +547,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
       title: Text(
         title,
         style: TextStyle(
-          color: colors.onSurface.withOpacity(0.8),
+          color: colors.onSurface,
           fontSize: 16,
           fontWeight: FontWeight.bold,
         ),

@@ -483,6 +483,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                   ),
 
                   // --- ADVANCED OPTIONS ---
+// --- ADVANCED OPTIONS ---
                   Theme(
                     data: Theme.of(context)
                         .copyWith(dividerColor: Colors.transparent),
@@ -543,16 +544,32 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                         ),
                         const SizedBox(height: 16),
 
-                        // 2. Remind Me Selector
-                        Opacity(
-                          opacity: _hasReminder ? 1.0 : 0.4,
-                          child: InteractiveInputRow(
+
+                        // 2. Remind Me Selector (Only show if reminders ON)
+                        if (_hasReminder)
+                          InteractiveInputRow(
                             label: "Remind me",
                             value: _formatOffsets(),
-                            onTapValue: _hasReminder
-                                ? () => _showReminderSelector(context)
-                                : null,
+                            onTapValue: () => _showReminderSelector(context),
                           ),
+
+                          // 4. Switch Tiles
+                        _buildSwitchTile(
+                          'Lock Task',
+                          "Exclude from auto-reorganization.",
+                          _movableByAI,
+                          (v) => setState(() => _movableByAI = v),
+                          colorScheme,
+                        ),
+                        _buildSwitchTile(
+                          'No Overlaps',
+                          "Ensures no overlapping events.",
+                          _setNonConfliction,
+                          (v) => setState(() {
+                            _setNonConfliction = v;
+                            _hasManuallySetConflict = true;
+                          }),
+                          colorScheme,
                         ),
 
                         // 3. Tags Selector
@@ -561,7 +578,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                           value: _selectedTags.isEmpty
                               ? "None"
                               : _selectedTags.join(", "),
-                          onTap: () => showModalBottomSheet(
+                          onTapValue: () => showModalBottomSheet(
                             context: context,
                             isScrollControlled: true,
                             backgroundColor: Colors.transparent,
@@ -601,25 +618,6 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                             ),
                           ),
                         ),
-
-                        // 4. Switch Tiles
-                        _buildSwitchTile(
-                          'Lock Task',
-                          "Exclude from auto-reorganization.",
-                          _movableByAI,
-                          (v) => setState(() => _movableByAI = v),
-                          colorScheme,
-                        ),
-                        _buildSwitchTile(
-                          'No Overlaps',
-                          "Ensures no overlapping events.",
-                          _setNonConfliction,
-                          (v) => setState(() {
-                            _setNonConfliction = v;
-                            _hasManuallySetConflict = true;
-                          }),
-                          colorScheme,
-                        ),
                       ],
                     ),
                   ),
@@ -645,7 +643,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
       title: Text(
         title,
         style: TextStyle(
-          color: colors.onSurface.withOpacity(0.8),
+          color: colors.onSurface,
           fontSize: 16,
           fontWeight: FontWeight.bold,
         ),
@@ -663,37 +661,6 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
           value: value,
           activeTrackColor: colors.primary,
           onChanged: onChanged,
-        ),
-      ),
-    );
-  }
-
-  void _showTagSelector(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => StatefulBuilder(
-        builder: (ctx, sheetSetState) => TagSelector(
-          selectedTags: _selectedTags,
-          availableTags: _tagsList,
-          onTagsChanged: (newList) {
-            setState(() => _selectedTags = newList);
-            sheetSetState(() {});
-          },
-          onTagAdded: (newTag) {
-            setState(() {
-              if (!_tagsList.contains(newTag)) _tagsList.add(newTag);
-            });
-            sheetSetState(() {});
-          },
-          onTagRemoved: (removedTag) {
-            setState(() {
-              _tagsList.remove(removedTag);
-              _selectedTags.remove(removedTag);
-            });
-            sheetSetState(() {});
-          },
         ),
       ),
     );

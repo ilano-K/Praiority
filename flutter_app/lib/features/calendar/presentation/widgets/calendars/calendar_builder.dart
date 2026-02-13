@@ -221,6 +221,16 @@ class CalendarBuilder {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
+
+        // --- EXISTING BUTTONS ---
+        _buildAnimatedFabOption(
+          "Smart ReOrganize",
+          colorScheme,
+          fabAnimation,
+          () => onOptionTap("ReOrganize"),
+        ),
+        const SizedBox(height: 10),
+
         // --- ADDED: SMART SCHEDULE BUTTON ---
         _buildAnimatedFabOption(
           "Smart Schedule",
@@ -228,15 +238,8 @@ class CalendarBuilder {
           fabAnimation,
           () => onOptionTap("Smart Schedule"),
         ),
-        const SizedBox(height: 10),
         
-        // --- EXISTING BUTTONS ---
-        _buildAnimatedFabOption(
-          "ReOrganize",
-          colorScheme,
-          fabAnimation,
-          () => onOptionTap("ReOrganize"),
-        ),
+        
         const SizedBox(height: 10),
         _buildAnimatedFabOption(
           "Task",
