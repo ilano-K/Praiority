@@ -13,6 +13,8 @@ class CustomSelector extends StatefulWidget {
   final int? initialOccurrences;
   final String? initialMonthlyType;
   final TaskType taskType;
+  // Whether the event is an all-day event
+  final bool isAllDay;
 
   const CustomSelector({
     super.key,
@@ -25,6 +27,7 @@ class CustomSelector extends StatefulWidget {
     this.initialOccurrences,
     this.initialMonthlyType,
     this.taskType = TaskType.task,
+    this.isAllDay = false,
   });
 
   @override
@@ -61,6 +64,15 @@ class _CustomSelectorState extends State<CustomSelector> {
     _selectedDays = widget.initialDays ?? {widget.eventStartDate.weekday % 7};
     _endOption = widget.initialEndOption ?? 'never';
     _selectedEndDate = widget.initialEndDate ?? widget.eventStartDate;
+
+    // For all-day events normalize the selected end date to a date-only value
+    if (widget.isAllDay) {
+      _selectedEndDate = DateTime(
+        _selectedEndDate.year,
+        _selectedEndDate.month,
+        _selectedEndDate.day,
+      );
+    }
   }
 
   @override
@@ -103,14 +115,20 @@ class _CustomSelectorState extends State<CustomSelector> {
               ),
               ElevatedButton(
                 onPressed: () {
+                  // Normalize end date for all-day events before returning
+                  final returnedEndDate = widget.isAllDay
+                      ? DateTime(_selectedEndDate.year, _selectedEndDate.month, _selectedEndDate.day)
+                      : _selectedEndDate;
+
                   Navigator.pop(context, {
                     'interval': int.tryParse(_repeatController.text) ?? 1,
                     'unit': _repeatUnit,
                     'days': _repeatUnit == 'week' ? _selectedDays : {widget.eventStartDate.weekday % 7},
                     'endOption': _endOption,
-                    'endDate': _selectedEndDate,
+                    'endDate': returnedEndDate,
                     'occurrences': int.tryParse(_occurrenceController.text) ?? 1,
                     'monthlyType': _monthlyType,
+                    'isAllDay': widget.isAllDay,
                   });
                 },
                 style: ElevatedButton.styleFrom(

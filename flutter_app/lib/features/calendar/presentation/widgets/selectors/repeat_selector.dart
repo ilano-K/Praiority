@@ -20,6 +20,8 @@ class RepeatSelector extends StatelessWidget {
   
   // New parameter to customize options based on task type
   final TaskType taskType;
+  // Whether the event is an all-day event
+  final bool isAllDay;
 
   const RepeatSelector({
     super.key,
@@ -34,6 +36,7 @@ class RepeatSelector extends StatelessWidget {
     this.initialOccurrences,
     this.initialMonthlyType,
     this.taskType = TaskType.task,
+    this.isAllDay = false,
   });
 
   @override
@@ -97,6 +100,7 @@ Widget _buildOption(BuildContext context, String label) {
               initialOccurrences: initialOccurrences,
               initialMonthlyType: initialMonthlyType,
               taskType: taskType,
+              isAllDay: isAllDay,
             ),
           );
 
