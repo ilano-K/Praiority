@@ -1,4 +1,8 @@
 import 'dart:async';
+import 'dart:io';
+
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 enum AppErrorType {
   network,
@@ -7,6 +11,7 @@ enum AppErrorType {
   invalidCredentials,
   server,
   validation,
+  taskConflict,
   unknown,
 }
 
@@ -33,61 +38,95 @@ abstract class AppException implements Exception {
 
 class UnauthenticatedException extends AppException {
   UnauthenticatedException()
-      : super(
-          title: "Session Expired",
-          message: "Please log in again to continue.",
-          type: AppErrorType.unauthenticated,
-          statusCode: 401,
-        );
+    : super(
+        title: "Session Expired",
+        message: "Please log in again to continue.",
+        type: AppErrorType.unauthenticated,
+        statusCode: 401,
+      );
 }
 
 class UnauthorizedException extends AppException {
   UnauthorizedException()
-      : super(
-          title: "Access Denied",
-          message: "You don’t have permission to perform this action.",
-          type: AppErrorType.unauthorized,
-          statusCode: 403,
-        );
+    : super(
+        title: "Access Denied",
+        message: "You don’t have permission to perform this action.",
+        type: AppErrorType.unauthorized,
+        statusCode: 403,
+      );
 }
 
 class InvalidCredentialsException extends AppException {
   InvalidCredentialsException()
-      : super(
-          title: "Login Failed",
-          message: "Incorrect email or password.",
-          type: AppErrorType.invalidCredentials,
-          statusCode: 401,
-        );
+    : super(
+        title: "Login Failed",
+        message: "Incorrect email or password.",
+        type: AppErrorType.invalidCredentials,
+        statusCode: 401,
+      );
 }
 
 class NetworkException extends AppException {
   NetworkException()
-      : super(
-          title: "No Internet",
-          message: "Please check your internet connection.",
-          type: AppErrorType.network,
-        );
+    : super(
+        title: "No Internet",
+        message: "Please check your internet connection.",
+        type: AppErrorType.network,
+      );
 }
 
 class ServerException extends AppException {
   ServerException({int? statusCode})
-      : super(
-          title: "Server Error",
-          message: "Something went wrong on our end. Please try again.",
-          type: AppErrorType.server,
-          statusCode: statusCode,
-        );
+    : super(
+        title: "Server Error",
+        message: "Something went wrong on our end. Please try again.",
+        type: AppErrorType.server,
+        statusCode: statusCode,
+      );
 }
 
 class ValidationException extends AppException {
   ValidationException(String message)
-      : super(
-          title: "Invalid Input",
-          message: message,
-          type: AppErrorType.validation,
-          statusCode: 400,
-        );
+    : super(
+        title: "Invalid Input",
+        message: message,
+        type: AppErrorType.validation,
+        statusCode: 400,
+      );
+}
+
+// --- SCHEDULING & TASK CONFLICT EXCEPTIONS ---
+
+class EndBeforeStartException extends AppException {
+  EndBeforeStartException([String? customMessage])
+    : super(
+        title: "Invalid Time Range",
+        message:
+            customMessage ??
+            "The end time cannot be set before the start time.",
+        type: AppErrorType.taskConflict,
+      );
+}
+
+class DeadlineConflictException extends AppException {
+  DeadlineConflictException([String? customMessage])
+    : super(
+        title: "Deadline Exceeded",
+        message:
+            customMessage ??
+            "The scheduled time goes beyond the task deadline.",
+        type: AppErrorType.taskConflict,
+      );
+}
+
+class TimeConflictException extends AppException {
+  TimeConflictException([String? customMessage])
+    : super(
+        title: "Schedule Conflict",
+        message:
+            customMessage ?? "This time slot overlaps with an existing task.",
+        type: AppErrorType.taskConflict,
+      );
 }
 
 // --- API EXCEPTION FACTORY ---
@@ -110,11 +149,62 @@ class ApiExceptionFactory {
 // --- GLOBAL PARSE ERROR FUNCTION ---
 // Converts any thrown error into an AppException
 AppException parseError(Object error) {
-  // Already an AppException → just return it
+  // 1. If it is already our custom exception, pass it through
   if (error is AppException) return error;
 
-  // Timeout / network issues
-  if (error is TimeoutException) return NetworkException();
-  // Fallback to generic server error
+  // 2. Handle Supabase Auth Errors
+  if (error is AuthException) {
+    switch (error.code) {
+      case 'invalid_credentials':
+      case 'bad_oauth_callback':
+        return InvalidCredentialsException();
+      case 'user_already_exists':
+      case 'signup_disabled':
+        return ValidationException("This email is already in use.");
+      case 'weak_password':
+        return ValidationException("Password is too weak.");
+      case 'otp_expired':
+        return ValidationException("The code has expired.");
+      case 'email_not_confirmed':
+        return ValidationException("Please confirm your email address.");
+    }
+
+    // Fallback message check
+    final msg = error.message.toLowerCase();
+    if (msg.contains('invalid login') || msg.contains('invalid email')) {
+      return InvalidCredentialsException();
+    }
+
+    return ServerException(statusCode: int.tryParse(error.statusCode ?? '500'));
+  }
+
+  // 3. Handle Google Sign-In Errors
+  if (error is GoogleSignInException) {
+    if (error.code == 'sign_in_canceled' ||
+        error.code == 'canceled' ||
+        error.toString().contains('canceled')) {
+      return ValidationException("Sign in canceled.");
+    }
+
+    // Check for network issues specific to Google (common on Android)
+    if (error.code == 'network_error') {
+      return NetworkException();
+    }
+
+    return ServerException();
+  }
+
+  // 4. Handle Network Errors
+  if (error is SocketException || error is TimeoutException) {
+    return NetworkException();
+  }
+
+  // 5. Handle String errors (manually thrown)
+  if (error is String) {
+    return ValidationException(error);
+  }
+
+  // 6. Default catch-all
+  print("Unknown Error Caught: $error"); // Helpful for debugging
   return ServerException();
 }

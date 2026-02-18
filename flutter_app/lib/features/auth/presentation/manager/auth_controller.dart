@@ -3,21 +3,25 @@ import 'package:flutter_app/features/auth/data/auth_provider.dart';
 import 'package:flutter_app/features/auth/data/auth_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-final authControllerProvider = AsyncNotifierProvider<AuthController, void>((){
+final authControllerProvider = AsyncNotifierProvider<AuthController, void>(() {
   return AuthController();
 });
 
 class AuthController extends AsyncNotifier<void> {
-  @override  
-  FutureOr<void> build(){
+  @override
+  FutureOr<void> build() {
     //
-  } 
-  Future<void> signUp({required String username, required String email, required String password}) async {
+  }
+  Future<void> signUp({
+    required String username,
+    required String email,
+    required String password,
+  }) async {
     state = const AsyncValue.loading();
 
-    state = await AsyncValue.guard(() async{
-        final authService = ref.read(authServiceProvider);
-        await authService.signUp(username, email, password);
+    state = await AsyncValue.guard(() async {
+      final authService = ref.read(authServiceProvider);
+      await authService.signUp(username, email, password);
     });
   }
 
@@ -25,7 +29,7 @@ class AuthController extends AsyncNotifier<void> {
     state = AsyncValue.loading();
     state = await AsyncValue.guard(() async {
       final authService = ref.read(authServiceProvider);
-      await authService.signIn(email, password);  
+      await authService.signIn(email, password);
     });
   }
 
@@ -42,6 +46,22 @@ class AuthController extends AsyncNotifier<void> {
     state = await AsyncValue.guard(() async {
       final authService = ref.read(authServiceProvider);
       await authService.signInWithGoogle();
+    });
+  }
+
+  Future<void> sendPasswordResetEmail(String email) async {
+    state = AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      final authService = ref.read(authServiceProvider);
+      await authService.sendPasswordResetEmail(email);
+    });
+  }
+
+  Future<void> updatePassword(String newPassword) async {
+    state = AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      final authService = ref.read(authServiceProvider);
+      await authService.updatePassword(newPassword);
     });
   }
 }

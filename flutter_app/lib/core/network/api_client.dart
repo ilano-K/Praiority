@@ -8,7 +8,7 @@ class ApiClient {
   final Dio _dio; //HTTP CLIENT
   
   ApiClient()
-    : _dio = Dio(BaseOptions(
+    : _dio = Dio(BaseOptions(     
       baseUrl: ApiConstants.baseUrl,
       connectTimeout: const Duration(seconds: 30),
       receiveTimeout: const Duration(seconds: 60),

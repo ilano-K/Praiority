@@ -4,7 +4,8 @@ import 'package:flutter_app/features/calendar/presentation/widgets/dialogs/app_w
 
 class AppDialogs {
   /// Shows a standard warning/error alert
-  static Future<void> showWarning(BuildContext context, {
+  static Future<void> showWarning(
+    BuildContext context, {
     required String title,
     required String message,
   }) {
@@ -15,7 +16,8 @@ class AppDialogs {
   }
 
   /// Shows a confirmation dialog (Yes/No style)
-  static Future<void> showConfirmation(BuildContext context, {
+  static Future<void> showConfirmation(
+    BuildContext context, {
     required String title,
     required String message,
     required VoidCallback onConfirm,

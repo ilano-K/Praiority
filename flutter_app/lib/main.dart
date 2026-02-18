@@ -1,5 +1,6 @@
 // File: lib/main.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_app/core/consants/auth_constants.dart';
 import 'package:flutter_app/core/providers/global_providers.dart';
 import 'package:flutter_app/core/services/connection_monitor.dart';
 import 'package:flutter_app/core/services/notification_service.dart';
@@ -14,9 +15,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Supabase.initialize(
-    url: "https://hilgjdxewhfgpzdkqfyi.supabase.co",
-    anonKey:
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhpbGdqZHhld2hmZ3B6ZGtxZnlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyNzg3NDQsImV4cCI6MjA4NDg1NDc0NH0.BJPHc7yXNt91YjKmpUJ-y45fflSDFdWJGeiUHyfowyk",
+    url: AuthConstants.supabaseUrl,
+    anonKey: AuthConstants.anonKey,
     authOptions: const FlutterAuthClientOptions(
       authFlowType: AuthFlowType.pkce,
     ),

@@ -62,11 +62,21 @@ extension UserPreferencesModelJson on UserPreferencesModel {
   /// Create a model from a JSON map
   static UserPreferencesModel fromJson(Map<String, dynamic> json) {
     final model = UserPreferencesModel();
+
     model.cloudId = json['id'] as String?;
-    model.startWorkHours = json['start_work_hours'] as String?;
-    model.endWorkHours = json['end_work_hours'] as String?;
+
+    final startUtc = json['start_work_hours'] as String?;
+    final endUtc = json['end_work_hours'] as String?;
+
+    model.startWorkHours = startUtc != null
+        ? utcToLocalHourMinute(startUtc)
+        : null;
+
+    model.endWorkHours = endUtc != null ? utcToLocalHourMinute(endUtc) : null;
+
     model.customPrompt = json['custom_prompt'] as String?;
     model.isDarkMode = json['is_dark_mode'] as bool;
+
     return model;
   }
 }

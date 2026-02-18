@@ -3,7 +3,7 @@
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_provider.dart';
-import 'package:flutter_app/features/settings/presentation/managers/settings_provider.dart';
+import 'package:flutter_app/features/settings/presentation/managers/user_preferences_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 

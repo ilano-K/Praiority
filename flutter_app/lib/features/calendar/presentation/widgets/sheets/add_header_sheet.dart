@@ -1,10 +1,8 @@
 // File: lib/features/calendar/presentation/widgets/add_header_sheet.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_app/core/errors/app_exceptions.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/dialogs/app_dialog.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-// --- CORE ERRORS ---
-import 'package:flutter_app/core/errors/task_conflict_exception.dart';
 
 // --- DOMAIN & CONTROLLERS ---
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
@@ -37,7 +35,6 @@ class HeaderData {
   });
 }
 
-// ✅ CHANGED TO STATEFUL WIDGET (To handle loading state)
 class AddSheetHeader extends ConsumerStatefulWidget {
   final HeaderData data;
 
@@ -118,40 +115,14 @@ class _AddSheetHeaderState extends ConsumerState<AddSheetHeader> {
                         await controller.addTask(task);
 
                         if (context.mounted) Navigator.pop(context);
-                      } on TimeConflictException {
-                        // Keep sheet open so user can fix it
-                        if (context.mounted) {
-                          AppDialogs.showWarning(
-                            context,
-                            title: "Schedule Conflict",
-                            message:
-                                "This task overlaps with an existing schedule. Please adjust the time.",
-                          );
-                        }
-                      } on EndBeforeStartException {
-                        if (context.mounted) {
-                          AppDialogs.showWarning(
-                            context,
-                            title: "Oops! Check Time",
-                            message:
-                                "The end time cannot be before the start time.",
-                          );
-                        }
-                      } on DeadlineConflictException {
-                        if (context.mounted) {
-                          AppDialogs.showWarning(
-                            context,
-                            title: "Invalid End Time",
-                            message:
-                                "The task ends after its deadline. Please adjust the time.",
-                          );
-                        }
                       } catch (e) {
+                        final appError = parseError(e);
+
                         if (context.mounted) {
                           AppDialogs.showWarning(
                             context,
-                            title: "Error",
-                            message: "An unexpected error occurred",
+                            title: appError.title,
+                            message: appError.message,
                           );
                         }
                       } finally {

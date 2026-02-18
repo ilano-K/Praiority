@@ -55,7 +55,7 @@ class UserPrefSyncService {
       if (response == null) return;
       final userPrefsModel = UserPreferencesModelJson.fromJson(response);
       debugPrint(
-        "[DEBUG] PULLING USER SETTINGS: cloud id: ${userPrefsModel.cloudId}",
+        "[DEBUG] PULLING USER SETTINGS: work hours: ${userPrefsModel.startWorkHours}",
       );
       await _localDb.updateUserPreferenceFromCloud(userPrefsModel);
     } catch (e) {

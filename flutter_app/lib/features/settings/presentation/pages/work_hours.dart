@@ -2,7 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/selectors/pick_time.dart';
-import 'package:flutter_app/features/settings/presentation/managers/settings_notfier.dart';
+import 'package:flutter_app/features/settings/presentation/managers/user_preferences_notifier.dart';
+import 'package:flutter_app/features/settings/presentation/managers/user_preferences_provider.dart';
 import 'package:flutter_app/features/settings/presentation/pages/mode_option.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -26,7 +27,7 @@ class _WorkHoursState extends ConsumerState<WorkHours> {
     // ✅ PRE-FILL LOGIC
     // We use addPostFrameCallback or just read directly because
     // we want to set the initial state before the first build.
-    final settings = ref.read(settingsControllerProvider).value;
+    final settings = ref.read(userPreferencesControllerProvider).value;
 
     if (settings != null) {
       if (settings.startWorkHours != null) {
@@ -81,7 +82,7 @@ class _WorkHoursState extends ConsumerState<WorkHours> {
     // 2. SAVING
     final String dbFrom = _to24HourFormat(_fromTime);
     final String dbTo = _to24HourFormat(_toTime);
-    final settingsController = ref.read(settingsControllerProvider.notifier);
+    final settingsController = ref.read(userPreferencesControllerProvider.notifier);
     await settingsController.saveSettings(dbFrom, dbTo);
 
     // 3. SMART NAVIGATION

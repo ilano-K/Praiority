@@ -1,4 +1,5 @@
 import 'package:flutter_app/core/consants/auth_constants.dart';
+import 'package:flutter_app/core/errors/app_exceptions.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -16,22 +17,13 @@ class AuthService {
   // Helper to ensure we only initialize once
   bool _isGoogleInitialized = false;
 
-  /// ✅ FIX 2: Configuration Logic
-  /// Since we can't pass config to the constructor, we use the initialize method.
   Future<void> _ensureGoogleInitialized() async {
     if (_isGoogleInitialized) return;
 
     try {
-      await _googleSignIn.initialize(
-        serverClientId: _webClientId,
-        // Note: 'scopes' are not available in initialize() in this version.
-        // You will request calendar permissions later using requestScopes() if needed.
-      );
+      await _googleSignIn.initialize(serverClientId: _webClientId);
       _isGoogleInitialized = true;
     } catch (e) {
-      // If it throws, it likely means it was already initialized elsewhere.
-      // We catch it so the app doesn't crash.
-      print("[AuthService] Warning: GoogleSignIn init check: $e");
       _isGoogleInitialized = true;
     }
   }
@@ -51,8 +43,7 @@ class AuthService {
       );
       return response;
     } catch (e) {
-      // handle errors
-      rethrow;
+      throw parseError(e);
     }
   }
 
@@ -65,8 +56,7 @@ class AuthService {
       );
       return response;
     } catch (e) {
-      // handle errors
-      rethrow;
+      throw parseError(e);
     }
   }
 
@@ -88,30 +78,44 @@ class AuthService {
         idToken: idToken,
         accessToken: null,
       );
-    } on GoogleSignInException catch (e) {
-      if (e.code == GoogleSignInExceptionCode.canceled) {
-        throw 'Login canceled';
-      }
-      rethrow;
     } catch (e) {
-      print("[DEBUG]: 1. AuthService - SIGN IN FAILED WITH ERROR: $e");
-      rethrow;
+      throw parseError(e);
     }
   }
 
   //sign out
   Future<void> signOut() async {
-    print("[DEBUG]: 1. AuthService - Starting Google SignOut");
     try {
-      await _googleSignIn.signOut();
-      print("[DEBUG]: 2. AuthService - Google SignOut DONE");
-    } catch (e) {
-      print("[DEBUG]: 2. AuthService - Google SignOut FAILED: $e");
-    }
+      // Try to sign out of Google (silently ignore errors)
+      try {
+        await _googleSignIn.signOut();
+      } catch (_) {}
 
-    print("[DEBUG]: 3. AuthService - Starting Supabase SignOut");
-    await _supabase.auth.signOut();
-    print("[DEBUG]: 4. AuthService - Supabase SignOut DONE");
+      // Sign out of Supabase
+      await _supabase.auth.signOut();
+    } catch (e) {
+      throw parseError(e);
+    }
+  }
+
+  // forget password
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      await _supabase.auth.resetPasswordForEmail(
+        email,
+        redirectTo: AuthConstants.callbackUrl,
+      );
+    } catch (e) {
+      throw parseError(e);
+    }
+  }
+
+  Future<void> updatePassword(String newPassword) async {
+    try {
+      await _supabase.auth.updateUser(UserAttributes(password: newPassword));
+    } catch (e) {
+      throw parseError(e);
+    }
   }
 
   User? get currentUser => _supabase.auth.currentUser;

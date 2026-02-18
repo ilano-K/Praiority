@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'themes.dart';
 import 'dart:async';
-import 'package:flutter_app/features/settings/presentation/managers/settings_provider.dart';
+import 'package:flutter_app/features/settings/presentation/managers/user_preferences_provider.dart';
 
 // 1. Define the Provider using the new Notifier
 final themeProvider = NotifierProvider<ThemeNotifier, ThemeData>(() {
@@ -22,7 +22,7 @@ class ThemeNotifier extends Notifier<ThemeData> {
 
   Future<void> _loadSavedTheme() async {
     try {
-      final repository = ref.read(settingsRepositoryProvider);
+      final repository = ref.read(userPreferencesRepositoryProvider);
       final prefs = await repository.getPreferences();
       if (prefs == null) return;
       final isDark = prefs.isDarkMode;
@@ -39,7 +39,7 @@ class ThemeNotifier extends Notifier<ThemeData> {
 
     // Persist the choice to local settings and trigger sync
     try {
-      final repository = ref.read(settingsRepositoryProvider);
+      final repository = ref.read(userPreferencesRepositoryProvider);
       final currentPrefs = await repository.getPreferences();
       if (currentPrefs == null) return;
       final updated = currentPrefs.copyWith(isDarkMode: newIsDark);

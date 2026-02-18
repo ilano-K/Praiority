@@ -7,7 +7,7 @@ import 'package:flutter_app/features/auth/presentation/pages/auth_gate.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_controller.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_provider.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/dialogs/app_confirmation_dialog.dart';
-import 'package:flutter_app/features/settings/presentation/managers/settings_provider.dart';
+import 'package:flutter_app/features/settings/presentation/managers/user_preferences_provider.dart';
 import 'package:flutter_app/features/settings/presentation/pages/work_hours.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
@@ -89,6 +89,27 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
     }
   }
 
+  void resetAppState(WidgetRef ref) {
+    // Invalidate controllers, repositories and data sources so no state
+    // remains in memory after sign-out.
+    ref.invalidate(calendarControllerProvider);
+    ref.invalidate(tagsProvider);
+    ref.invalidate(calendarRepositoryProvider);
+    ref.invalidate(calendarDataSourceProvider);
+    ref.invalidate(googleSyncNotifierProvider);
+    ref.invalidate(googleCalendarSyncServiceProvider);
+    ref.invalidate(googleCalendarRemoteDataSourceProvider);
+    ref.invalidate(taskSyncServiceProvider);
+
+    ref.invalidate(userPreferencesControllerProvider);
+    ref.invalidate(userPreferencesRepositoryProvider);
+    ref.invalidate(settingsLocalDataSourceProvider);
+    ref.invalidate(userPrefSyncServiceProvider);
+
+    // Also reset auth controller state
+    ref.invalidate(authControllerProvider);
+  }
+
   Future<void> _handleLogout() async {
     if (_isLoggingOut) return;
     setState(() => _isLoggingOut = true);
@@ -105,6 +126,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
       await taskSyncService.pushLocalChanges();
       await userPrefsSyncService.pushLocalChanges();
       await dbProvider.clearDatabase();
+      resetAppState(ref);
       await authController.signOut();
 
       if (!mounted) return;

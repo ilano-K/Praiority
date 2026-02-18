@@ -1,21 +1,16 @@
 import 'package:flutter_app/features/settings/domain/entities/user_preferences.dart';
-import 'package:flutter_app/features/settings/presentation/managers/settings_provider.dart';
+import 'package:flutter_app/features/settings/presentation/managers/user_preferences_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 
-final settingsControllerProvider =
-    AsyncNotifierProvider<SettingsController, UserPreferences?>(() {
-      return SettingsController();
-    });
-
-class SettingsController extends AsyncNotifier<UserPreferences?> {
+class UserPreferencesNotifier extends AsyncNotifier<UserPreferences?> {
   @override
   FutureOr<UserPreferences?> build() async {
     return await loadUserSettings();
   }
 
   Future<UserPreferences?> loadUserSettings() async {
-    final repository = ref.watch(settingsRepositoryProvider);
+    final repository = ref.read(userPreferencesRepositoryProvider);
     return await repository.getPreferences();
   }
 
@@ -30,7 +25,7 @@ class SettingsController extends AsyncNotifier<UserPreferences?> {
         endWorkHours: end,
       );
 
-      final repository = ref.watch(settingsRepositoryProvider);
+      final repository = ref.read(userPreferencesRepositoryProvider);
       await repository.savePreferences(newPrefs);
 
       final prefSyncController = ref.read(userPrefSyncServiceProvider);

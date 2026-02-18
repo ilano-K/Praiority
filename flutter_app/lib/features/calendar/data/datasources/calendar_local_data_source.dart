@@ -31,7 +31,6 @@ class CalendarLocalDataSource {
 
   Future<void> updateTasksFromCloud(List<TaskModel> cloudTasks) async {
     await isar.writeTxn(() async {
-      print("saving tasks from cloud");
       for (var cloudTask in cloudTasks) {
         final localTask = await isar.taskModels
             .filter()
@@ -63,7 +62,6 @@ class CalendarLocalDataSource {
             await isar.taskTagModels.put(tagModel);
           }
         }
-        print("saving tasks from cloud for cloud tasks ${cloudTask.title}");
         await isar.taskModels.put(cloudTask);
       }
     });
