@@ -18,6 +18,7 @@ class _SmartScheduleState extends ConsumerState<SmartSchedule> {
   DateTime _targetDate = DateTime.now();
 
   final TextEditingController _instructionController = TextEditingController();
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -29,7 +30,7 @@ class _SmartScheduleState extends ConsumerState<SmartSchedule> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Container(
+    final content = Container(
       margin: const EdgeInsets.symmetric(horizontal: 24),
       constraints: const BoxConstraints(maxWidth: 400),
       decoration: BoxDecoration(
@@ -68,6 +69,7 @@ class _SmartScheduleState extends ConsumerState<SmartSchedule> {
           // --- TARGET DATE ROW (Clickable) ---
           InkWell(
             onTap: () async {
+              if (_isLoading) return;
               final DateTime? picked = await pickDate(
                 context,
                 initialDate: _targetDate,
@@ -127,7 +129,8 @@ class _SmartScheduleState extends ConsumerState<SmartSchedule> {
             width: double.infinity,
             height: 54,
             child: ElevatedButton(
-              onPressed: () async {
+              onPressed: _isLoading ? null : () async {
+                setState(() => _isLoading = true);
                 final instruction = _instructionController.text.trim();
                 final calendarController = ref.read(
                   calendarControllerProvider.notifier,
@@ -148,7 +151,9 @@ class _SmartScheduleState extends ConsumerState<SmartSchedule> {
                       message: "An unexpected error occurred",
                     );
                   }
-                }
+                } finally {
+                  if (mounted) setState(() => _isLoading = false);
+              }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: colorScheme.primary,
@@ -170,6 +175,23 @@ class _SmartScheduleState extends ConsumerState<SmartSchedule> {
           ),
         ],
       ),
+    );
+    return Stack(
+      children: [
+        AbsorbPointer(
+          absorbing: _isLoading,
+          child: content,
+        ),
+        if (_isLoading)
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withOpacity(0.2),
+              child: const Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
