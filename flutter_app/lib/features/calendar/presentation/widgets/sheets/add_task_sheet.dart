@@ -31,6 +31,8 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
   String _selectedType = 'Task';
   bool _isSmartScheduleEnabled = true;
   String _priority = "Medium";
+  // flag used to disable interactions while the header is saving
+  bool _isSaving = false;
   List<String> _selectedTags = [];
   CalendarColor _selectedColor = appEventColors[0];
   List<String> _tagsList = [];
@@ -143,7 +145,16 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
     return "${parts.join(", ")} before";
   }
 
-  Task createTaskSaveTemplate(bool isDark) {
+  /// Creates a draft task from the current form state.
+  ///
+  /// When smart scheduling is enabled the returned object normally has
+  /// *null* start/end times so that the AI system can pick them later.
+  /// However, callers can request a "fallback" pair by setting
+  /// [includeFallbackTimes] to true; this is used when the user switches to
+  /// **Event** mode so the event sheet inherits the grid-aligned timestamp
+  /// they originally tapped.
+  Task createTaskSaveTemplate(bool isDark,
+      {bool includeFallbackTimes = false}) {
     final colorValue =
         isDark ? _selectedColor.dark.value : _selectedColor.light.value;
     final title = _titleController.text.trim();
@@ -163,7 +174,18 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
       reminderOffsets: _hasReminder ? _selectedOffsets : [],
     );
 
-    final scheduleData = _isSmartScheduleEnabled
+    // determine what times to attach
+    final DateTime? startTime = (_isSmartScheduleEnabled && !includeFallbackTimes)
+        ? null
+        : _combineDateAndTime(_startDate, _startTime);
+    final DateTime? endTime = (_isSmartScheduleEnabled && !includeFallbackTimes)
+        ? null
+        : _combineDateAndTime(_endDate, _endTime);
+    final DateTime? deadline = (_isSmartScheduleEnabled && !includeFallbackTimes)
+        ? null
+        : _combineDateAndTime(_deadlineDate, _deadlineTime);
+
+    final scheduleData = (_isSmartScheduleEnabled && !includeFallbackTimes)
         ? {
             "startTime": null,
             "endTime": null,
@@ -171,9 +193,9 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
             "status": TaskStatus.pending,
           }
         : {
-            "startTime": _combineDateAndTime(_startDate, _startTime),
-            "endTime": _combineDateAndTime(_endDate, _endTime),
-            "deadline": _combineDateAndTime(_deadlineDate, _deadlineTime),
+            "startTime": startTime,
+            "endTime": endTime,
+            "deadline": deadline,
             "status": TaskStatus.scheduled,
           };
 
@@ -232,23 +254,42 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
       descController: _descController,
       onTypeSelected: (type) => setState(() => _selectedType = type),
       onColorSelected: (color) => setState(() => _selectedColor = color),
-      saveTemplate: () => createTaskSaveTemplate(isDark),
+      saveTemplate: ({bool includeFallbackTimes = false}) =>
+          createTaskSaveTemplate(isDark,
+              includeFallbackTimes: includeFallbackTimes),
     );
 
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.85,
-      decoration: BoxDecoration(
-        color: sheetBackground,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AddSheetHeader(data: headerData),
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
+    // prevent any route pops (back button/barrier) and absorb vertical drags during saving
+    return WillPopScope(
+      onWillPop: () async => !_isSaving,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        // when saving we intercept vertical drag gestures so the sheet itself
+        // doesn't respond to them. otherwise leave handlers null so normal
+        // behavior occurs.
+        onVerticalDragDown: _isSaving ? (_) {} : null,
+        onVerticalDragUpdate: _isSaving ? (_) {} : null,
+        onVerticalDragEnd: _isSaving ? (_) {} : null,
+        child: IgnorePointer(
+          ignoring: _isSaving,
+          child: Container(
+        height: MediaQuery.of(context).size.height * 0.85,
+        decoration: BoxDecoration(
+          color: sheetBackground,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AddSheetHeader(
+              data: headerData,
+              onSavingChanged: (saving) =>
+                  setState(() => _isSaving = saving),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
                 children: [
                   // --- SMART SCHEDULE TOGGLE ---
                   Row(
@@ -528,6 +569,9 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
           ),
         ],
       ),
+      )
+      )
+      )
     );
   }
 

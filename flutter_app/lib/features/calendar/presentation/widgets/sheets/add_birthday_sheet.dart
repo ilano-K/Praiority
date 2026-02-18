@@ -130,7 +130,8 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
       descController: _descController,
       onTypeSelected: (type) => setState(() => _selectedType = type),
       onColorSelected: (color) => setState(() => _selectedColor = color),
-      saveTemplate: () => _handleSave(isDark),
+      saveTemplate: ({bool includeFallbackTimes = false}) =>
+          _handleSave(isDark),
     );
 
     return Container(

@@ -22,7 +22,12 @@ class HeaderData {
   final TextEditingController descController;
   final ValueChanged<String> onTypeSelected;
   final ValueChanged<CalendarColor> onColorSelected;
-  final Task Function() saveTemplate;
+  /// Returns a draft [Task] representing the current form state.
+  ///
+  /// The boolean argument is used by callers who want to force the
+  /// inclusion of start/end timestamps even if smart scheduling is enabled
+  /// (e.g. when switching to the event sheet).
+  final Task Function({bool includeFallbackTimes}) saveTemplate;
 
   HeaderData({
     required this.selectedType,
@@ -37,8 +42,18 @@ class HeaderData {
 
 class AddSheetHeader extends ConsumerStatefulWidget {
   final HeaderData data;
+  /// Notifies parent widget when the save process begins or ends.
+  ///
+  /// This allows the parent sheet to disable interactions (e.g. scrolling)
+  /// while saving is in progress. The value will be `true` when the saving
+  /// spinner is shown and `false` when it is hidden.
+  final ValueChanged<bool>? onSavingChanged;
 
-  const AddSheetHeader({super.key, required this.data});
+  const AddSheetHeader({
+    super.key,
+    required this.data,
+    this.onSavingChanged,
+  });
 
   @override
   ConsumerState<AddSheetHeader> createState() => _AddSheetHeaderState();
@@ -92,6 +107,8 @@ class _AddSheetHeaderState extends ConsumerState<AddSheetHeader> {
               onPressed: _isSaving
                   ? null
                   : () async {
+                      // notify parent so the sheet can disable interactions
+                      widget.onSavingChanged?.call(true);
                       setState(() => _isSaving = true); // Start Spinner
 
                       var task = widget.data.saveTemplate();
@@ -129,6 +146,7 @@ class _AddSheetHeaderState extends ConsumerState<AddSheetHeader> {
                         // Always stop spinner if we are still on this screen
                         if (mounted) {
                           setState(() => _isSaving = false);
+                          widget.onSavingChanged?.call(false);
                         }
                       }
                     },
@@ -281,7 +299,9 @@ class _AddSheetHeaderState extends ConsumerState<AddSheetHeader> {
       onTap: () {
         if (isSelected) return;
 
-        final currentDraft = widget.data.saveTemplate();
+        final currentDraft = widget.data.saveTemplate(
+          includeFallbackTimes: label == 'Event',
+        );
         TaskType newType = label == 'Event'
             ? TaskType.event
             : (label == 'Birthday' ? TaskType.birthday : TaskType.task);
