@@ -61,15 +61,11 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
       }
     }
 
-  // --- LOGIC: HANDLE GOOGLE SIGN IN ---
-  void _handleGoogleSignIn() {
-  debugPrint("Initiating Google Sign-In flow...");
-  // This is where you'll later add the 'google_sign_in' package logic
-  Navigator.pushReplacement(
-    context, 
-    MaterialPageRoute(builder: (context) => const MainCalendar()),
-  );
-}
+  // --- LOGIC: HANDLE GOOGLE SIGN UP ---
+  void _handleGoogleSignIn() async {
+    final authController = ref.read(authControllerProvider.notifier);
+    await authController.signInWithGoogle();
+  }
 
   @override
   void dispose() {
