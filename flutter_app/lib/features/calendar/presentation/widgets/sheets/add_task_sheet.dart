@@ -31,6 +31,8 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
   String _selectedType = 'Task';
   bool _isSmartScheduleEnabled = true;
   String _priority = "Medium";
+  // flag used to disable interactions while the header is saving
+  bool _isSaving = false;
   List<String> _selectedTags = [];
   CalendarColor _selectedColor = appEventColors[0];
   List<String> _tagsList = [];
@@ -235,20 +237,37 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
       saveTemplate: () => createTaskSaveTemplate(isDark),
     );
 
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.85,
-      decoration: BoxDecoration(
-        color: sheetBackground,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AddSheetHeader(data: headerData),
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
+    // prevent any route pops (back button/barrier) and absorb vertical drags during saving
+    return WillPopScope(
+      onWillPop: () async => !_isSaving,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        // when saving we intercept vertical drag gestures so the sheet itself
+        // doesn't respond to them. otherwise leave handlers null so normal
+        // behavior occurs.
+        onVerticalDragDown: _isSaving ? (_) {} : null,
+        onVerticalDragUpdate: _isSaving ? (_) {} : null,
+        onVerticalDragEnd: _isSaving ? (_) {} : null,
+        child: IgnorePointer(
+          ignoring: _isSaving,
+          child: Container(
+        height: MediaQuery.of(context).size.height * 0.85,
+        decoration: BoxDecoration(
+          color: sheetBackground,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AddSheetHeader(
+              data: headerData,
+              onSavingChanged: (saving) =>
+                  setState(() => _isSaving = saving),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
                 children: [
                   // --- SMART SCHEDULE TOGGLE ---
                   Row(
@@ -528,6 +547,9 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
           ),
         ],
       ),
+      )
+      )
+      )
     );
   }
 

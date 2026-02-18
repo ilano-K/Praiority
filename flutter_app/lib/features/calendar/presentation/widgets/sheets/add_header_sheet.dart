@@ -40,8 +40,18 @@ class HeaderData {
 // ✅ CHANGED TO STATEFUL WIDGET (To handle loading state)
 class AddSheetHeader extends ConsumerStatefulWidget {
   final HeaderData data;
+  /// Notifies parent widget when the save process begins or ends.
+  ///
+  /// This allows the parent sheet to disable interactions (e.g. scrolling)
+  /// while saving is in progress. The value will be `true` when the saving
+  /// spinner is shown and `false` when it is hidden.
+  final ValueChanged<bool>? onSavingChanged;
 
-  const AddSheetHeader({super.key, required this.data});
+  const AddSheetHeader({
+    super.key,
+    required this.data,
+    this.onSavingChanged,
+  });
 
   @override
   ConsumerState<AddSheetHeader> createState() => _AddSheetHeaderState();
@@ -95,6 +105,8 @@ class _AddSheetHeaderState extends ConsumerState<AddSheetHeader> {
               onPressed: _isSaving
                   ? null
                   : () async {
+                      // notify parent so the sheet can disable interactions
+                      widget.onSavingChanged?.call(true);
                       setState(() => _isSaving = true); // Start Spinner
 
                       var task = widget.data.saveTemplate();
@@ -158,6 +170,7 @@ class _AddSheetHeaderState extends ConsumerState<AddSheetHeader> {
                         // Always stop spinner if we are still on this screen
                         if (mounted) {
                           setState(() => _isSaving = false);
+                          widget.onSavingChanged?.call(false);
                         }
                       }
                     },
