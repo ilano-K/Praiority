@@ -17,6 +17,9 @@ class CalendarBuilder {
     required ColorScheme colorScheme,
     required DateTime selectedDate,
     required VoidCallback onPickDate,
+    // new parameters for Google sync button
+    required bool isSyncingGoogle,
+    required VoidCallback onGoogleSync,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10),
@@ -47,15 +50,23 @@ class CalendarBuilder {
           ),
           const Spacer(),
 
-          // --- UPDATED: REFRESH ICON REPLACED WITH GOOGLE ASSET ---
-          Padding(
-            padding: const EdgeInsets.only(right: 10.0),
-            child: Image.asset(
-              'assets/images/G.png',
-              width:
-                  22, // Sized slightly smaller than 24 to match visual weight
-              height: 22,
-              fit: BoxFit.contain,
+          // --- NEW: Google sync button with loading state ---
+          GestureDetector(
+            onTap: isSyncingGoogle ? null : onGoogleSync,
+            child: Padding(
+              padding: const EdgeInsets.only(right: 10.0),
+              child: isSyncingGoogle
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Image.asset(
+                      'assets/images/G.png',
+                      width: 22,
+                      height: 22,
+                      fit: BoxFit.contain,
+                    ),
             ),
           ),
 
@@ -191,7 +202,9 @@ class CalendarBuilder {
                     fontSize: 14,
                     fontWeight: FontWeight.w900,
                     // UPDATED: Added Italic here
-                    fontStyle: isCompleted ? FontStyle.italic : FontStyle.normal,
+                    fontStyle: isCompleted
+                        ? FontStyle.italic
+                        : FontStyle.normal,
                     decoration: isCompleted
                         ? TextDecoration.lineThrough
                         : TextDecoration.none,
@@ -221,7 +234,6 @@ class CalendarBuilder {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-
         // --- EXISTING BUTTONS ---
         _buildAnimatedFabOption(
           "Smart ReOrganize",
@@ -238,8 +250,7 @@ class CalendarBuilder {
           fabAnimation,
           () => onOptionTap("Smart Schedule"),
         ),
-        
-        
+
         const SizedBox(height: 10),
         _buildAnimatedFabOption(
           "Task",
@@ -248,7 +259,7 @@ class CalendarBuilder {
           () => onOptionTap("Task"),
         ),
         const SizedBox(height: 10),
-        
+
         // --- FAB TOGGLE ---
         SizedBox(
           width: 65,
@@ -305,7 +316,7 @@ class CalendarBuilder {
 }
 
 class TaskDataSource extends CalendarDataSource {
-  final bool showAll; 
+  final bool showAll;
 
   TaskDataSource(List<Task> tasks, bool isDark, {this.showAll = false}) {
     _buildAppointments(tasks, isDark);
@@ -327,14 +338,16 @@ class TaskDataSource extends CalendarDataSource {
       final Color displayColor = _resolveColor(task.colorValue, isDark);
       final bool isCompleted = task.status == TaskStatus.completed;
 
-      DateTime endTime = task.endTime ?? task.startTime!.add(const Duration(hours: 1));
-      
+      DateTime endTime =
+          task.endTime ?? task.startTime!.add(const Duration(hours: 1));
+
       if (endTime.difference(task.startTime!).inMinutes < 15) {
         endTime = task.startTime!.add(const Duration(minutes: 15));
       }
 
       String? rRule = RRuleUtils.sanitizeRRule(task.recurrenceRule);
-      if (task.type == TaskType.birthday && (rRule == null || rRule.isEmpty || rRule == 'None')) {
+      if (task.type == TaskType.birthday &&
+          (rRule == null || rRule.isEmpty || rRule == 'None')) {
         rRule = 'FREQ=YEARLY';
       }
 
@@ -362,7 +375,7 @@ class TaskDataSource extends CalendarDataSource {
         endTime: endTime,
         notes: task.description,
         color: isCompleted ? displayColor.withOpacity(0.4) : displayColor,
-        isAllDay: task.isAllDay || task.type == TaskType.birthday, 
+        isAllDay: task.isAllDay || task.type == TaskType.birthday,
         recurrenceRule: rRule,
       );
     }).toList();

@@ -10,6 +10,7 @@ import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_controller.dart';
+import 'package:flutter_app/features/calendar/presentation/managers/calendar_provider.dart';
 import 'package:flutter_app/features/calendar/presentation/utils/date_time_utils.dart';
 
 import 'package:flutter_app/features/calendar/presentation/pages/views/month_view.dart';
@@ -25,6 +26,7 @@ import 'package:flutter_app/features/calendar/presentation/widgets/sheets/add_ev
 import 'package:flutter_app/features/calendar/presentation/widgets/sheets/add_task_sheet.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/dialogs/app_confirmation_dialog.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/dialogs/app_warning_dialog.dart';
+import 'package:flutter_app/core/errors/app_exceptions.dart';
 
 class MainCalendar extends ConsumerStatefulWidget {
   const MainCalendar({super.key});
@@ -44,6 +46,9 @@ class _MainCalendarState extends ConsumerState<MainCalendar>
   Timer? _debounceTimer;
 
   CalendarView _currentView = CalendarView.day;
+
+  // state for the top bar Google sync button
+  bool _isSyncingGoogle = false;
 
   final CalendarController _calendarController = CalendarController();
   late AnimationController _fabController;
@@ -174,6 +179,50 @@ class _MainCalendarState extends ConsumerState<MainCalendar>
     _lastFetchDate = _selectedDate;
   }
 
+  /// new: handle google calendar sync from header
+  Future<void> _handleGoogleSync() async {
+    if (_isSyncingGoogle) return;
+
+    setState(() => _isSyncingGoogle = true);
+    final messenger = ScaffoldMessenger.of(context);
+
+    try {
+      final googleSync = ref.read(googleSyncNotifierProvider.notifier);
+      await googleSync.performSync();
+
+      if (mounted) {
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text("Google Calendar synced successfully!"),
+            behavior: SnackBarBehavior.fixed,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint("[Google Sync Error]: $e");
+      if (mounted) {
+        final appError = parseError(e);
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Text(appError.title),
+            content: Text(appError.message),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text("OK"),
+              ),
+            ],
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSyncingGoogle = false);
+      }
+    }
+  }
+
   // --- UI HELPERS ---
   void _showAiTipBeforeEdit(Task task) {
     showDialog(
@@ -290,7 +339,6 @@ class _MainCalendarState extends ConsumerState<MainCalendar>
     final tasksAsync = ref.watch(calendarControllerProvider);
     final tasks = tasksAsync.valueOrNull ?? [];
 
-
     return Scaffold(
       backgroundColor: colorScheme.surface,
       resizeToAvoidBottomInset: false,
@@ -344,9 +392,7 @@ class _MainCalendarState extends ConsumerState<MainCalendar>
                 ),
               ),
             );
-          }
-
-          else if (key == "smart schedule") {
+          } else if (key == "smart schedule") {
             showDialog(
               context: context,
               barrierColor: Colors.black.withOpacity(0.3),
@@ -375,6 +421,8 @@ class _MainCalendarState extends ConsumerState<MainCalendar>
                   colorScheme: colorScheme,
                   selectedDate: date,
                   onPickDate: () => _pickDate(context),
+                  isSyncingGoogle: _isSyncingGoogle,
+                  onGoogleSync: _handleGoogleSync,
                 );
               },
             ),
