@@ -60,7 +60,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
         scaffoldMessenger.showSnackBar(
           const SnackBar(
             content: Text("Google Calendar synced successfully!"),
-            behavior: SnackBarBehavior.floating,
+            behavior: SnackBarBehavior.fixed,
           ),
         );
       }
