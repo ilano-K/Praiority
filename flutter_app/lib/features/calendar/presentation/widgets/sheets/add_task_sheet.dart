@@ -30,7 +30,6 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
   String _selectedType = 'Task';
   bool _isSmartScheduleEnabled = true;
   String _priority = "Medium";
-  // flag used to disable interactions while the header is saving
   bool _isSaving = false;
   List<String> _selectedTags = [];
   CalendarColor _selectedColor = appEventColors[0];
@@ -52,8 +51,10 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
   late DateTime _endDate;
   late TimeOfDay _startTime;
   late TimeOfDay _endTime;
-  late DateTime _deadlineDate;
-  late TimeOfDay _deadlineTime;
+
+  // ✅ Nullable Deadlines
+  DateTime? _deadlineDate;
+  TimeOfDay? _deadlineTime;
 
   @override
   void initState() {
@@ -72,8 +73,12 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
     _endDate = baseDate;
     _startTime = TimeOfDay.fromDateTime(baseDate);
     _endTime = TimeOfDay.fromDateTime(baseDate.add(const Duration(hours: 1)));
-    _deadlineDate = widget.task?.deadline ?? baseDate;
-    _deadlineTime = const TimeOfDay(hour: 23, minute: 59);
+
+    // ✅ Initialize deadline from task if it exists, otherwise keep null
+    if (widget.task?.deadline != null) {
+      _deadlineDate = widget.task!.deadline;
+      _deadlineTime = TimeOfDay.fromDateTime(widget.task!.deadline!);
+    }
 
     if (widget.task != null) {
       _prefillFromTask(widget.task!);
@@ -86,7 +91,6 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
   }
 
   void _prefillFromTask(Task task) {
-    print("[PREFILLING] ${task.isSmartSchedule}");
     _titleController.text = task.title;
     _descController.text = task.description ?? "";
     _isSmartScheduleEnabled = task.isSmartSchedule;
@@ -96,8 +100,16 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
     _endTime = TimeOfDay.fromDateTime(
       task.endTime ?? DateTime.now().add(const Duration(hours: 1)),
     );
-    _deadlineDate = task.deadline ?? DateTime.now();
-    _deadlineTime = TimeOfDay.fromDateTime(task.deadline ?? DateTime.now());
+
+    // ✅ Handle nullable deadline in prefill
+    if (task.deadline != null) {
+      _deadlineDate = task.deadline;
+      _deadlineTime = TimeOfDay.fromDateTime(task.deadline!);
+    } else {
+      _deadlineDate = null;
+      _deadlineTime = null;
+    }
+
     _selectedTags = task.tags;
     _priority = _enumToString(task.priority);
     _movableByAI = task.isAiMovable;
@@ -134,14 +146,12 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
 
   String _formatOffsets() {
     if (_selectedOffsets.isEmpty) return "None";
-
     final List<String> parts = _selectedOffsets.map((d) {
       if (d.inMinutes == 0) return "At time of event";
       if (d.inMinutes < 60) return "${d.inMinutes}m";
       if (d.inHours < 24) return "${d.inHours}h";
       return "${d.inDays}d";
     }).toList();
-
     return "${parts.join(", ")} before";
   }
 
@@ -169,7 +179,6 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
       reminderOffsets: _hasReminder ? _selectedOffsets : [],
     );
 
-    // determine what times to attach
     final DateTime? startTime =
         (_isSmartScheduleEnabled && !includeFallbackTimes)
         ? null
@@ -177,16 +186,17 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
     final DateTime? endTime = (_isSmartScheduleEnabled && !includeFallbackTimes)
         ? null
         : _combineDateAndTime(_endDate, _endTime);
-    final DateTime? deadline =
-        (_isSmartScheduleEnabled && !includeFallbackTimes)
-        ? null
-        : _combineDateAndTime(_deadlineDate, _deadlineTime);
+
+    // ✅ Determine if a valid deadline exists
+    final DateTime? deadline = (_deadlineDate != null && _deadlineTime != null)
+        ? _combineDateAndTime(_deadlineDate!, _deadlineTime!)
+        : null;
 
     final scheduleData = (_isSmartScheduleEnabled && !includeFallbackTimes)
         ? {
             "startTime": null,
             "endTime": null,
-            "deadline": null,
+            "deadline": deadline,
             "status": TaskStatus.pending,
           }
         : {
@@ -224,7 +234,6 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
 
   void _showOffsetSelector(BuildContext context) {
     final taskStart = _combineDateAndTime(_startDate, _startTime);
-
     ReminderSelector.show(
       parentContext: context,
       selectedOffsets: _selectedOffsets,
@@ -259,14 +268,10 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
           ),
     );
 
-    // prevent any route pops (back button/barrier) and absorb vertical drags during saving
     return WillPopScope(
       onWillPop: () async => !_isSaving,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        // when saving we intercept vertical drag gestures so the sheet itself
-        // doesn't respond to them. otherwise leave handlers null so normal
-        // behavior occurs.
         onVerticalDragDown: _isSaving ? (_) {} : null,
         onVerticalDragUpdate: _isSaving ? (_) {} : null,
         onVerticalDragEnd: _isSaving ? (_) {} : null,
@@ -293,7 +298,6 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                   child: SingleChildScrollView(
                     child: Column(
                       children: [
-                        // --- SMART SCHEDULE TOGGLE ---
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -330,8 +334,6 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                           ),
                         ],
                         const SizedBox(height: 10),
-
-                        // --- PRIORITY ---
                         InteractiveInputRow(
                           label: "Priority",
                           value: _priority,
@@ -345,8 +347,6 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                             ),
                           ),
                         ),
-
-                        // --- START & END TIME ---
                         if (!_isSmartScheduleEnabled) ...[
                           InteractiveInputRow(
                             label: "Start Time",
@@ -368,7 +368,6 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                               if (picked != null) {
                                 setState(() {
                                   _startTime = picked;
-                                  // ensure end is after start
                                   if (_endDate.isAtSameMomentAs(_startDate) &&
                                       (_endTime.hour <= _startTime.hour &&
                                           _endTime.minute <=
@@ -405,8 +404,6 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                             },
                           ),
                         ],
-
-                        // --- ADVANCED OPTIONS ---
                         Theme(
                           data: Theme.of(
                             context,
@@ -425,7 +422,6 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                             onExpansionChanged: (val) =>
                                 setState(() => _advancedExpanded = val),
                             children: [
-                              // 1. Reminders Toggle
                               Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
@@ -461,8 +457,6 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                                   Transform.scale(
                                     scale: 0.8,
                                     child: Switch(
-                                      materialTapTargetSize:
-                                          MaterialTapTargetSize.shrinkWrap,
                                       value: _hasReminder,
                                       activeTrackColor: colorScheme.primary,
                                       onChanged: (val) =>
@@ -472,16 +466,12 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                                 ],
                               ),
                               const SizedBox(height: 16),
-
-                              // 2. Remind Me Selector (Only show if reminders ON)
                               if (_hasReminder)
                                 InteractiveInputRow(
                                   label: "Remind me",
                                   value: _formatOffsets(),
                                   onTap: () => _showOffsetSelector(context),
                                 ),
-
-                              // 5. Switch Tiles (Refactored)
                               _buildSwitchTile(
                                 'Lock Task',
                                 "Exclude from auto-reorganization.",
@@ -496,8 +486,6 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                                 (v) => setState(() => _setNonConfliction = v),
                                 colorScheme,
                               ),
-
-                              // 3. Tags Selector
                               InteractiveInputRow(
                                 label: "Tags",
                                 value: _selectedTags.isEmpty
@@ -523,9 +511,8 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                                                 .read(tagsProvider.notifier)
                                                 .addTag(newTag);
                                             setState(() {
-                                              if (!_tagsList.contains(newTag)) {
+                                              if (!_tagsList.contains(newTag))
                                                 _tagsList.add(newTag);
-                                              }
                                             });
                                             sheetSetState(() {});
                                           },
@@ -547,30 +534,49 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                                   ),
                                 ),
                               ),
-
-                              // 4. Deadline Selector
                               InteractiveInputRow(
                                 label: "Deadline",
-                                value: DateFormat(
-                                  'MMMM d, y',
-                                ).format(_deadlineDate),
-                                trailing: _deadlineTime.format(context),
+                                // If no date, show "None" on the left. If date exists, show formatted date.
+                                value: _deadlineDate == null
+                                    ? "None"
+                                    : DateFormat(
+                                        'MMMM d, y',
+                                      ).format(_deadlineDate!),
+                                // If no date, show nothing on the trailing side. If date exists, show time.
+                                trailing: _deadlineDate == null
+                                    ? ""
+                                    : (_deadlineTime?.format(context) ?? ""),
                                 onTapValue: () async {
                                   final picked = await pickDate(
                                     context,
-                                    initialDate: _deadlineDate,
+                                    initialDate:
+                                        _deadlineDate ?? DateTime.now(),
                                   );
                                   if (picked != null) {
-                                    setState(() => _deadlineDate = picked);
+                                    setState(() {
+                                      _deadlineDate = picked;
+                                      // Default to end of day if they haven't picked a time yet
+                                      _deadlineTime ??= const TimeOfDay(
+                                        hour: 23,
+                                        minute: 59,
+                                      );
+                                    });
                                   }
                                 },
                                 onTapTrailing: () async {
+                                  // Only allow time picking if a date is already set,
+                                  // or just default to today if they click time first.
                                   final picked = await pickTime(
                                     context,
-                                    initialTime: _deadlineTime,
+                                    initialTime:
+                                        _deadlineTime ??
+                                        const TimeOfDay(hour: 23, minute: 59),
                                   );
                                   if (picked != null) {
-                                    setState(() => _deadlineTime = picked);
+                                    setState(() {
+                                      _deadlineTime = picked;
+                                      _deadlineDate ??= DateTime.now();
+                                    });
                                   }
                                 },
                               ),
