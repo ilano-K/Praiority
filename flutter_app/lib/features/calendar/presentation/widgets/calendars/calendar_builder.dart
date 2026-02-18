@@ -6,6 +6,7 @@ import 'package:flutter_app/features/calendar/presentation/pages/views/task_view
 import 'package:flutter_app/features/calendar/presentation/utils/rrule_utils.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/selectors/color_selector.dart';
 import 'package:flutter_app/features/calendar/presentation/utils/date_time_utils.dart';
+import 'package:flutter_app/features/calendar/presentation/utils/task_utils.dart';
 import 'package:intl/intl.dart';
 import 'dart:math' as math;
 
@@ -130,25 +131,29 @@ class CalendarBuilder {
     required Function(Task) onTaskTap,
     required DateTime selectedDate,
   }) {
-    final selectedDateOnly = dateOnly(selectedDate);
+    // compute start/end ranges for the target day
+    final startOfDay = DateTime(
+      selectedDate.year,
+      selectedDate.month,
+      selectedDate.day,
+    );
+    final endOfDay = DateTime(
+      selectedDate.year,
+      selectedDate.month,
+      selectedDate.day,
+      23,
+      59,
+      59,
+    );
+
     final allDayTasks = tasks.where((t) {
       if (t.status == TaskStatus.pending) {
         return false;
       }
       if ((t.isAllDay || t.type == TaskType.birthday) && t.startTime != null) {
-        final taskDateOnly = dateOnly(t.startTime!);
-
-        // For non-recurring tasks, check exact date match
-        if (t.recurrenceRule == null ||
-            t.recurrenceRule == "" ||
-            t.recurrenceRule == "None") {
-          return taskDateOnly == selectedDateOnly;
-        }
-
-        // For recurring tasks, check if this date is within the recurring range
-        // For birthdays, they repeat every year on the same month/day
-        return t.startTime!.month == selectedDate.month &&
-            t.startTime!.day == selectedDate.day;
+        // rely on the shared recurrence logic so monthly/weekly/daily/custom
+        // rules are handled exactly the same way as the other views.
+        return TaskUtils.validTaskModelForDate(t, startOfDay, endOfDay);
       }
       return false;
     }).toList();

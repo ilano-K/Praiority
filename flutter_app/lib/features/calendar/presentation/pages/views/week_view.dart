@@ -11,6 +11,8 @@ import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/components/appointment_card.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/components/task_summary_view.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/selectors/color_selector.dart';
+// Import TaskUtils for recurrence checks
+import 'package:flutter_app/features/calendar/presentation/utils/task_utils.dart';
 // Import DayView to share the TaskDataSource logic
 import 'day_view.dart';
 
@@ -329,14 +331,23 @@ class _WeekViewState extends ConsumerState<WeekView> {
   }
 
   Widget _buildDayTaskList(BuildContext context, DateTime day, bool isDark) {
-    final dayAllDayTasks = widget.tasks
-        .where(
-          (t) =>
-              (t.isAllDay || t.type == TaskType.birthday) &&
-              t.startTime != null &&
-              DateUtils.isSameDay(t.startTime!, day),
-        )
-        .toList();
+    // Build a list of all-day/birthday tasks that actually occur on `day`.
+    // Previously we simply compared the startTime date, which meant
+    // recurring all-day events (e.g. daily, weekly, yearly repeats) would
+    // only appear on their original start date. The Day/Month views rely on
+    // `TaskUtils.validTaskModelForDate` so we mirror that behaviour here.
+
+    final startOfDay = DateTime(day.year, day.month, day.day);
+    final endOfDay = DateTime(day.year, day.month, day.day, 23, 59, 59);
+
+    final dayAllDayTasks = widget.tasks.where((t) {
+      if (t.startTime == null) return false;
+      // only care about explicit all-day or birthday items
+      if (!(t.isAllDay || t.type == TaskType.birthday)) return false;
+
+      // use the same recurring check as month/day views
+      return TaskUtils.validTaskModelForDate(t, startOfDay, endOfDay);
+    }).toList();
 
     if (dayAllDayTasks.isEmpty) return const SizedBox.shrink();
     final bool hasMore = dayAllDayTasks.length > 2;
