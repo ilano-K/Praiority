@@ -1,17 +1,20 @@
 class SmartGenerateRequest {
-  final DateTime targetDate;
+  final DateTime targetStart;
+  final DateTime targetEnd;
   final DateTime currentTime;
   final String? instruction;
 
   SmartGenerateRequest({
-    required this.targetDate,
+    required this.targetStart,
+    required this.targetEnd,
     required this.currentTime,
     this.instruction,
   });
 
   Map<String, dynamic> toJson() {
     return {
-      'target_date': targetDate.toUtc().toIso8601String(),
+      'target_start': targetStart.toUtc().toIso8601String(),
+      'target_end': targetEnd.toUtc().toIso8601String(),
       'current_time': currentTime.toUtc().toIso8601String(),
       'instruction': instruction ?? "",
     };

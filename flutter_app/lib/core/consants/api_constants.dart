@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 class ApiConstants {
   static const _port = 8000;
 
+  static const _localIp = '192.168.0.230';
+
   static String get baseUrl {
     if (kReleaseMode) {
       return 'API URL DITO KARL';
@@ -12,9 +14,9 @@ class ApiConstants {
 
     // local host handling
     if (Platform.isAndroid) {
-      return 'http://10.0.2.2:$_port';
+      return 'http://$_localIp:$_port';
     }
-    return 'http://localhost:$_port';
+    return 'http://$_localIp:$_port';
   }
 
   //static endpoints

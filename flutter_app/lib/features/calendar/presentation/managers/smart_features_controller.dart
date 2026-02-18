@@ -1,3 +1,4 @@
+import 'package:flutter_app/features/calendar/domain/entities/date_range.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_provider.dart';
 import 'package:flutter_app/features/smart_features/data/models/smart_advice_request.dart';
 import 'package:flutter_app/features/smart_features/data/models/smart_generate_request.dart';
@@ -25,17 +26,19 @@ class SmartFeaturesController {
     print(
       "[DEBUG] Executing request: Smart Schedule for task with cloudId: $cloudId",
     );
+
+    final range = targetDate.range(CalendarScope.day);
     try {
       final request = SmartScheduleRequest(
         cloudId: cloudId,
-        targetDate: targetDate,
+        targetStart: range.start,
+        targetEnd: range.end,
         currentTime: currentTime,
         instruction: instruction,
       );
 
       await _ref.read(smartServiceProvider).smartSchedule(request: request);
     } catch (e) {
-      print(e);
       rethrow;
     }
   }
@@ -47,15 +50,21 @@ class SmartFeaturesController {
   }) async {
     print("[DEBUG] Executing request: Smart Generate Task");
     try {
+      final dateRange = targetDate.range(CalendarScope.day);
+
       final request = SmartGenerateRequest(
-        targetDate: targetDate,
+        targetStart: dateRange.start,
+        targetEnd: dateRange.end,
         currentTime: currentTime,
         instruction: instruction,
       );
 
+      print(
+        "[DEBUG] Executing request:heres the request: START ${request.targetStart}, END ${request.targetEnd} INST ${request.instruction} CURRTIME ${request.currentTime}",
+      );
+
       await _ref.read(smartServiceProvider).smartGenerateTask(request: request);
     } catch (e) {
-      print(e);
       rethrow;
     }
   }
@@ -69,9 +78,12 @@ class SmartFeaturesController {
     print(
       "[DEBUG] Executing request: Smart Organize for target date: $targetDate",
     );
+
+    final range = targetDate.range(CalendarScope.day);
     try {
       final request = SmartOrganizeRequest(
-        targetDate: targetDate,
+        targetStart: range.start,
+        targetEnd: range.end,
         currentTime: currentTime,
         instruction: instruction,
       );
@@ -82,7 +94,6 @@ class SmartFeaturesController {
 
       await _ref.read(smartServiceProvider).smartOrganize(request: request);
     } catch (e) {
-      print(e);
       rethrow;
     }
   }
@@ -111,7 +122,6 @@ class SmartFeaturesController {
 
       return task?.aiTip;
     } catch (e) {
-      print(e);
       rethrow;
     }
   }

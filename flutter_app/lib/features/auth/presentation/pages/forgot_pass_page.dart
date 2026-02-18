@@ -26,10 +26,7 @@ class _ForgotPassPageState extends ConsumerState<ForgotPassPage> {
 
     if (email.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text("Please enter your email address."),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
+        SnackBar(content: const Text("Please enter your email address.")),
       );
       return;
     }
@@ -54,11 +51,7 @@ class _ForgotPassPageState extends ConsumerState<ForgotPassPage> {
             : next.error.toString();
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(message),
-            backgroundColor: colorScheme.error,
-            behavior: SnackBarBehavior.floating,
-          ),
+          SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
         );
       }
 
@@ -72,7 +65,6 @@ class _ForgotPassPageState extends ConsumerState<ForgotPassPage> {
             content: Text(
               "Reset link sent to ${_emailController.text}! Check your inbox.",
             ),
-            backgroundColor: Colors.green,
             behavior: SnackBarBehavior.floating,
           ),
         );

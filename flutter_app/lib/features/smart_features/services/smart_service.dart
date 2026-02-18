@@ -25,6 +25,8 @@ class SmartService {
   Future<dynamic> smartGenerateTask({
     required SmartGenerateRequest request,
   }) async {
+    final json = request.toJson();
+    print("[DEBUG] SMART SERVICE THIS IS THE REQUEST: ${json}");
     final response = await _apiClient.postRequest(
       ApiConstants.smartGenerateTask,
       request.toJson(),
@@ -38,6 +40,7 @@ class SmartService {
       ApiConstants.smartOrganizeTask,
       request.toJson(),
     );
+
     return response.data;
   }
 
