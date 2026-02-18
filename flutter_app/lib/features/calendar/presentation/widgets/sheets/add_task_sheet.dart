@@ -145,7 +145,16 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
     return "${parts.join(", ")} before";
   }
 
-  Task createTaskSaveTemplate(bool isDark) {
+  /// Creates a draft task from the current form state.
+  ///
+  /// When smart scheduling is enabled the returned object normally has
+  /// *null* start/end times so that the AI system can pick them later.
+  /// However, callers can request a "fallback" pair by setting
+  /// [includeFallbackTimes] to true; this is used when the user switches to
+  /// **Event** mode so the event sheet inherits the grid-aligned timestamp
+  /// they originally tapped.
+  Task createTaskSaveTemplate(bool isDark,
+      {bool includeFallbackTimes = false}) {
     final colorValue =
         isDark ? _selectedColor.dark.value : _selectedColor.light.value;
     final title = _titleController.text.trim();
@@ -165,7 +174,18 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
       reminderOffsets: _hasReminder ? _selectedOffsets : [],
     );
 
-    final scheduleData = _isSmartScheduleEnabled
+    // determine what times to attach
+    final DateTime? startTime = (_isSmartScheduleEnabled && !includeFallbackTimes)
+        ? null
+        : _combineDateAndTime(_startDate, _startTime);
+    final DateTime? endTime = (_isSmartScheduleEnabled && !includeFallbackTimes)
+        ? null
+        : _combineDateAndTime(_endDate, _endTime);
+    final DateTime? deadline = (_isSmartScheduleEnabled && !includeFallbackTimes)
+        ? null
+        : _combineDateAndTime(_deadlineDate, _deadlineTime);
+
+    final scheduleData = (_isSmartScheduleEnabled && !includeFallbackTimes)
         ? {
             "startTime": null,
             "endTime": null,
@@ -173,9 +193,9 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
             "status": TaskStatus.pending,
           }
         : {
-            "startTime": _combineDateAndTime(_startDate, _startTime),
-            "endTime": _combineDateAndTime(_endDate, _endTime),
-            "deadline": _combineDateAndTime(_deadlineDate, _deadlineTime),
+            "startTime": startTime,
+            "endTime": endTime,
+            "deadline": deadline,
             "status": TaskStatus.scheduled,
           };
 
@@ -234,7 +254,9 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
       descController: _descController,
       onTypeSelected: (type) => setState(() => _selectedType = type),
       onColorSelected: (color) => setState(() => _selectedColor = color),
-      saveTemplate: () => createTaskSaveTemplate(isDark),
+      saveTemplate: ({bool includeFallbackTimes = false}) =>
+          createTaskSaveTemplate(isDark,
+              includeFallbackTimes: includeFallbackTimes),
     );
 
     // prevent any route pops (back button/barrier) and absorb vertical drags during saving

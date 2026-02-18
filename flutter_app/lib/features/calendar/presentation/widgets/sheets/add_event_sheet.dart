@@ -384,7 +384,8 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
               onTypeSelected: (type) => setState(() => _selectedType = type),
               onColorSelected: (color) =>
                   setState(() => _selectedColor = color),
-              saveTemplate: () => createTaskSaveTemplate(isDark),
+              saveTemplate: ({bool includeFallbackTimes = false}) =>
+                  createTaskSaveTemplate(isDark),
             ),
           ),
           Expanded(
