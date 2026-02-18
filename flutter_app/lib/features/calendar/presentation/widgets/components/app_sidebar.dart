@@ -50,13 +50,19 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
     if (_isSyncingGoogle) return;
 
     setState(() => _isSyncingGoogle = true);
+    
+    // Capture both the messenger and navigator before the async gap
     final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context); 
 
     try {
       final googleSyncNotfier = ref.read(googleSyncNotifierProvider.notifier);
       await googleSyncNotfier.performSync();
 
       if (mounted) {
+        // Close the sidebar upon success
+        navigator.pop(); 
+        
         scaffoldMessenger.showSnackBar(
           const SnackBar(
             content: Text("Google Calendar synced successfully!"),
@@ -83,6 +89,8 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
         );
       }
     } finally {
+      // If we popped the navigator, mounted will be false here, 
+      // which safely prevents calling setState on a disposed widget.
       if (mounted) {
         setState(() => _isSyncingGoogle = false);
       }
