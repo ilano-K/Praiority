@@ -52,7 +52,9 @@ class SaveTaskUseCase {
         checkEnd,
       );
 
-      for (final taskCurr in tasksInRange) {
+      final tasks = tasksInRange.where((t) => t.status != TaskStatus.pending);
+
+      for (final taskCurr in tasks) {
         if (taskCurr.id == task.id) continue;
 
         if (taskCurr.type == TaskType.birthday ||

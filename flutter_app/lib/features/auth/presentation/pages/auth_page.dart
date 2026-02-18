@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_app/features/auth/data/auth_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_app/features/auth/presentation/pages/sign_in_page.dart';
-import 'package:flutter_app/features/auth/presentation/pages/sign_up_page.dart'; 
+import 'package:flutter_app/features/auth/presentation/pages/sign_up_page.dart';
 
 class AuthPage extends ConsumerStatefulWidget {
   const AuthPage({super.key});
@@ -33,10 +33,7 @@ class _AuthPageState extends ConsumerState<AuthPage> {
                 key: const ValueKey('SignIn'), // Key ensures animation works
                 onSwitch: _toggleAuth,
               )
-            : SignUpPage(
-                key: const ValueKey('SignUp'),
-                onSwitch: _toggleAuth,
-              ),
+            : SignUpPage(key: const ValueKey('SignUp'), onSwitch: _toggleAuth),
       ),
     );
   }

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_controller.dart';
-import 'package:flutter_app/features/calendar/presentation/managers/calendar_provider.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/components/interactive_row.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/selectors/date_picker.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/selectors/pick_time.dart';
@@ -87,6 +86,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
   }
 
   void _prefillFromTask(Task task) {
+    print("[PREFILLING] ${task.isSmartSchedule}");
     _titleController.text = task.title;
     _descController.text = task.description ?? "";
     _isSmartScheduleEnabled = task.isSmartSchedule;
@@ -145,18 +145,13 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
     return "${parts.join(", ")} before";
   }
 
-  /// Creates a draft task from the current form state.
-  ///
-  /// When smart scheduling is enabled the returned object normally has
-  /// *null* start/end times so that the AI system can pick them later.
-  /// However, callers can request a "fallback" pair by setting
-  /// [includeFallbackTimes] to true; this is used when the user switches to
-  /// **Event** mode so the event sheet inherits the grid-aligned timestamp
-  /// they originally tapped.
-  Task createTaskSaveTemplate(bool isDark,
-      {bool includeFallbackTimes = false}) {
-    final colorValue =
-        isDark ? _selectedColor.dark.value : _selectedColor.light.value;
+  Task createTaskSaveTemplate(
+    bool isDark, {
+    bool includeFallbackTimes = false,
+  }) {
+    final colorValue = isDark
+        ? _selectedColor.dark.value
+        : _selectedColor.light.value;
     final title = _titleController.text.trim();
 
     var baseTask = Task.create(
@@ -175,13 +170,15 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
     );
 
     // determine what times to attach
-    final DateTime? startTime = (_isSmartScheduleEnabled && !includeFallbackTimes)
+    final DateTime? startTime =
+        (_isSmartScheduleEnabled && !includeFallbackTimes)
         ? null
         : _combineDateAndTime(_startDate, _startTime);
     final DateTime? endTime = (_isSmartScheduleEnabled && !includeFallbackTimes)
         ? null
         : _combineDateAndTime(_endDate, _endTime);
-    final DateTime? deadline = (_isSmartScheduleEnabled && !includeFallbackTimes)
+    final DateTime? deadline =
+        (_isSmartScheduleEnabled && !includeFallbackTimes)
         ? null
         : _combineDateAndTime(_deadlineDate, _deadlineTime);
 
@@ -220,6 +217,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
             isAiMovable: baseTask.isAiMovable,
             isConflicting: baseTask.isConflicting,
             reminderOffsets: baseTask.reminderOffsets,
+            isSmartSchedule: baseTask.isSmartSchedule,
           )
         : baseTask;
   }
@@ -255,8 +253,10 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
       onTypeSelected: (type) => setState(() => _selectedType = type),
       onColorSelected: (color) => setState(() => _selectedColor = color),
       saveTemplate: ({bool includeFallbackTimes = false}) =>
-          createTaskSaveTemplate(isDark,
-              includeFallbackTimes: includeFallbackTimes),
+          createTaskSaveTemplate(
+            isDark,
+            includeFallbackTimes: includeFallbackTimes,
+          ),
     );
 
     // prevent any route pops (back button/barrier) and absorb vertical drags during saving
@@ -273,305 +273,320 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
         child: IgnorePointer(
           ignoring: _isSaving,
           child: Container(
-        height: MediaQuery.of(context).size.height * 0.85,
-        decoration: BoxDecoration(
-          color: sheetBackground,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AddSheetHeader(
-              data: headerData,
-              onSavingChanged: (saving) =>
-                  setState(() => _isSaving = saving),
+            height: MediaQuery.of(context).size.height * 0.85,
+            decoration: BoxDecoration(
+              color: sheetBackground,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(20),
+              ),
             ),
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                children: [
-                  // --- SMART SCHEDULE TOGGLE ---
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "Smart Schedule",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.onSurface,
-                        ),
-                      ),
-                      Transform.scale(
-                        scale: 0.8,
-                        child: Switch(
-                          value: _isSmartScheduleEnabled,
-                          activeTrackColor: colorScheme.primary,
-                          onChanged: (val) =>
-                              setState(() => _isSmartScheduleEnabled = val),
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (_isSmartScheduleEnabled) ...[
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        "an AI-based system that schedules your tasks\nat the best time for you.",
-                        style: TextStyle(
-                          color: colorScheme.onSurface.withOpacity(0.6),
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 10),
-
-                  // --- PRIORITY ---
-                  InteractiveInputRow(
-                    label: "Priority",
-                    value: _priority,
-                    onTap: () => showModalBottomSheet(
-                      context: context,
-                      backgroundColor: Colors.transparent,
-                      builder: (context) => PrioritySelector(
-                        currentPriority: _priority,
-                        onPrioritySelected: (val) =>
-                            setState(() => _priority = val),
-                      ),
-                    ),
-                  ),
-
-                  // --- START & END TIME ---
-                  if (!_isSmartScheduleEnabled) ...[
-                    InteractiveInputRow(
-                      label: "Start Time",
-                      value: DateFormat('MMMM d, y').format(_startDate),
-                      trailing: _startTime.format(context),
-                      onTapValue: () async {
-                        final picked = await pickDate(
-                          context,
-                          initialDate: _startDate,
-                        );
-                        if (picked != null) setState(() => _startDate = picked);
-                      },
-                      onTapTrailing: () async {
-                        final picked = await pickTime(
-                          context,
-                          initialTime: _startTime,
-                        );
-                        if (picked != null) {
-                          setState(() {
-                            _startTime = picked;
-                            // ensure end is after start
-                            if (_endDate.isAtSameMomentAs(_startDate) &&
-                                (_endTime.hour <= _startTime.hour &&
-                                    _endTime.minute <= _startTime.minute)) {
-                              _endTime = TimeOfDay(
-                                hour: (_startTime.hour + 1) % 24,
-                                minute: _startTime.minute,
-                              );
-                            }
-                          });
-                        }
-                      },
-                    ),
-                    InteractiveInputRow(
-                      label: "End Time",
-                      value: DateFormat('MMMM d, y').format(_endDate),
-                      trailing: _endTime.format(context),
-                      onTapValue: () async {
-                        final picked = await pickDate(
-                          context,
-                          initialDate: _endDate,
-                        );
-                        if (picked != null) setState(() => _endDate = picked);
-                      },
-                      onTapTrailing: () async {
-                        final picked = await pickTime(
-                          context,
-                          initialTime: _endTime,
-                        );
-                        if (picked != null) {
-                          setState(() => _endTime = picked);
-                        }
-                      },
-                    ),
-                  ],
-
-                  // --- ADVANCED OPTIONS ---
-                  Theme(
-                    data: Theme.of(context)
-                        .copyWith(dividerColor: Colors.transparent),
-                    child: ExpansionTile(
-                      tilePadding: EdgeInsets.zero,
-                      title: Text(
-                        'Advanced Options',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.onSurface,
-                        ),
-                      ),
-                      initiallyExpanded: _advancedExpanded,
-                      onExpansionChanged: (val) =>
-                          setState(() => _advancedExpanded = val),
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AddSheetHeader(
+                  data: headerData,
+                  onSavingChanged: (saving) =>
+                      setState(() => _isSaving = saving),
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
                       children: [
-                        // 1. Reminders Toggle
+                        // --- SMART SCHEDULE TOGGLE ---
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "Reminders",
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: colorScheme.onSurface,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    _hasReminder
-                                        ? "You'll get a notification"
-                                        : "Reminders are turned off",
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: colorScheme.onSurface
-                                          .withOpacity(0.6),
-                                    ),
-                                  ),
-                                ],
+                            Text(
+                              "Smart Schedule",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: colorScheme.onSurface,
                               ),
                             ),
                             Transform.scale(
                               scale: 0.8,
                               child: Switch(
-                                materialTapTargetSize:
-                                    MaterialTapTargetSize.shrinkWrap,
-                                value: _hasReminder,
+                                value: _isSmartScheduleEnabled,
                                 activeTrackColor: colorScheme.primary,
-                                onChanged: (val) =>
-                                    setState(() => _hasReminder = val),
+                                onChanged: (val) => setState(
+                                  () => _isSmartScheduleEnabled = val,
+                                ),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 16),
-
-                        // 2. Remind Me Selector (Only show if reminders ON)
-                        if (_hasReminder)
-                          InteractiveInputRow(
-                            label: "Remind me",
-                            value: _formatOffsets(),
-                            onTap: () => _showOffsetSelector(context),
+                        if (_isSmartScheduleEnabled) ...[
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              "an AI-based system that schedules your tasks\nat the best time for you.",
+                              style: TextStyle(
+                                color: colorScheme.onSurface.withOpacity(0.6),
+                                fontSize: 14,
+                              ),
+                            ),
                           ),
+                        ],
+                        const SizedBox(height: 10),
 
-                          // 5. Switch Tiles (Refactored)
-                        _buildSwitchTile(
-                          'Lock Task',
-                          "Exclude from auto-reorganization.",
-                          _movableByAI,
-                          (v) => setState(() => _movableByAI = v),
-                          colorScheme,
-                        ),
-                        _buildSwitchTile(
-                          'No Overlaps',
-                          "Ensures no overlapping tasks.",
-                          _setNonConfliction,
-                          (v) => setState(() => _setNonConfliction = v),
-                          colorScheme,
-                        ),
-
-                        // 3. Tags Selector
+                        // --- PRIORITY ---
                         InteractiveInputRow(
-                          label: "Tags",
-                          value: _selectedTags.isEmpty
-                              ? "None"
-                              : _selectedTags.join(", "),
+                          label: "Priority",
+                          value: _priority,
                           onTap: () => showModalBottomSheet(
                             context: context,
-                            isScrollControlled: true,
                             backgroundColor: Colors.transparent,
-                            builder: (ctx) => StatefulBuilder(
-                              builder: (context, sheetSetState) => TagSelector(
-                                selectedTags: _selectedTags,
-                                availableTags: _tagsList,
-                                onTagsChanged: (newList) {
-                                  setState(() => _selectedTags = newList);
-                                  sheetSetState(() {});
-                                },
-                                onTagAdded: (newTag) async {
-                                  await ref
-                                      .read(tagsProvider.notifier)
-                                      .addTag(newTag);
-                                  setState(() {
-                                    if (!_tagsList.contains(newTag)) {
-                                      _tagsList.add(newTag);
-                                    }
-                                  });
-                                  sheetSetState(() {});
-                                },
-                                onTagRemoved: (removedTag) async {
-                                  setState(() {
-                                    _tagsList = List<String>.from(_tagsList)
-                                      ..remove(removedTag);
-                                    _selectedTags =
-                                        List<String>.from(_selectedTags)
-                                          ..remove(removedTag);
-                                  });
-                                  await ref
-                                      .read(tagsProvider.notifier)
-                                      .deleteTag(removedTag);
-                                  sheetSetState(() {});
-                                },
-                              ),
+                            builder: (context) => PrioritySelector(
+                              currentPriority: _priority,
+                              onPrioritySelected: (val) =>
+                                  setState(() => _priority = val),
                             ),
                           ),
                         ),
 
-                        // 4. Deadline Selector
-                        InteractiveInputRow(
-                          label: "Deadline",
-                          value: DateFormat('MMMM d, y').format(_deadlineDate),
-                          trailing: _deadlineTime.format(context),
-                          onTapValue: () async {
-                            final picked = await pickDate(
-                              context,
-                              initialDate: _deadlineDate,
-                            );
-                            if (picked != null) {
-                              setState(() => _deadlineDate = picked);
-                            }
-                          },
-                          onTapTrailing: () async {
-                            final picked = await pickTime(
-                              context,
-                              initialTime: _deadlineTime,
-                            );
-                            if (picked != null) {
-                              setState(() => _deadlineTime = picked);
-                            }
-                          },
+                        // --- START & END TIME ---
+                        if (!_isSmartScheduleEnabled) ...[
+                          InteractiveInputRow(
+                            label: "Start Time",
+                            value: DateFormat('MMMM d, y').format(_startDate),
+                            trailing: _startTime.format(context),
+                            onTapValue: () async {
+                              final picked = await pickDate(
+                                context,
+                                initialDate: _startDate,
+                              );
+                              if (picked != null)
+                                setState(() => _startDate = picked);
+                            },
+                            onTapTrailing: () async {
+                              final picked = await pickTime(
+                                context,
+                                initialTime: _startTime,
+                              );
+                              if (picked != null) {
+                                setState(() {
+                                  _startTime = picked;
+                                  // ensure end is after start
+                                  if (_endDate.isAtSameMomentAs(_startDate) &&
+                                      (_endTime.hour <= _startTime.hour &&
+                                          _endTime.minute <=
+                                              _startTime.minute)) {
+                                    _endTime = TimeOfDay(
+                                      hour: (_startTime.hour + 1) % 24,
+                                      minute: _startTime.minute,
+                                    );
+                                  }
+                                });
+                              }
+                            },
+                          ),
+                          InteractiveInputRow(
+                            label: "End Time",
+                            value: DateFormat('MMMM d, y').format(_endDate),
+                            trailing: _endTime.format(context),
+                            onTapValue: () async {
+                              final picked = await pickDate(
+                                context,
+                                initialDate: _endDate,
+                              );
+                              if (picked != null)
+                                setState(() => _endDate = picked);
+                            },
+                            onTapTrailing: () async {
+                              final picked = await pickTime(
+                                context,
+                                initialTime: _endTime,
+                              );
+                              if (picked != null) {
+                                setState(() => _endTime = picked);
+                              }
+                            },
+                          ),
+                        ],
+
+                        // --- ADVANCED OPTIONS ---
+                        Theme(
+                          data: Theme.of(
+                            context,
+                          ).copyWith(dividerColor: Colors.transparent),
+                          child: ExpansionTile(
+                            tilePadding: EdgeInsets.zero,
+                            title: Text(
+                              'Advanced Options',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: colorScheme.onSurface,
+                              ),
+                            ),
+                            initiallyExpanded: _advancedExpanded,
+                            onExpansionChanged: (val) =>
+                                setState(() => _advancedExpanded = val),
+                            children: [
+                              // 1. Reminders Toggle
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          "Reminders",
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                            color: colorScheme.onSurface,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          _hasReminder
+                                              ? "You'll get a notification"
+                                              : "Reminders are turned off",
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: colorScheme.onSurface
+                                                .withOpacity(0.6),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Transform.scale(
+                                    scale: 0.8,
+                                    child: Switch(
+                                      materialTapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
+                                      value: _hasReminder,
+                                      activeTrackColor: colorScheme.primary,
+                                      onChanged: (val) =>
+                                          setState(() => _hasReminder = val),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+
+                              // 2. Remind Me Selector (Only show if reminders ON)
+                              if (_hasReminder)
+                                InteractiveInputRow(
+                                  label: "Remind me",
+                                  value: _formatOffsets(),
+                                  onTap: () => _showOffsetSelector(context),
+                                ),
+
+                              // 5. Switch Tiles (Refactored)
+                              _buildSwitchTile(
+                                'Lock Task',
+                                "Exclude from auto-reorganization.",
+                                _movableByAI,
+                                (v) => setState(() => _movableByAI = v),
+                                colorScheme,
+                              ),
+                              _buildSwitchTile(
+                                'No Overlaps',
+                                "Ensures no overlapping tasks.",
+                                _setNonConfliction,
+                                (v) => setState(() => _setNonConfliction = v),
+                                colorScheme,
+                              ),
+
+                              // 3. Tags Selector
+                              InteractiveInputRow(
+                                label: "Tags",
+                                value: _selectedTags.isEmpty
+                                    ? "None"
+                                    : _selectedTags.join(", "),
+                                onTap: () => showModalBottomSheet(
+                                  context: context,
+                                  isScrollControlled: true,
+                                  backgroundColor: Colors.transparent,
+                                  builder: (ctx) => StatefulBuilder(
+                                    builder: (context, sheetSetState) =>
+                                        TagSelector(
+                                          selectedTags: _selectedTags,
+                                          availableTags: _tagsList,
+                                          onTagsChanged: (newList) {
+                                            setState(
+                                              () => _selectedTags = newList,
+                                            );
+                                            sheetSetState(() {});
+                                          },
+                                          onTagAdded: (newTag) async {
+                                            await ref
+                                                .read(tagsProvider.notifier)
+                                                .addTag(newTag);
+                                            setState(() {
+                                              if (!_tagsList.contains(newTag)) {
+                                                _tagsList.add(newTag);
+                                              }
+                                            });
+                                            sheetSetState(() {});
+                                          },
+                                          onTagRemoved: (removedTag) async {
+                                            setState(() {
+                                              _tagsList = List<String>.from(
+                                                _tagsList,
+                                              )..remove(removedTag);
+                                              _selectedTags = List<String>.from(
+                                                _selectedTags,
+                                              )..remove(removedTag);
+                                            });
+                                            await ref
+                                                .read(tagsProvider.notifier)
+                                                .deleteTag(removedTag);
+                                            sheetSetState(() {});
+                                          },
+                                        ),
+                                  ),
+                                ),
+                              ),
+
+                              // 4. Deadline Selector
+                              InteractiveInputRow(
+                                label: "Deadline",
+                                value: DateFormat(
+                                  'MMMM d, y',
+                                ).format(_deadlineDate),
+                                trailing: _deadlineTime.format(context),
+                                onTapValue: () async {
+                                  final picked = await pickDate(
+                                    context,
+                                    initialDate: _deadlineDate,
+                                  );
+                                  if (picked != null) {
+                                    setState(() => _deadlineDate = picked);
+                                  }
+                                },
+                                onTapTrailing: () async {
+                                  final picked = await pickTime(
+                                    context,
+                                    initialTime: _deadlineTime,
+                                  );
+                                  if (picked != null) {
+                                    setState(() => _deadlineTime = picked);
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
                         ),
+                        const SizedBox(height: 40),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 40),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
-      )
-      )
-      )
     );
   }
 

@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_app/features/auth/presentation/manager/auth_controller.dart';
+import 'package:flutter_app/core/errors/app_exceptions.dart';
 
-class ResetPassPage extends StatefulWidget {
+// 1. Change to ConsumerStatefulWidget to use Riverpod 'ref'
+class ResetPassPage extends ConsumerStatefulWidget {
   const ResetPassPage({super.key});
 
   @override
-  State<ResetPassPage> createState() => _ResetPassPageState();
+  ConsumerState<ResetPassPage> createState() => _ResetPassPageState();
 }
 
-class _ResetPassPageState extends State<ResetPassPage> {
+class _ResetPassPageState extends ConsumerState<ResetPassPage> {
   final TextEditingController _newPassController = TextEditingController();
   final TextEditingController _confirmPassController = TextEditingController();
 
@@ -21,17 +25,70 @@ class _ResetPassPageState extends State<ResetPassPage> {
     super.dispose();
   }
 
+  // 2. Logic to handle password update
+  void _handleNewPassword() async {
+    final newPass = _newPassController.text.trim();
+    final confirmedPass = _confirmPassController.text.trim();
+
+    final colorScheme = Theme.of(context).colorScheme;
+
+    if (newPass.isEmpty || confirmedPass.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text("Please fill in both fields"),
+          backgroundColor: colorScheme.error,
+        ),
+      );
+      return;
+    }
+
+    if (newPass != confirmedPass) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text("Passwords do not match"),
+          backgroundColor: colorScheme.error,
+        ),
+      );
+      return;
+    }
+
+    // Trigger update
+    await ref.read(authControllerProvider.notifier).updatePassword(newPass);
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    // ✅ WRAP IN SCAFFOLD TO PROVIDE MATERIAL CONTEXT
+    // 3. Watch the auth state to show loading spinner
+    final authState = ref.watch(authControllerProvider);
+
+    // 4. Listen for success/failure
+    ref.listen<AsyncValue<void>>(authControllerProvider, (prev, next) {
+      if (next.hasError && !next.isLoading) {
+        final message = next.error is AppException
+            ? (next.error as AppException).message
+            : next.error.toString();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message), backgroundColor: colorScheme.error),
+        );
+      }
+
+      if (!next.hasError && !next.isLoading && (prev?.isLoading ?? false)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Password updated successfully!"),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context); // Go back to login or home
+      }
+    });
+
     return Scaffold(
-      backgroundColor: Colors
-          .transparent, // Keeps the background of the previous screen visible if it's a sheet
+      backgroundColor: Colors.transparent,
       body: Container(
-        // Ensure the container fills the screen if it's a full page,
-        // or fits the content if it's a bottom sheet.
         height: double.infinity,
         decoration: BoxDecoration(
           color: colorScheme.surface,
@@ -39,13 +96,11 @@ class _ResetPassPageState extends State<ResetPassPage> {
         ),
         padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
         child: SingleChildScrollView(
-          // ✅ Add ScrollView to prevent overflow when keyboard appears
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 20), // Top spacing for status bar
-              // --- HEADER SECTION ---
+              const SizedBox(height: 20),
               Row(
                 children: [
                   IconButton(
@@ -74,7 +129,6 @@ class _ResetPassPageState extends State<ResetPassPage> {
                 ],
               ),
               const SizedBox(height: 30),
-
               Text(
                 "Set the new password to your account, to sign in and access all the features",
                 style: TextStyle(
@@ -84,7 +138,6 @@ class _ResetPassPageState extends State<ResetPassPage> {
                 ),
               ),
               const SizedBox(height: 25),
-
               Text(
                 "New Password",
                 style: TextStyle(
@@ -100,9 +153,9 @@ class _ResetPassPageState extends State<ResetPassPage> {
                 onToggle: () =>
                     setState(() => _isNewPassObscured = !_isNewPassObscured),
                 colorScheme: colorScheme,
+                enabled: !authState.isLoading,
               ),
               const SizedBox(height: 20),
-
               Text(
                 "Re-type New Password",
                 style: TextStyle(
@@ -119,6 +172,7 @@ class _ResetPassPageState extends State<ResetPassPage> {
                   () => _isConfirmPassObscured = !_isConfirmPassObscured,
                 ),
                 colorScheme: colorScheme,
+                enabled: !authState.isLoading,
               ),
               const SizedBox(height: 30),
 
@@ -127,9 +181,7 @@ class _ResetPassPageState extends State<ResetPassPage> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: () async {
-                    _handleNewPassword();
-                  },
+                  onPressed: authState.isLoading ? null : _handleNewPassword,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: colorScheme.onSurface,
                     foregroundColor: colorScheme.surface,
@@ -138,10 +190,22 @@ class _ResetPassPageState extends State<ResetPassPage> {
                     ),
                     elevation: 0,
                   ),
-                  child: const Text(
-                    "Continue",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
+                  child: authState.isLoading
+                      ? SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(
+                            color: colorScheme.surface,
+                            strokeWidth: 3,
+                          ),
+                        )
+                      : const Text(
+                          "Continue",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(height: 10),
@@ -152,18 +216,17 @@ class _ResetPassPageState extends State<ResetPassPage> {
     );
   }
 
-  void _handleNewPassword() async {}
-
   Widget _buildPasswordField({
     required TextEditingController controller,
     required bool isObscured,
     required VoidCallback onToggle,
     required ColorScheme colorScheme,
+    bool enabled = true,
   }) {
-    // ✅ Material design widgets now have a Material ancestor (the Scaffold)
     return TextField(
       controller: controller,
       obscureText: isObscured,
+      enabled: enabled,
       style: TextStyle(
         color: colorScheme.onSurface,
         fontWeight: FontWeight.bold,
