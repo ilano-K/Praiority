@@ -41,12 +41,10 @@ class CalendarLocalDataSource {
           // Task exists locally → update fields
           cloudTask.id = localTask.id; // preserve local Isar ID
           cloudTask.isSynced = true;
-          cloudTask.status = TaskStatus.scheduled;
           cloudTask.updatedAt = DateTime.now();
         } else {
           // New task → insert as is
           cloudTask.isSynced = true;
-          cloudTask.status = TaskStatus.scheduled;
           cloudTask.updatedAt = DateTime.now();
         }
 
@@ -209,13 +207,10 @@ class CalendarLocalDataSource {
   }
 
   Future<List<TaskModel>> getTasksByRange(DateTime start, DateTime end) async {
-    // var q = isar.taskModels.filter().group(
-    //   (g) => g.startTimeBetween(start, end).or().recurrenceRuleIsNotNull(),
-    // );
-    // final tasks = await q.isDeletedEqualTo(false).sortByStartTime().findAll();
     final tasks = await isar.taskModels
         .filter()
         .isDeletedEqualTo(false)
+        .statusEqualTo(TaskStatus.scheduled)
         .sortByStartTime()
         .findAll();
 
@@ -258,10 +253,6 @@ class CalendarLocalDataSource {
   }
 
   Future<List<TaskModel>> getUnsyncedTasks() async {
-    // Include deleted tasks so that deletions are pushed to the remote
-    // backend. Previously deleted tasks were excluded by filtering
-    // `isDeleted == false`, preventing the sync service from sending
-    // delete updates to Supabase.
     return isar.taskModels.filter().isSyncedEqualTo(false).findAll();
   }
 
