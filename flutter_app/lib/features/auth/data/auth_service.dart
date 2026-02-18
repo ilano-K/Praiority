@@ -10,8 +10,6 @@ class AuthService {
   // Note: Ensure this is the "Web Client ID" from Google Cloud Console
   static const String _webClientId = AuthConstants.webClientId;
 
-  // ✅ FIX 1: Use the Singleton Instance
-  // The constructor GoogleSignIn() was removed in your version. You must use .instance
   final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
 
   // Helper to ensure we only initialize once
@@ -62,7 +60,6 @@ class AuthService {
 
   Future<AuthResponse> signInWithGoogle() async {
     try {
-      // ✅ FIX 3: Initialize before signing in
       await _ensureGoogleInitialized();
 
       // trigger login pop up
@@ -71,11 +68,9 @@ class AuthService {
       final googleAuth = googleUser.authentication;
       final idToken = googleAuth.idToken;
 
-      if (idToken == null) throw 'No Id Token Found. Check Web Client ID.';
-
       return await _supabase.auth.signInWithIdToken(
         provider: OAuthProvider.google,
-        idToken: idToken,
+        idToken: idToken!,
         accessToken: null,
       );
     } catch (e) {
@@ -114,6 +109,7 @@ class AuthService {
     try {
       await _supabase.auth.updateUser(UserAttributes(password: newPassword));
     } catch (e) {
+      print(e);
       throw parseError(e);
     }
   }

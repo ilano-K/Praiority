@@ -102,15 +102,6 @@ class _SignInPageState extends ConsumerState<SignInPage> {
           break;
 
         case AppErrorType.server:
-          showDialog(
-            context: context,
-            builder: (_) => AlertDialog(
-              title: Text(error.title),
-              content: Text(error.message),
-            ),
-          );
-          break;
-
         default:
           ScaffoldMessenger.of(
             context,

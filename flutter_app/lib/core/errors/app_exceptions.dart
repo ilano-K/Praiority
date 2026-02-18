@@ -167,6 +167,8 @@ AppException parseError(Object error) {
         return ValidationException("The code has expired.");
       case 'email_not_confirmed':
         return ValidationException("Please confirm your email address.");
+      case 'same_password':
+        return ValidationException("New password should be different from the old password.");
     }
 
     // Fallback message check
