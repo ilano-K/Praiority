@@ -48,6 +48,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
 
   // Date & Time
   late DateTime _startDate;
+  late DateTime _endDate;
   late TimeOfDay _startTime;
   late TimeOfDay _endTime;
   late DateTime _deadlineDate;
@@ -67,6 +68,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
     }
 
     _startDate = baseDate;
+    _endDate = baseDate;
     _startTime = TimeOfDay.fromDateTime(baseDate);
     _endTime = TimeOfDay.fromDateTime(baseDate.add(const Duration(hours: 1)));
     _deadlineDate = widget.task?.deadline ?? baseDate;
@@ -87,6 +89,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
     _descController.text = task.description ?? "";
     _isSmartScheduleEnabled = task.isSmartSchedule;
     _startDate = task.startTime ?? DateTime.now();
+    _endDate = task.endTime ?? _startDate;
     _startTime = TimeOfDay.fromDateTime(task.startTime ?? DateTime.now());
     _endTime = TimeOfDay.fromDateTime(
       task.endTime ?? DateTime.now().add(const Duration(hours: 1)),
@@ -169,7 +172,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
           }
         : {
             "startTime": _combineDateAndTime(_startDate, _startTime),
-            "endTime": _combineDateAndTime(_startDate, _endTime),
+            "endTime": _combineDateAndTime(_endDate, _endTime),
             "deadline": _combineDateAndTime(_deadlineDate, _deadlineTime),
             "status": TaskStatus.scheduled,
           };
@@ -320,8 +323,10 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                         if (picked != null) {
                           setState(() {
                             _startTime = picked;
-                            if (_endTime.hour <= _startTime.hour &&
-                                _endTime.minute <= _startTime.minute) {
+                            // ensure end is after start
+                            if (_endDate.isAtSameMomentAs(_startDate) &&
+                                (_endTime.hour <= _startTime.hour &&
+                                    _endTime.minute <= _startTime.minute)) {
                               _endTime = TimeOfDay(
                                 hour: (_startTime.hour + 1) % 24,
                                 minute: _startTime.minute,
@@ -333,31 +338,22 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                     ),
                     InteractiveInputRow(
                       label: "End Time",
-                      value: DateFormat('MMMM d, y').format(_startDate),
+                      value: DateFormat('MMMM d, y').format(_endDate),
                       trailing: _endTime.format(context),
                       onTapValue: () async {
                         final picked = await pickDate(
                           context,
-                          initialDate: _startDate,
+                          initialDate: _endDate,
                         );
-                        if (picked != null) setState(() => _startDate = picked);
+                        if (picked != null) setState(() => _endDate = picked);
                       },
                       onTapTrailing: () async {
                         final picked = await pickTime(
                           context,
-                          initialTime: _startTime,
+                          initialTime: _endTime,
                         );
                         if (picked != null) {
-                          setState(() {
-                            _startTime = picked;
-                            if (_endTime.hour <= _startTime.hour &&
-                                _endTime.minute <= _startTime.minute) {
-                              _endTime = TimeOfDay(
-                                hour: (_startTime.hour + 1) % 24,
-                                minute: _startTime.minute,
-                              );
-                            }
-                          });
+                          setState(() => _endTime = picked);
                         }
                       },
                     ),
