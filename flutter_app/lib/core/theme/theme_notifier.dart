@@ -16,7 +16,14 @@ class ThemeNotifier extends Notifier<ThemeData> {
   ThemeData build() {
     // Return the initial state immediately, then load persisted choice
     // and apply it asynchronously so UI is responsive on startup.
+    // Initial default shown immediately
     _loadSavedTheme();
+
+    // Theme updates are applied explicitly by other controllers (for
+    // example `AuthGate` after pulling remote prefs). Avoid listening to
+    // `userPreferencesControllerProvider` here to prevent potential
+    // provider dependency cycles.
+
     return lightMode;
   }
 
@@ -51,5 +58,15 @@ class ThemeNotifier extends Notifier<ThemeData> {
     } catch (e) {
       debugPrint('[ThemeNotifier] failed to persist theme: $e');
     }
+  }
+
+  /// Public API to set the theme from outside the notifier.
+  void setTheme(ThemeData theme) {
+    state = theme;
+  }
+
+  /// Reset to the app default theme (light mode).
+  void resetToDefault() {
+    state = lightMode;
   }
 }

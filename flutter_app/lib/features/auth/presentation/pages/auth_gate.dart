@@ -14,6 +14,8 @@ import 'package:flutter_app/features/calendar/presentation/pages/main_calendar.d
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_provider.dart';
 import 'package:flutter_app/features/settings/presentation/managers/user_preferences_provider.dart';
 import 'package:flutter_app/features/settings/presentation/pages/work_hours.dart';
+import 'package:flutter_app/core/theme/theme_notifier.dart';
+import 'package:flutter_app/core/theme/themes.dart';
 
 // Lock for UI Loading State
 final _isLoadingUIProvider = StateProvider<bool>((ref) => false);
@@ -96,6 +98,20 @@ class _AuthGateState extends ConsumerState<AuthGate> {
               .read(userPrefSyncServiceProvider)
               .pullRemoteChanges()
               .timeout(const Duration(seconds: 3));
+
+          // After pulling remote prefs into local storage, apply the
+          // stored theme immediately so the UI updates on login.
+          try {
+            final repo = ref.read(userPreferencesRepositoryProvider);
+            final prefs = await repo.getPreferences();
+            if (prefs != null) {
+              ref
+                  .read(themeProvider.notifier)
+                  .setTheme(prefs.isDarkMode ? darkMode : lightMode);
+            }
+          } catch (_) {
+            // ignore errors here; provider listener will still pick up prefs
+          }
 
           // Refresh the UI provider after pulling from cloud
           ref.invalidate(userPreferencesControllerProvider);
