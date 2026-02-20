@@ -99,10 +99,7 @@ class SmartFeaturesController {
   }
 
   // smart advice
-  Future<String?> executeSmartAdvice(
-    String cloudId, {
-    String? instruction,
-  }) async {
+  Future<void> executeSmartAdvice(String cloudId, {String? instruction}) async {
     print(
       "[DEBUG] Executing request: Smart Advice for task with cloudId: $cloudId",
     );
@@ -113,14 +110,6 @@ class SmartFeaturesController {
       );
       // response
       await _ref.read(smartServiceProvider).smartAdvice(request: request);
-
-      // sync tasks
-
-      final task = await _ref
-          .read(calendarRepositoryProvider)
-          .getTaskById(cloudId);
-
-      return task?.aiTip;
     } catch (e) {
       rethrow;
     }

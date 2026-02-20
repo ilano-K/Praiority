@@ -72,7 +72,15 @@ class CalendarStateController extends AsyncNotifier<List<Task>> {
   Future<String?> requestAiTip(String taskId) async {
     return await AsyncValue.guard(() async {
       final smartController = ref.read(smartFeaturesControllerProvider);
-      return await smartController.executeSmartAdvice(taskId);
+      final syncService = ref.read(taskSyncServiceProvider);
+      final repository = ref.read(calendarRepositoryProvider);
+
+      await smartController.executeSmartAdvice(taskId);
+      await syncService.pullRemoteChanges();
+      await refreshUi();
+      final task = await repository.getTaskById(taskId);
+
+      return task?.aiTip;
     }).then((value) {
       return value.valueOrNull;
     });
