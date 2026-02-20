@@ -136,7 +136,7 @@ class _SignInPageState extends ConsumerState<SignInPage> {
                   ),
                   const SizedBox(height: 30),
                   AuthField(
-                    hint: "Username/Email",
+                    hint: "Username",
                     controller: _emailUnController,
                   ),
                   const SizedBox(height: 15),

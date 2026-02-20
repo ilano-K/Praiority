@@ -15,23 +15,14 @@ class SignUpPage extends ConsumerStatefulWidget {
 }
 
 class _SignUpPageState extends ConsumerState<SignUpPage> {
-  final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
   // --- LOGIC: HANDLE SIGN UP ---
     void _handleSignUp() async {
-      final username = _usernameController.text.trim();
       final email = _emailController.text.trim();
       final password =_passwordController.text.trim();
 
-      // 1. Basic empty check
-      if (email.isEmpty || password.isEmpty || username.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Please fill out all the fields")),
-        );
-        return; 
-      }
 
       // 2. Regex Check
       if (!isValidEmail(email)) {
@@ -52,7 +43,7 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
       final authController = ref.read(authControllerProvider.notifier);
       
       try{
-        await authController.signUp(username: username, email: email, password: password);
+        await authController.signUp(email: email, password: password);
       } catch (error) {
         final appException = parseError(error);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -69,7 +60,6 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
 
   @override
   void dispose() {
-    _usernameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -116,7 +106,6 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
               const SizedBox(height: 20),
               Text("Get Started!", style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: colorScheme.onSurface)),
               const SizedBox(height: 30),
-              AuthField(hint: "Username", controller: _usernameController),
               const SizedBox(height: 15),
               AuthField(hint: "Email", controller: _emailController),
               const SizedBox(height: 15),

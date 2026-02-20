@@ -168,40 +168,6 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
           children: [
             Column(
               children: [
-                // --- USER PROFILE SECTION ---
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 40),
-                  child: Column(
-                    children: [
-                      CircleAvatar(
-                        radius: 55,
-                        backgroundColor: colorScheme.primary.withOpacity(0.1),
-                        child: Icon(
-                          Icons.person,
-                          size: 70,
-                          color: colorScheme.primary,
-                        ),
-                      ),
-                      const SizedBox(height: 15),
-                      Text(
-                        "Juan Dela Cruz",
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w900,
-                          color: colorScheme.onSurface,
-                        ),
-                      ),
-                      Text(
-                        "juandelacruz@gmail.com",
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: colorScheme.onSurface.withOpacity(0.4),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 25),
                   child: Divider(

@@ -109,9 +109,6 @@ class _TaskViewState extends ConsumerState<TaskView> {
           final scheduled = tasks
               .where((t) => t.status == TaskStatus.scheduled)
               .toList();
-          final pending = tasks
-              .where((t) => t.status == TaskStatus.unscheduled)
-              .toList();
           final completed = tasks
               .where((t) => t.status == TaskStatus.completed)
               .toList();
@@ -120,14 +117,6 @@ class _TaskViewState extends ConsumerState<TaskView> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
             children: [
               _buildScheduledCategory(context, scheduled),
-              _buildExpandableCategory(
-                context,
-                pending,
-                "My Pending Tasks",
-                _isPendingExpanded,
-                () => setState(() => _isPendingExpanded = !_isPendingExpanded),
-                showActions: false,
-              ),
               _buildExpandableCategory(
                 context,
                 completed,

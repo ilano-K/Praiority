@@ -13,7 +13,7 @@ class AuthController extends AsyncNotifier<void> {
     //
   }
   Future<void> signUp({
-    required String username,
+
     required String email,
     required String password,
   }) async {
@@ -21,7 +21,7 @@ class AuthController extends AsyncNotifier<void> {
 
     state = await AsyncValue.guard(() async {
       final authService = ref.read(authServiceProvider);
-      await authService.signUp(username, email, password);
+      await authService.signUp(email, password);
     });
   }
 
