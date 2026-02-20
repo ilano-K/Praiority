@@ -45,7 +45,6 @@ class GoogleRemoteDataSource {
         httpClient.close();
       }
     } catch (e) {
-      print("[GOOGLE REMOTE DATA SOURCE] CALENDAR ERROR: $e");
       throw _handleGoogleError(e);
     }
   }
@@ -85,7 +84,6 @@ class GoogleRemoteDataSource {
         httpClient.close();
       }
     } catch (e) {
-      print("[GOOGLE REMOTE DATA SOURCE] TASKS ERROR: $e");
       throw _handleGoogleError(e);
     }
   }

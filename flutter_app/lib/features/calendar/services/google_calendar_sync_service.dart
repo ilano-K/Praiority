@@ -1,3 +1,4 @@
+import 'package:flutter_app/core/errors/app_exceptions.dart';
 import 'package:flutter_app/features/calendar/data/datasources/calendar_local_data_source.dart';
 import 'package:flutter_app/features/calendar/data/datasources/google_remote_data_source.dart';
 import 'package:flutter_app/features/calendar/data/models/task_model.dart';
@@ -13,8 +14,6 @@ class GoogleCalendarSyncService {
 
   Future<void> syncGoogleData() async {
     try {
-      print("[GOOGLE SYNC SERVICE] Starting master sync (Events & Tasks).");
-
       // 1. Get existing IDs to prevent duplicates for both types
       final existingIds = await _localDb.getAllGoogleEventIds();
       final List<TaskModel> newModels = [];
@@ -97,13 +96,13 @@ class GoogleCalendarSyncService {
 
       // 2. Save everything in one batch
       if (newModels.isNotEmpty) {
-        print(
-          "[GOOGLE SYNC SERVICE] Saving ${newModels.length} new items to Isar.",
-        );
         await _localDb.saveTasksFromGoogle(newModels);
+      } else {
+        throw ValidationException(
+          "Tasks is already up to date. No new tasks were found.",
+        );
       }
     } catch (e) {
-      print("[GOOGLE SYNC SERVICE] Error during sync: $e");
       rethrow;
     }
   }

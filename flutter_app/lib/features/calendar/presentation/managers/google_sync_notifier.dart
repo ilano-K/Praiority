@@ -21,5 +21,7 @@ class GoogleSyncNotifier extends AsyncNotifier<void> {
       final calendarController = ref.read(calendarControllerProvider.notifier);
       await calendarController.refreshUi();
     }
+
+    if (state.hasError) throw state.error!;
   }
 }

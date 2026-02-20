@@ -202,17 +202,10 @@ class _MainCalendarState extends ConsumerState<MainCalendar>
       debugPrint("[Google Sync Error]: $e");
       if (mounted) {
         final appError = parseError(e);
-        showDialog(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: Text(appError.title),
+        messenger.showSnackBar(
+          SnackBar(
             content: Text(appError.message),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text("OK"),
-              ),
-            ],
+            behavior: SnackBarBehavior.fixed,
           ),
         );
       }
