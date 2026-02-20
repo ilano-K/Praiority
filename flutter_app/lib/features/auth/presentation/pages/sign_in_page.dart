@@ -9,6 +9,7 @@ import 'package:flutter_app/features/calendar/presentation/managers/calendar_pro
 import 'package:flutter_app/features/settings/presentation/pages/work_hours.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
+import 'package:flutter_app/core/theme/theme_notifier.dart';
 
 class SignInPage extends ConsumerStatefulWidget {
   final VoidCallback onSwitch;
@@ -109,7 +110,7 @@ class _SignInPageState extends ConsumerState<SignInPage> {
       }
     });
 
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final isDarkMode = ref.watch(themeProvider).brightness == Brightness.dark;
     final String logoPath = isDarkMode
         ? 'assets/images/DarkLogo.png'
         : 'assets/images/LightLogo.png';
@@ -135,10 +136,7 @@ class _SignInPageState extends ConsumerState<SignInPage> {
                     ),
                   ),
                   const SizedBox(height: 30),
-                  AuthField(
-                    hint: "Username",
-                    controller: _emailUnController,
-                  ),
+                  AuthField(hint: "Username", controller: _emailUnController),
                   const SizedBox(height: 15),
                   AuthField(
                     hint: "Password",

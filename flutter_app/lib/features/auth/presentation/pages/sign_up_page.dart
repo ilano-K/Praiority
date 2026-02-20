@@ -5,6 +5,7 @@ import 'package:flutter_app/core/errors/app_exceptions.dart';
 import 'package:flutter_app/features/auth/presentation/manager/auth_controller.dart';
 import 'package:flutter_app/features/auth/presentation/widgets/auth_components.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_app/core/theme/theme_notifier.dart';
 import '../../../calendar/presentation/pages/main_calendar.dart';
 
 class SignUpPage extends ConsumerStatefulWidget {
@@ -92,7 +93,7 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
     });
 
     final colorScheme = Theme.of(context).colorScheme;
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final isDarkMode = ref.watch(themeProvider).brightness == Brightness.dark;
     final logoPath = isDarkMode
         ? 'assets/images/DarkLogo.png'
         : 'assets/images/LightLogo.png';
