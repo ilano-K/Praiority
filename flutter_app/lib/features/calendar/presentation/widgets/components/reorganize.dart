@@ -157,12 +157,12 @@ class _RescheduleState extends ConsumerState<Reschedule> {
                 ),
                 elevation: 0,
               ),
-              child: Text( // Removed 'const' here
+              child: Text( 
                 "Reorganize",
                 style: TextStyle(
                   fontSize: 16, 
                   fontWeight: FontWeight.bold, 
-                  color: colorScheme.onSurface, // Fixed typo and used onPrimary for contrast
+                  color: colorScheme.onSurface, 
                 ),
               ),
             ),
@@ -171,22 +171,26 @@ class _RescheduleState extends ConsumerState<Reschedule> {
       ),
     );
 
-    return Stack(
-      children: [
-        AbsorbPointer(
-          absorbing: _isLoading,
-          child: content,
-        ),
-        if (_isLoading)
-          Positioned.fill(
-            child: Container(
-              color: Colors.black.withOpacity(0.2),
-              child: const Center(
-                child: CircularProgressIndicator(),
+    // Added PopScope here to prevent closing while loading
+    return PopScope(
+      canPop: !_isLoading, 
+      child: Stack(
+        children: [
+          AbsorbPointer(
+            absorbing: _isLoading,
+            child: content,
+          ),
+          if (_isLoading)
+            Positioned.fill(
+              child: Container(
+                color: Colors.transparent, 
+                child: const Center(
+                  child: CircularProgressIndicator(),
+                ),
               ),
             ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 }

@@ -129,32 +129,34 @@ class _SmartScheduleState extends ConsumerState<SmartSchedule> {
             width: double.infinity,
             height: 54,
             child: ElevatedButton(
-              onPressed: _isLoading ? null : () async {
-                setState(() => _isLoading = true);
-                final instruction = _instructionController.text.trim();
-                final calendarController = ref.read(
-                  calendarControllerProvider.notifier,
-                );
+              onPressed: _isLoading
+                  ? null
+                  : () async {
+                      setState(() => _isLoading = true);
+                      final instruction = _instructionController.text.trim();
+                      final calendarController = ref.read(
+                        calendarControllerProvider.notifier,
+                      );
 
-                try {
-                  final targetDateOnly = dateOnly(_targetDate);
-                  await calendarController.generateTask(
-                    targetDateOnly,
-                    instruction.isEmpty ? null : instruction,
-                  );
-                  if (context.mounted) Navigator.pop(context);
-                } catch (e) {
-                  if (context.mounted) {
-                    AppDialogs.showWarning(
-                      context,
-                      title: "Error",
-                      message: "An unexpected error occurred",
-                    );
-                  }
-                } finally {
-                  if (mounted) setState(() => _isLoading = false);
-              }
-              },
+                      try {
+                        final targetDateOnly = dateOnly(_targetDate);
+                        await calendarController.generateTask(
+                          targetDateOnly,
+                          instruction.isEmpty ? null : instruction,
+                        );
+                        if (context.mounted) Navigator.pop(context);
+                      } catch (e) {
+                        if (context.mounted) {
+                          AppDialogs.showWarning(
+                            context,
+                            title: "Error",
+                            message: "An unexpected error occurred",
+                          );
+                        }
+                      } finally {
+                        if (mounted) setState(() => _isLoading = false);
+                      }
+                    },
               style: ElevatedButton.styleFrom(
                 backgroundColor: colorScheme.primary,
                 foregroundColor: colorScheme.onPrimary,
@@ -176,22 +178,27 @@ class _SmartScheduleState extends ConsumerState<SmartSchedule> {
         ],
       ),
     );
-    return Stack(
-      children: [
-        AbsorbPointer(
-          absorbing: _isLoading,
-          child: content,
-        ),
-        if (_isLoading)
-          Positioned.fill(
-            child: Container(
-              color: Colors.black.withOpacity(0.2),
-              child: const Center(
-                child: CircularProgressIndicator(),
+
+    // Added PopScope here to prevent closing while loading
+    return PopScope(
+      canPop: !_isLoading,
+      child: Stack(
+        children: [
+          AbsorbPointer(
+            absorbing: _isLoading,
+            child: content,
+          ),
+          if (_isLoading)
+            Positioned.fill(
+              child: Container(
+                color: Colors.transparent, // Prevents clicks without darkening the screen
+                child: const Center(
+                  child: CircularProgressIndicator(),
+                ),
               ),
             ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 }
