@@ -27,17 +27,12 @@ class AuthService {
   }
 
   // account creation
-  Future<AuthResponse> signUp(
-    String username,
-    String email,
-    String password,
-  ) async {
+  Future<AuthResponse> signUp(String email, String password) async {
     try {
       final response = await _supabase.auth.signUp(
         email: email,
         password: password,
         emailRedirectTo: 'praiority.scheduler://login-callback',
-        data: {"username": username},
       );
       return response;
     } catch (e) {
