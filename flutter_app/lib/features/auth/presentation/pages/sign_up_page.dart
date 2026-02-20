@@ -1,5 +1,6 @@
 // File: lib/features/auth/presentation/pages/sign_up_page.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_app/core/consants/auth_constants.dart';
 import 'package:flutter_app/core/errors/app_exceptions.dart';
 import 'package:flutter_app/features/auth/presentation/manager/auth_controller.dart';
 import 'package:flutter_app/features/auth/presentation/widgets/auth_components.dart';
@@ -19,38 +20,42 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
   final TextEditingController _passwordController = TextEditingController();
 
   // --- LOGIC: HANDLE SIGN UP ---
-    void _handleSignUp() async {
-      final email = _emailController.text.trim();
-      final password =_passwordController.text.trim();
+  void _handleSignUp() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
 
-
-      // 2. Regex Check
-      if (!isValidEmail(email)) {
-         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Please enter a valid email address")),
-        );
-        return; 
-      }
-
-      // --- ADDED SUCCESS NOTIFICATION ---
-      // This triggers because the inputs are confirmed correct at this point
+    // 2. Regex Check
+    if (!isValidEmail(email)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Check your email for user verification"),
-        ),
+        const SnackBar(content: Text("Please enter a valid email address")),
       );
-
-      final authController = ref.read(authControllerProvider.notifier);
-      
-      try{
-        await authController.signUp(email: email, password: password);
-      } catch (error) {
-        final appException = parseError(error);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(appException.message)),
-        );
-      }
+      return;
     }
+
+    if (password.length < AuthConstants.passwordLenght) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Password must be 6 characters long.")),
+      );
+      return;
+    }
+
+    // --- ADDED SUCCESS NOTIFICATION ---
+    // This triggers because the inputs are confirmed correct at this point
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Check your email for user verification")),
+    );
+
+    final authController = ref.read(authControllerProvider.notifier);
+
+    try {
+      await authController.signUp(email: email, password: password);
+    } catch (error) {
+      final appException = parseError(error);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(appException.message)));
+    }
+  }
 
   // --- LOGIC: HANDLE GOOGLE SIGN UP ---
   void _handleGoogleSignIn() async {
@@ -70,28 +75,27 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
     final authState = ref.watch(authControllerProvider);
 
     // 2. Listen for Errors to show a SnackBar
-    ref.listen<AsyncValue>(
-      authControllerProvider,
-      (_, state) {
-        // Guard clause: If there is no error, do nothing.
-        if (!state.hasError) return;
+    ref.listen<AsyncValue>(authControllerProvider, (_, state) {
+      // Guard clause: If there is no error, do nothing.
+      if (!state.hasError) return;
 
-        // A. CONVERT: Pass the raw error to your utility
-        // parseError() returns an 'AppException' object
-        final appException = parseError(state.error!);
+      // A. CONVERT: Pass the raw error to your utility
+      // parseError() returns an 'AppException' object
+      final appException = parseError(state.error!);
 
-        // B. DISPLAY: Use .message to show the friendly text
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(appException.message), // e.g. "Invalid email"
-          ),
-        );
-      },
-    );
+      // B. DISPLAY: Use .message to show the friendly text
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(appException.message), // e.g. "Invalid email"
+        ),
+      );
+    });
 
     final colorScheme = Theme.of(context).colorScheme;
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final logoPath = isDarkMode ? 'assets/images/DarkLogo.png' : 'assets/images/LightLogo.png';
+    final logoPath = isDarkMode
+        ? 'assets/images/DarkLogo.png'
+        : 'assets/images/LightLogo.png';
 
     final isLoading = authState.isLoading;
     return Scaffold(
@@ -104,27 +108,54 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
               const SizedBox(height: 60),
               Image.asset(logoPath, height: 200),
               const SizedBox(height: 20),
-              Text("Get Started!", style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: colorScheme.onSurface)),
+              Text(
+                "Get Started!",
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                  color: colorScheme.onSurface,
+                ),
+              ),
               const SizedBox(height: 30),
               const SizedBox(height: 15),
               AuthField(hint: "Email", controller: _emailController),
               const SizedBox(height: 15),
-              AuthField(hint: "Password", isPass: true, controller: _passwordController),
+              AuthField(
+                hint: "Password",
+                isPass: true,
+                controller: _passwordController,
+              ),
               const SizedBox(height: 25),
-              AuthComponents.buildButton(context, "Sign Up", onPressed: isLoading? null : _handleSignUp),
+              AuthComponents.buildButton(
+                context,
+                "Sign Up",
+                onPressed: isLoading ? null : _handleSignUp,
+              ),
               const SizedBox(height: 20),
               AuthComponents.buildSocialDivider(context, "sign up"),
               const SizedBox(height: 20),
-              AuthComponents.buildGoogleButton(context, onTap: _handleGoogleSignIn),
+              AuthComponents.buildGoogleButton(
+                context,
+                onTap: _handleGoogleSignIn,
+              ),
               const SizedBox(height: 40),
               GestureDetector(
                 onTap: widget.onSwitch,
                 child: RichText(
                   text: TextSpan(
-                    style: TextStyle(color: colorScheme.onSurface, fontSize: 14),
+                    style: TextStyle(
+                      color: colorScheme.onSurface,
+                      fontSize: 14,
+                    ),
                     children: [
                       const TextSpan(text: "Already Have an Account? "),
-                      TextSpan(text: "Sign In", style: const TextStyle(fontWeight: FontWeight.bold, decoration: TextDecoration.underline)),
+                      TextSpan(
+                        text: "Sign In",
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
                     ],
                   ),
                 ),

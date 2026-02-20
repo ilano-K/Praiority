@@ -5,4 +5,5 @@ class AuthConstants {
   static const supabaseUrl = "https://hilgjdxewhfgpzdkqfyi.supabase.co";
   static const anonKey =
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhpbGdqZHhld2hmZ3B6ZGtxZnlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyNzg3NDQsImV4cCI6MjA4NDg1NDc0NH0.BJPHc7yXNt91YjKmpUJ-y45fflSDFdWJGeiUHyfowyk";
+  static const passwordLenght = 6;
 }

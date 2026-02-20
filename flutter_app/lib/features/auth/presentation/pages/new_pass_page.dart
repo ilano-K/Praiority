@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_app/core/consants/auth_constants.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_app/features/auth/presentation/manager/auth_controller.dart';
 import 'package:flutter_app/core/errors/app_exceptions.dart';
@@ -35,7 +36,7 @@ class _ResetPassPageState extends ConsumerState<ResetPassPage> {
     if (newPass.isEmpty || confirmedPass.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text("Please fill in both fields"),
+          content: const Text("Please fill in both fields."),
           backgroundColor: colorScheme.error,
         ),
       );
@@ -45,7 +46,17 @@ class _ResetPassPageState extends ConsumerState<ResetPassPage> {
     if (newPass != confirmedPass) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text("Passwords do not match"),
+          content: const Text("Passwords do not match."),
+          backgroundColor: colorScheme.error,
+        ),
+      );
+      return;
+    }
+
+    if (newPass.length < AuthConstants.passwordLenght) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text("New password must be 6 characters in length."),
           backgroundColor: colorScheme.error,
         ),
       );
