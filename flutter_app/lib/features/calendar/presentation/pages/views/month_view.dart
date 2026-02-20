@@ -83,14 +83,14 @@ class _MonthViewState extends ConsumerState<MonthView> {
       // 2. Configure Settings: Show 3 items, then "+X more"
       monthViewSettings: const MonthViewSettings(
         appointmentDisplayMode: MonthAppointmentDisplayMode.appointment,
-        appointmentDisplayCount: 3, 
+        appointmentDisplayCount: 3,
         showAgenda: false,
       ),
 
       // 3. Custom Appointment Builder (Your preferred styling)
       appointmentBuilder: (context, details) {
         final Appointment appointment = details.appointments.first;
-        
+
         final task = widget.tasks.firstWhere(
           (t) => t.id == appointment.id,
           orElse: () => Task(id: "temp", title: "", startTime: DateTime.now()),
@@ -99,14 +99,18 @@ class _MonthViewState extends ConsumerState<MonthView> {
         if (task.id == "temp") return const SizedBox();
 
         final bool isCompleted = task.status == TaskStatus.completed;
-        final Color textColor = ThemeData.estimateBrightnessForColor(appointment.color) == Brightness.light
+        final Color textColor =
+            ThemeData.estimateBrightnessForColor(appointment.color) ==
+                Brightness.light
             ? Colors.black
             : Colors.white;
 
         return Container(
           decoration: BoxDecoration(
             // Lighten background if completed
-            color: isCompleted ? appointment.color.withOpacity(0.4) : appointment.color,
+            color: isCompleted
+                ? appointment.color.withOpacity(0.4)
+                : appointment.color,
             borderRadius: BorderRadius.circular(4),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
@@ -118,7 +122,9 @@ class _MonthViewState extends ConsumerState<MonthView> {
               fontWeight: FontWeight.w600,
               color: isCompleted ? textColor.withOpacity(0.6) : textColor,
               // Apply Strikethrough
-              decoration: isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
+              decoration: isCompleted
+                  ? TextDecoration.lineThrough
+                  : TextDecoration.none,
               // Apply Italic
               fontStyle: isCompleted ? FontStyle.italic : FontStyle.normal,
             ),
@@ -166,8 +172,8 @@ class _MonthViewState extends ConsumerState<MonthView> {
                       color: isToday
                           ? colorScheme.onPrimary
                           : (isCurrentMonth
-                              ? colorScheme.onSurface
-                              : colorScheme.onSurface.withOpacity(0.2)),
+                                ? colorScheme.onSurface
+                                : colorScheme.onSurface.withOpacity(0.2)),
                     ),
                   ),
                 ),
@@ -181,31 +187,46 @@ class _MonthViewState extends ConsumerState<MonthView> {
         if (details.targetElement == CalendarElement.calendarCell ||
             details.targetElement == CalendarElement.appointment) {
           final date = details.date!;
-          
-          // If tapped on an appointment directly, trigger task tap
-          if (details.targetElement == CalendarElement.appointment && details.appointments != null) {
-             final Appointment selectedAppt = details.appointments!.first;
-             try {
-                final tappedTask = widget.tasks.firstWhere((t) => t.id == selectedAppt.id);
-                widget.onTaskTap(tappedTask);
-                return;
-             } catch (e) {
-               // Fallback if not found
-             }
+
+          // If tapped directly on an appointment bar (and not the empty cell space)
+          if (details.targetElement == CalendarElement.appointment &&
+              details.appointments != null) {
+            final Appointment selectedAppt = details.appointments!.first;
+            try {
+              final tappedTask = widget.tasks.firstWhere(
+                (t) => t.id == selectedAppt.id,
+              );
+              widget.onTaskTap(tappedTask);
+              return;
+            } catch (e) {
+              // Fallback if not found
+            }
           }
 
-          final range = date.range(CalendarScope.day);
-          
-          // Show ALL tasks for the day in the bottom sheet (Inclusive)
-          final dayTasks = widget.tasks
-              .where(
-                (t) =>
-                    t.startTime != null &&
-                    t.status != TaskStatus.pending && 
-                    TaskUtils.validTaskModelForDate(t, range.start, range.end),
-              )
-              .toList();
-              
+          // --- THE FIX ---
+          // Instead of manually calculating dates with validTaskModelForDate,
+          // simply grab the appointments Syncfusion already placed on this cell.
+          List<Task> dayTasks = [];
+
+          if (details.appointments != null &&
+              details.appointments!.isNotEmpty) {
+            for (var appt in details.appointments!) {
+              try {
+                // Find the original Task that matches this Appointment's ID
+                final matchingTask = widget.tasks.firstWhere(
+                  (t) => t.id == appt.id,
+                );
+
+                // Avoid adding duplicates
+                if (!dayTasks.any((t) => t.id == matchingTask.id)) {
+                  dayTasks.add(matchingTask);
+                }
+              } catch (e) {
+                debugPrint("Task not found for appointment: ${appt.id}");
+              }
+            }
+          }
+
           if (dayTasks.isNotEmpty) {
             showModalBottomSheet(
               context: context,
@@ -220,7 +241,14 @@ class _MonthViewState extends ConsumerState<MonthView> {
           } else {
             // No tasks for this day - allow creating a new task
             // Normalize to start of day (midnight) for month view
-            final normalizedDate = DateTime(date.year, date.month, date.day, 0, 0, 0);
+            final normalizedDate = DateTime(
+              date.year,
+              date.month,
+              date.day,
+              0,
+              0,
+              0,
+            );
             showModalBottomSheet(
               context: context,
               isScrollControlled: true,
@@ -258,8 +286,9 @@ class MonthDataSource extends CalendarDataSource {
       final Color displayColor = _resolveColor(task.colorValue, isDark);
       final bool isCompleted = task.status == TaskStatus.completed;
 
-      DateTime endTime = task.endTime ?? task.startTime!.add(const Duration(hours: 1));
-      
+      DateTime endTime =
+          task.endTime ?? task.startTime!.add(const Duration(hours: 1));
+
       // Visual fix: ensure bars are visible
       if (endTime.difference(task.startTime!).inMinutes < 30) {
         endTime = task.startTime!.add(const Duration(minutes: 30));
@@ -271,7 +300,8 @@ class MonthDataSource extends CalendarDataSource {
       String? rRule = RRuleUtils.sanitizeRRule(task.recurrenceRule);
       if (task.type == TaskType.birthday) {
         if (rRule == null || rRule.isEmpty || rRule == 'None') {
-          rRule = 'FREQ=YEARLY;BYMONTH=${task.startTime!.month};BYMONTHDAY=${task.startTime!.day}';
+          rRule =
+              'FREQ=YEARLY;BYMONTH=${task.startTime!.month};BYMONTHDAY=${task.startTime!.day}';
         }
       }
 
@@ -283,7 +313,7 @@ class MonthDataSource extends CalendarDataSource {
         notes: task.description,
         color: isCompleted ? displayColor.withOpacity(0.4) : displayColor,
         // Force AllDay so it renders as a bar in Month View
-        isAllDay: true, 
+        isAllDay: true,
         recurrenceRule: rRule,
       );
     }).toList();

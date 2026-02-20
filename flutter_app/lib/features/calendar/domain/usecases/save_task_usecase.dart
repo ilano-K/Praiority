@@ -54,6 +54,9 @@ class SaveTaskUseCase {
 
       final tasks = tasksInRange.where((t) => t.status != TaskStatus.pending);
 
+      print("[SAVE TASK USECASE] HERE ARE THE TASKS IN RANGE");
+      print(tasks);
+
       for (final taskCurr in tasks) {
         if (taskCurr.id == task.id) continue;
 
@@ -67,6 +70,7 @@ class SaveTaskUseCase {
           final newBlocks = task.isConflicting;
 
           if (existingBlocks || newBlocks) {
+            print(taskCurr.title);
             throw TimeConflictException();
           }
         }

@@ -86,7 +86,9 @@ class TaskUtils {
       );
       final originalFits =
           !taskEndTime.isBefore(rangeStart) && !taskStartTime.isAfter(rangeEnd);
-
+      print("===========");
+      print(task.title);
+      print(instances);
       return instances.isNotEmpty || originalFits;
     } catch (e) {
       // If there's an error parsing the recurrence rule, treat it as a non-recurring task
