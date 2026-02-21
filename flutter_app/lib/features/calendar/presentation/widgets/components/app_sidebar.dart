@@ -69,6 +69,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
       }
     } catch (e) {
       if (mounted) {
+        navigator.pop();
         final appError = parseError(e);
         scaffoldMessenger.showSnackBar(
           SnackBar(

@@ -257,13 +257,11 @@ class DayAppointmentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isTaskOnly = task.type == TaskType.task;
-    // 1. Check completion status
     final bool isCompleted = task.status == TaskStatus.completed;
 
     return Container(
       margin: const EdgeInsets.all(2),
       decoration: BoxDecoration(
-        // 2. Lighten background color if completed
         color: isCompleted ? appointment.color.withOpacity(0.5) : appointment.color,
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
@@ -278,42 +276,46 @@ class DayAppointmentCard extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.all(8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  appointment.subject,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                    color: colorScheme.onSurface,
-                    // 3. Apply Strikethrough & Italic to Title
-                    decoration: isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
-                    fontStyle: isCompleted ? FontStyle.italic : FontStyle.normal,
+            // --- FIX START ---
+            child: SingleChildScrollView(
+              physics: const NeverScrollableScrollPhysics(), // Silences overflow warnings
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min, // Ensures the column stays tight
+                children: [
+                  Text(
+                    appointment.subject,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      color: colorScheme.onSurface,
+                      decoration: isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
+                      fontStyle: isCompleted ? FontStyle.italic : FontStyle.normal,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (appointment.notes != null && appointment.notes!.isNotEmpty)
-                  Expanded(
-                    child: Text(
+                  if (appointment.notes != null && appointment.notes!.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
                       appointment.notes!,
                       style: TextStyle(
                         fontSize: 10,
-                        // 4. Dim the notes color significantly if completed
                         color: isCompleted 
                             ? colorScheme.onSurface.withOpacity(0.5) 
                             : colorScheme.onSurface.withOpacity(0.7),
-                        // 5. Apply Strikethrough & Italic to Notes
                         decoration: isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
                         fontStyle: isCompleted ? FontStyle.italic : FontStyle.normal,
                       ),
+                      // REMOVED: Expanded wrapper
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-              ],
+                  ],
+                ],
+              ),
             ),
+            // --- FIX END ---
           ),
           if (isTaskOnly)
             Positioned(
@@ -322,7 +324,6 @@ class DayAppointmentCard extends StatelessWidget {
               child: Icon(
                 Icons.flag_rounded,
                 size: 24,
-                // 6. Dim the flag icon if completed
                 color: _getPriorityColor(task.priority).withOpacity(isCompleted ? 0.5 : 1.0),
               ),
             ),
