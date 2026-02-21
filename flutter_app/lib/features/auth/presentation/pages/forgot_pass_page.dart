@@ -51,7 +51,7 @@ class _ForgotPassPageState extends ConsumerState<ForgotPassPage> {
             : next.error.toString();
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+          SnackBar(content: Text(message), behavior: SnackBarBehavior.fixed),
         );
       }
 
@@ -65,7 +65,7 @@ class _ForgotPassPageState extends ConsumerState<ForgotPassPage> {
             content: Text(
               "Reset link sent to ${_emailController.text}! Check your inbox.",
             ),
-            behavior: SnackBarBehavior.floating,
+            behavior: SnackBarBehavior.fixed,
           ),
         );
       }

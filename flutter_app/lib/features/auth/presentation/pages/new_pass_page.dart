@@ -37,7 +37,6 @@ class _ResetPassPageState extends ConsumerState<ResetPassPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text("Please fill in both fields."),
-          backgroundColor: colorScheme.error,
         ),
       );
       return;
@@ -47,7 +46,6 @@ class _ResetPassPageState extends ConsumerState<ResetPassPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text("Passwords do not match."),
-          backgroundColor: colorScheme.error,
         ),
       );
       return;
@@ -57,7 +55,6 @@ class _ResetPassPageState extends ConsumerState<ResetPassPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text("New password must be 6 characters in length."),
-          backgroundColor: colorScheme.error,
         ),
       );
       return;
@@ -90,7 +87,6 @@ class _ResetPassPageState extends ConsumerState<ResetPassPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text("Password updated successfully!"),
-            backgroundColor: Colors.green,
           ),
         );
         Navigator.pop(context); // Go back to login or home
