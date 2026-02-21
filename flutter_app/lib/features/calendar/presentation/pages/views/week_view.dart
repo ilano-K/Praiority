@@ -8,13 +8,11 @@ import 'package:intl/intl.dart';
 
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
-import 'package:flutter_app/features/calendar/presentation/widgets/components/appointment_card.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/components/task_summary_view.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/selectors/color_selector.dart';
 // Import TaskUtils for recurrence checks
 import 'package:flutter_app/features/calendar/presentation/utils/task_utils.dart';
 // Import DayView to share the TaskDataSource logic
-import 'day_view.dart';
 
 class WeekView extends ConsumerStatefulWidget {
   final List<Task> tasks;
@@ -166,7 +164,7 @@ class _WeekViewState extends ConsumerState<WeekView> {
 
             appointmentBuilder: (context, details) {
               final Appointment appointment = details.appointments.first;
-              
+
               // Find the actual Task object from widget.tasks
               final task = widget.tasks.firstWhere(
                 (t) => t.id == appointment.id,
@@ -176,17 +174,19 @@ class _WeekViewState extends ConsumerState<WeekView> {
                   startTime: DateTime.now(),
                 ),
               );
-              
+
               if (task.id == "temp") {
                 return Container(color: Colors.red, width: 20, height: 20);
               }
-              
+
               final bool isCompleted = task.status == TaskStatus.completed;
-              
+
               return Container(
                 margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                 decoration: BoxDecoration(
-                  color: isCompleted ? appointment.color.withOpacity(0.5) : appointment.color,
+                  color: isCompleted
+                      ? appointment.color.withOpacity(0.5)
+                      : appointment.color,
                   borderRadius: BorderRadius.circular(8),
                   boxShadow: [
                     BoxShadow(
@@ -207,23 +207,32 @@ class _WeekViewState extends ConsumerState<WeekView> {
                           fontWeight: FontWeight.bold,
                           fontSize: 12,
                           color: colorScheme.onSurface,
-                          decoration: isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
-                          fontStyle: isCompleted ? FontStyle.italic : FontStyle.normal,
+                          decoration: isCompleted
+                              ? TextDecoration.lineThrough
+                              : TextDecoration.none,
+                          fontStyle: isCompleted
+                              ? FontStyle.italic
+                              : FontStyle.normal,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      if (appointment.notes != null && appointment.notes!.isNotEmpty)
+                      if (appointment.notes != null &&
+                          appointment.notes!.isNotEmpty)
                         Expanded(
                           child: Text(
                             appointment.notes!,
                             style: TextStyle(
                               fontSize: 10,
-                              color: isCompleted 
-                                  ? colorScheme.onSurface.withOpacity(0.5) 
+                              color: isCompleted
+                                  ? colorScheme.onSurface.withOpacity(0.5)
                                   : colorScheme.onSurface.withOpacity(0.7),
-                              decoration: isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
-                              fontStyle: isCompleted ? FontStyle.italic : FontStyle.normal,
+                              decoration: isCompleted
+                                  ? TextDecoration.lineThrough
+                                  : TextDecoration.none,
+                              fontStyle: isCompleted
+                                  ? FontStyle.italic
+                                  : FontStyle.normal,
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -349,6 +358,9 @@ class _WeekViewState extends ConsumerState<WeekView> {
       return TaskUtils.validTaskModelForDate(t, startOfDay, endOfDay);
     }).toList();
 
+    print("[ALL DAY TASKS]");
+    print(dayAllDayTasks);
+
     if (dayAllDayTasks.isEmpty) return const SizedBox.shrink();
     final bool hasMore = dayAllDayTasks.length > 2;
     final displayTasks = dayAllDayTasks.take(2).toList();
@@ -417,7 +429,7 @@ class _WeekViewState extends ConsumerState<WeekView> {
       ],
     );
   }
-  
+
   void _handleTimeRegionTap(BuildContext context, DateTime tappedTime) {
     // Check if there's already a task at this time
     final existingTask = widget.tasks.firstWhere(
@@ -425,11 +437,7 @@ class _WeekViewState extends ConsumerState<WeekView> {
           t.startTime != null &&
           DateUtils.isSameDay(t.startTime!, tappedTime) &&
           t.startTime!.hour == tappedTime.hour,
-      orElse: () => Task(
-        id: "none",
-        title: "",
-        startTime: tappedTime,
-      ),
+      orElse: () => Task(id: "none", title: "", startTime: tappedTime),
     );
 
     if (existingTask.id != "none") {

@@ -52,9 +52,10 @@ class TaskUtils {
     try {
       final rule = RecurrenceRule.fromString(ruleString);
 
-      // remove seconds precision and convert to utc
-      // rrule pacakge requires the use of UTC
-      final startLocal = DateTime(
+      // --- THE FIX: FLOATING UTC ---
+      // Instead of .toUtc() (which subtracts 8 hours), we construct a UTC
+      // DateTime using the exact same local wall-clock numbers.
+      final startUtc = DateTime.utc(
         taskStartTime.year,
         taskStartTime.month,
         taskStartTime.day,
@@ -62,13 +63,26 @@ class TaskUtils {
         taskStartTime.minute,
         taskStartTime.second,
       );
-      final startUtc = startLocal.toUtc();
-      final afterUTC = startOfDay(rangeStart).toUtc();
-      final beforeUTC = endOfDay(rangeEnd).toUtc();
 
-      // If the computed "before" bound is earlier than the rule start,
-      // there can be no instances — avoid calling getInstances with
-      // before < start which triggers an assertion in the rrule package.
+      final afterUTC = DateTime.utc(
+        rangeStart.year,
+        rangeStart.month,
+        rangeStart.day,
+        0,
+        0,
+        0,
+      );
+
+      final beforeUTC = DateTime.utc(
+        rangeEnd.year,
+        rangeEnd.month,
+        rangeEnd.day,
+        23,
+        59,
+        59,
+      );
+
+      // If the computed "before" bound is earlier than the rule start...
       if (beforeUTC.isBefore(startUtc)) {
         return false;
       }
@@ -84,11 +98,10 @@ class TaskUtils {
         before: beforeUTC,
         includeAfter: true,
       );
+
       final originalFits =
           !taskEndTime.isBefore(rangeStart) && !taskStartTime.isAfter(rangeEnd);
-      print("===========");
-      print(task.title);
-      print(instances);
+
       return instances.isNotEmpty || originalFits;
     } catch (e) {
       // If there's an error parsing the recurrence rule, treat it as a non-recurring task
