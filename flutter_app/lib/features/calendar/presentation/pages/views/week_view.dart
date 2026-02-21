@@ -165,74 +165,87 @@ class _WeekViewState extends ConsumerState<WeekView> {
             dataSource: _dataSource,
 
             appointmentBuilder: (context, details) {
-  final Appointment appointment = details.appointments.first;
-  
-  final task = widget.tasks.firstWhere(
-    (t) => t.id == appointment.id,
-    orElse: () => Task(id: "temp", title: "Missing", startTime: DateTime.now()),
-  );
-  
-  if (task.id == "temp") return Container(color: Colors.red, width: 20, height: 20);
-  
-  final bool isCompleted = task.status == TaskStatus.completed;
-  
-  return Container(
-    margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-    decoration: BoxDecoration(
-      color: isCompleted ? appointment.color.withOpacity(0.5) : appointment.color,
-      borderRadius: BorderRadius.circular(8),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.15),
-          blurRadius: 4,
-          offset: const Offset(0, 2),
-        ),
-      ],
-    ),
-    child: Padding(
-      padding: const EdgeInsets.all(8),
-      // --- FIX: Wrap the Column in a SingleChildScrollView ---
-      child: SingleChildScrollView(
-        physics: const NeverScrollableScrollPhysics(), // Prevents accidental scrolling
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min, // Keep it tight
-          children: [
-            Text(
-              appointment.subject,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
-                color: colorScheme.onSurface,
-                decoration: isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
-                fontStyle: isCompleted ? FontStyle.italic : FontStyle.normal,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            if (appointment.notes != null && appointment.notes!.isNotEmpty) ...[
-              const SizedBox(height: 2), // Small gap
-              Text(
-                appointment.notes!,
-                style: TextStyle(
-                  fontSize: 10,
-                  color: isCompleted 
-                      ? colorScheme.onSurface.withOpacity(0.5) 
-                      : colorScheme.onSurface.withOpacity(0.7),
-                  decoration: isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
-                  fontStyle: isCompleted ? FontStyle.italic : FontStyle.normal,
+              final Appointment appointment = details.appointments.first;
+
+              final task = widget.tasks.firstWhere(
+                (t) => t.id == appointment.id,
+              );
+
+              if (task.id == "temp") {
+                return Container(color: Colors.red, width: 20, height: 20);
+              }
+
+              final bool isCompleted = task.status == TaskStatus.completed;
+
+              return Container(
+                margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                decoration: BoxDecoration(
+                  color: isCompleted
+                      ? appointment.color.withOpacity(0.5)
+                      : appointment.color,
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-                // Allow it to wrap, but it will be clipped silently by the ScrollView
-                maxLines: 2, 
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ],
-        ),
-      ),
-    ),
-  );
-},
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  // --- FIX: Wrap the Column in a SingleChildScrollView ---
+                  child: SingleChildScrollView(
+                    physics:
+                        const NeverScrollableScrollPhysics(), // Prevents accidental scrolling
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min, // Keep it tight
+                      children: [
+                        Text(
+                          appointment.subject,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                            color: colorScheme.onSurface,
+                            decoration: isCompleted
+                                ? TextDecoration.lineThrough
+                                : TextDecoration.none,
+                            fontStyle: isCompleted
+                                ? FontStyle.italic
+                                : FontStyle.normal,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (appointment.notes != null &&
+                            appointment.notes!.isNotEmpty) ...[
+                          const SizedBox(height: 2), // Small gap
+                          Text(
+                            appointment.notes!,
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: isCompleted
+                                  ? colorScheme.onSurface.withOpacity(0.5)
+                                  : colorScheme.onSurface.withOpacity(0.7),
+                              decoration: isCompleted
+                                  ? TextDecoration.lineThrough
+                                  : TextDecoration.none,
+                              fontStyle: isCompleted
+                                  ? FontStyle.italic
+                                  : FontStyle.normal,
+                            ),
+                            // Allow it to wrap, but it will be clipped silently by the ScrollView
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
 
             onViewChanged: widget.onViewChanged,
 
@@ -416,7 +429,7 @@ class _WeekViewState extends ConsumerState<WeekView> {
       ],
     );
   }
-  
+
   void _handleTimeRegionTap(BuildContext context, DateTime tappedTime) {
     // Check if there's already a task at this time
     final existingTask = widget.tasks.firstWhere(
@@ -424,11 +437,7 @@ class _WeekViewState extends ConsumerState<WeekView> {
           t.startTime != null &&
           DateUtils.isSameDay(t.startTime!, tappedTime) &&
           t.startTime!.hour == tappedTime.hour,
-      orElse: () => Task(
-        id: "none",
-        title: "",
-        startTime: tappedTime,
-      ),
+      orElse: () => Task(id: "none", title: "", startTime: tappedTime),
     );
 
     if (existingTask.id != "none") {
