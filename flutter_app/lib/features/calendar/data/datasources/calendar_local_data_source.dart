@@ -59,6 +59,9 @@ class CalendarLocalDataSource {
             final tagModel = TaskTagModel.fromEntity(tagEntity);
             await isar.taskTagModels.put(tagModel);
           }
+          for (var task in cloudTasks) {
+            print(task.status);
+          }
         }
         await isar.taskModels.put(cloudTask);
       }
@@ -210,10 +213,17 @@ class CalendarLocalDataSource {
     final tasks = await isar.taskModels
         .filter()
         .isDeletedEqualTo(false)
-        .statusEqualTo(TaskStatus.scheduled)
+        .group(
+          (q) => q
+              .statusEqualTo(TaskStatus.scheduled)
+              .or()
+              .statusEqualTo(
+                TaskStatus.rescheduled,
+              ), // <-- Replace with your second status
+        )
         .sortByStartTime()
         .findAll();
-
+    print(tasks);
     return tasks.toList();
   }
 

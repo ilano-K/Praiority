@@ -267,7 +267,7 @@ class _MainCalendarState extends ConsumerState<MainCalendar>
                         calendarControllerProvider.notifier,
                       );
                       final newStatus = task.status == TaskStatus.completed
-                          ? TaskStatus.scheduled
+                          ? TaskStatus.rescheduled
                           : TaskStatus.completed;
                       final updatedTask = task.copyWith(status: newStatus);
                       await controller.addTask(updatedTask);

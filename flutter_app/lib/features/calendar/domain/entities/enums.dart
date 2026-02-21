@@ -1,7 +1,10 @@
 enum TaskType { task, event, birthday }
+
 enum TaskCategory { easy, average, hard, none }
+
 enum TaskPriority { none, low, medium, high }
-enum TaskStatus { unscheduled, scheduled, completed, pending }
+
+enum TaskStatus { unscheduled, scheduled, completed, pending, rescheduled }
 
 /// Converts a string to TaskType. Returns null if not valid.
 TaskType? taskTypeFromString(String value) {
@@ -58,6 +61,8 @@ TaskStatus? taskStatusFromString(String value) {
       return TaskStatus.completed;
     case 'pending':
       return TaskStatus.pending;
+    case 'rescheduled':
+      return TaskStatus.rescheduled;
     default:
       return null;
   }

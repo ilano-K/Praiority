@@ -20,7 +20,6 @@ class TaskView extends ConsumerStatefulWidget {
 
 class _TaskViewState extends ConsumerState<TaskView> {
   bool _isScheduledExpanded = true;
-  bool _isPendingExpanded = false;
   bool _isCompletedExpanded = false;
 
   // We don't need initState to fetch data anymore because
@@ -107,7 +106,11 @@ class _TaskViewState extends ConsumerState<TaskView> {
         },
         data: (tasks) {
           final scheduled = tasks
-              .where((t) => t.status == TaskStatus.scheduled)
+              .where(
+                (t) =>
+                    t.status == TaskStatus.scheduled ||
+                    t.status == TaskStatus.rescheduled,
+              )
               .toList();
           final completed = tasks
               .where((t) => t.status == TaskStatus.completed)
@@ -281,7 +284,7 @@ class _TaskViewState extends ConsumerState<TaskView> {
                   GestureDetector(
                     onTap: () => _updateTaskStatus(
                       task,
-                      isDone ? TaskStatus.scheduled : TaskStatus.completed,
+                      isDone ? TaskStatus.rescheduled : TaskStatus.completed,
                     ),
                     child: Container(
                       width: 28,

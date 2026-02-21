@@ -232,8 +232,9 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
   }
 
   Task createTaskSaveTemplate(bool isDark) {
-    final colorValue =
-        isDark ? _selectedColor.dark.value : _selectedColor.light.value;
+    final colorValue = isDark
+        ? _selectedColor.dark.value
+        : _selectedColor.light.value;
     final title = _titleController.text.trim();
 
     final DateTime startTime = _isAllDay
@@ -291,6 +292,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
             reminderOffsets: baseTask.reminderOffsets,
             isSmartSchedule: baseTask.isSmartSchedule,
             status: baseTask.status,
+            priority: TaskPriority.none,
           )
         : baseTask;
   }
@@ -313,8 +315,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
   }
 
   void _showRepeatSelector(BuildContext context) async {
-    final taskType =
-        _selectedType == 'Event' ? TaskType.event : TaskType.task;
+    final taskType = _selectedType == 'Event' ? TaskType.event : TaskType.task;
 
     final result = await showModalBottomSheet(
       context: context,
@@ -392,7 +393,6 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                
                   // --- ALL DAY SWITCH ---
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -484,10 +484,11 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                   ),
 
                   // --- ADVANCED OPTIONS ---
-// --- ADVANCED OPTIONS ---
+                  // --- ADVANCED OPTIONS ---
                   Theme(
-                    data: Theme.of(context)
-                        .copyWith(dividerColor: Colors.transparent),
+                    data: Theme.of(
+                      context,
+                    ).copyWith(dividerColor: Colors.transparent),
                     child: ExpansionTile(
                       tilePadding: EdgeInsets.zero,
                       title: Text(
@@ -523,8 +524,9 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                                         : "Reminders are turned off",
                                     style: TextStyle(
                                       fontSize: 14,
-                                      color: colorScheme.onSurface
-                                          .withOpacity(0.6),
+                                      color: colorScheme.onSurface.withOpacity(
+                                        0.6,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -545,7 +547,6 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                         ),
                         const SizedBox(height: 16),
 
-
                         // 2. Remind Me Selector (Only show if reminders ON)
                         if (_hasReminder)
                           InteractiveInputRow(
@@ -554,7 +555,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                             onTapValue: () => _showReminderSelector(context),
                           ),
 
-                          // 4. Switch Tiles
+                        // 4. Switch Tiles
                         _buildSwitchTile(
                           'Lock Task',
                           "Exclude from auto-reorganization.",
@@ -606,9 +607,9 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                                   setState(() {
                                     _tagsList = List<String>.from(_tagsList)
                                       ..remove(removedTag);
-                                    _selectedTags =
-                                        List<String>.from(_selectedTags)
-                                          ..remove(removedTag);
+                                    _selectedTags = List<String>.from(
+                                      _selectedTags,
+                                    )..remove(removedTag);
                                   });
                                   await ref
                                       .read(tagsProvider.notifier)

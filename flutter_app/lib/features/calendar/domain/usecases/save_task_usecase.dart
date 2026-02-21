@@ -23,7 +23,9 @@ class SaveTaskUseCase {
   SaveTaskUseCase(this.repository, this.scheduleTaskNotification);
 
   Future<void> execute(Task task) async {
-    if (task.status == TaskStatus.pending) {
+    if (task.status == TaskStatus.pending ||
+        task.status == TaskStatus.completed ||
+        task.status == TaskStatus.rescheduled) {
       await repository.saveAndUpdateTask(task);
       return;
     }

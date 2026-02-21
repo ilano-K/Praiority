@@ -381,12 +381,14 @@ const _TaskModelstatusEnumValueMap = {
   r'scheduled': r'scheduled',
   r'completed': r'completed',
   r'pending': r'pending',
+  r'rescheduled': r'rescheduled',
 };
 const _TaskModelstatusValueEnumMap = {
   r'unscheduled': TaskStatus.unscheduled,
   r'scheduled': TaskStatus.scheduled,
   r'completed': TaskStatus.completed,
   r'pending': TaskStatus.pending,
+  r'rescheduled': TaskStatus.rescheduled,
 };
 const _TaskModeltypeEnumValueMap = {
   r'task': r'task',
