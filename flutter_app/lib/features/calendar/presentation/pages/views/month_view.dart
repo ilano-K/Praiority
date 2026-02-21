@@ -90,7 +90,17 @@ class _MonthViewState extends ConsumerState<MonthView> {
       // 3. Custom Appointment Builder (Your preferred styling)
       appointmentBuilder: (context, details) {
         final Appointment appointment = details.appointments.first;
+        print(widget.tasks);
 
+        for (var task in widget.tasks) {
+          print("======");
+          print(task.title);
+          print(task.id);
+          print("=======");
+        }
+
+        print("appointment id");
+        print(appointment.id);
         final task = widget.tasks.firstWhere(
           (t) => t.id == appointment.id,
           orElse: () => Task(id: "temp", title: "", startTime: DateTime.now()),
@@ -187,46 +197,23 @@ class _MonthViewState extends ConsumerState<MonthView> {
         if (details.targetElement == CalendarElement.calendarCell ||
             details.targetElement == CalendarElement.appointment) {
           final date = details.date!;
+          final range = date.range(CalendarScope.day);
+          // 1. Get the exact start and end of the tapped day
+          final startOfDay = range.start;
+          final endOfDay = range.end;
 
-          // If tapped directly on an appointment bar (and not the empty cell space)
-          if (details.targetElement == CalendarElement.appointment &&
-              details.appointments != null) {
-            final Appointment selectedAppt = details.appointments!.first;
-            try {
-              final tappedTask = widget.tasks.firstWhere(
-                (t) => t.id == selectedAppt.id,
-              );
-              widget.onTaskTap(tappedTask);
-              return;
-            } catch (e) {
-              // Fallback if not found
-            }
-          }
-
-          // --- THE FIX ---
-          // Instead of manually calculating dates with validTaskModelForDate,
-          // simply grab the appointments Syncfusion already placed on this cell.
           List<Task> dayTasks = [];
 
-          if (details.appointments != null &&
-              details.appointments!.isNotEmpty) {
-            for (var appt in details.appointments!) {
-              try {
-                // Find the original Task that matches this Appointment's ID
-                final matchingTask = widget.tasks.firstWhere(
-                  (t) => t.id == appt.id,
-                );
+          for (var task in widget.tasks) {
+            // Filter out pending tasks
+            if (task.status == TaskStatus.pending) continue;
 
-                // Avoid adding duplicates
-                if (!dayTasks.any((t) => t.id == matchingTask.id)) {
-                  dayTasks.add(matchingTask);
-                }
-              } catch (e) {
-                debugPrint("Task not found for appointment: ${appt.id}");
-              }
+            if (TaskUtils.validTaskModelForDate(task, startOfDay, endOfDay)) {
+              dayTasks.add(task);
             }
           }
 
+          // 3. Open the appropriate bottom sheet
           if (dayTasks.isNotEmpty) {
             showModalBottomSheet(
               context: context,
@@ -234,26 +221,17 @@ class _MonthViewState extends ConsumerState<MonthView> {
               isScrollControlled: true,
               builder: (context) => TaskSummaryView(
                 date: date,
-                tasks: dayTasks,
+                tasks: dayTasks, // Pass your manually verified list!
                 onTaskTap: widget.onTaskTap,
               ),
             );
           } else {
             // No tasks for this day - allow creating a new task
-            // Normalize to start of day (midnight) for month view
-            final normalizedDate = DateTime(
-              date.year,
-              date.month,
-              date.day,
-              0,
-              0,
-              0,
-            );
             showModalBottomSheet(
               context: context,
               isScrollControlled: true,
               backgroundColor: Colors.transparent,
-              builder: (context) => AddTaskSheet(initialDate: normalizedDate),
+              builder: (context) => AddTaskSheet(initialDate: startOfDay),
             );
           }
         }

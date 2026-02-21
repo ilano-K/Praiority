@@ -75,6 +75,14 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
     final title = _titleController.text.trim();
     final description = _descController.text.trim();
 
+    final startOfDay = DateTime(
+      _birthdayDate.year,
+      _birthdayDate.month,
+      _birthdayDate.day,
+      0,
+      0,
+      0,
+    );
     final endOfDay = DateTime(
       _birthdayDate.year,
       _birthdayDate.month,
@@ -88,7 +96,7 @@ class _AddBirthdaySheetState extends State<AddBirthdaySheet> {
       type: TaskType.birthday,
       title: title,
       description: description,
-      startTime: _birthdayDate, // Birthdays usually start on the selected date
+      startTime: startOfDay, // Birthdays usually start on the selected date
       endTime: endOfDay,
       isAllDay: true,
       status: TaskStatus.scheduled,
