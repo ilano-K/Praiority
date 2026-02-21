@@ -1,4 +1,4 @@
-import 'package:flutter_app/features/settings/data/models/user_preferences_model.dart';
+import 'package:flutter_app/features/user_preferences/data/models/user_preferences_model.dart';
 import 'package:isar/isar.dart';
 import 'package:uuid/uuid.dart';
 

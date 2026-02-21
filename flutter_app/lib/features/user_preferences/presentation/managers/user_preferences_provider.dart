@@ -1,9 +1,9 @@
 import 'package:flutter_app/core/providers/global_providers.dart';
-import 'package:flutter_app/features/settings/data/datasources/settings_local_data_source.dart';
-import 'package:flutter_app/features/settings/data/repositories/settings_repository.dart';
-import 'package:flutter_app/features/settings/domain/entities/user_preferences.dart';
-import 'package:flutter_app/features/settings/presentation/managers/user_preferences_notifier.dart';
-import 'package:flutter_app/features/settings/services/user_pref_sync_service.dart';
+import 'package:flutter_app/features/user_preferences/data/datasources/settings_local_data_source.dart';
+import 'package:flutter_app/features/user_preferences/data/repositories/settings_repository.dart';
+import 'package:flutter_app/features/user_preferences/domain/entities/user_preferences.dart';
+import 'package:flutter_app/features/user_preferences/presentation/managers/user_preferences_notifier.dart';
+import 'package:flutter_app/features/user_preferences/services/user_pref_sync_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 

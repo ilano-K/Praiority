@@ -1,6 +1,6 @@
-import 'package:flutter_app/features/settings/data/datasources/settings_local_data_source.dart';
-import 'package:flutter_app/features/settings/data/models/user_preferences_model.dart';
-import 'package:flutter_app/features/settings/domain/entities/user_preferences.dart';
+import 'package:flutter_app/features/user_preferences/data/datasources/settings_local_data_source.dart';
+import 'package:flutter_app/features/user_preferences/data/models/user_preferences_model.dart';
+import 'package:flutter_app/features/user_preferences/domain/entities/user_preferences.dart';
 
 class SettingsRepository {
   final SettingsLocalDataSource settingsLocalDataSource;

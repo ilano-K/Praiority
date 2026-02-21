@@ -1,5 +1,5 @@
 import 'package:flutter_app/features/calendar/presentation/utils/date_time_utils.dart';
-import 'package:flutter_app/features/settings/domain/entities/user_preferences.dart';
+import 'package:flutter_app/features/user_preferences/domain/entities/user_preferences.dart';
 import 'package:isar/isar.dart';
 import 'package:uuid/uuid.dart';
 

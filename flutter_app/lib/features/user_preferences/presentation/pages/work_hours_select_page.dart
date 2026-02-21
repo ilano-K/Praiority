@@ -2,15 +2,22 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/selectors/pick_time.dart';
-import 'package:flutter_app/features/settings/presentation/managers/user_preferences_notifier.dart';
-import 'package:flutter_app/features/settings/presentation/managers/user_preferences_provider.dart';
-import 'package:flutter_app/features/settings/presentation/pages/mode_option.dart';
+import 'package:flutter_app/features/calendar/presentation/pages/main_calendar.dart';
+import 'package:flutter_app/features/user_preferences/presentation/managers/user_preferences_provider.dart';
+import 'package:flutter_app/features/user_preferences/presentation/pages/theme_select_page.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class WorkHours extends ConsumerStatefulWidget {
-  final bool isFromSidebar;
 
-  const WorkHours({super.key, this.isFromSidebar = false});
+  final bool isFromSidebar;
+  // When true, after saving work hours (first-run flow) show theme select page
+  final bool showThemeOnComplete;
+
+  const WorkHours({
+    super.key,
+    this.isFromSidebar = false,
+    this.showThemeOnComplete = false,
+  });
 
   @override
   ConsumerState<WorkHours> createState() => _WorkHoursState();
@@ -82,7 +89,9 @@ class _WorkHoursState extends ConsumerState<WorkHours> {
     // 2. SAVING
     final String dbFrom = _to24HourFormat(_fromTime);
     final String dbTo = _to24HourFormat(_toTime);
-    final settingsController = ref.read(userPreferencesControllerProvider.notifier);
+    final settingsController = ref.read(
+      userPreferencesControllerProvider.notifier,
+    );
     await settingsController.saveSettings(dbFrom, dbTo);
 
     // 3. SMART NAVIGATION
@@ -91,10 +100,15 @@ class _WorkHoursState extends ConsumerState<WorkHours> {
 
     if (widget.isFromSidebar) {
       Navigator.pop(context);
-    } else {
+    } else if (widget.showThemeOnComplete) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const ModeOption()),
+      );
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const MainCalendar()),
       );
     }
 

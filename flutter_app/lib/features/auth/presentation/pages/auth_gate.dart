@@ -4,6 +4,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_app/features/auth/presentation/pages/new_pass_page.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_controller.dart';
+import 'package:flutter_app/features/user_preferences/presentation/managers/user_preferences_provider.dart';
+import 'package:flutter_app/features/user_preferences/presentation/pages/theme_select_page.dart';
+import 'package:flutter_app/features/user_preferences/presentation/pages/work_hours_select_page.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -12,8 +15,6 @@ import 'package:flutter_app/features/auth/data/auth_provider.dart';
 import 'package:flutter_app/features/auth/presentation/pages/auth_page.dart';
 import 'package:flutter_app/features/calendar/presentation/pages/main_calendar.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_provider.dart';
-import 'package:flutter_app/features/settings/presentation/managers/user_preferences_provider.dart';
-import 'package:flutter_app/features/settings/presentation/pages/work_hours.dart';
 import 'package:flutter_app/core/theme/theme_notifier.dart';
 import 'package:flutter_app/core/theme/themes.dart';
 
@@ -37,6 +38,8 @@ class _AuthGateState extends ConsumerState<AuthGate> {
   // We keep these to prevent the "Double Sync" on app startup
   bool _isSyncing = false;
   String? _lastSyncedUserId;
+  bool? _isBrandNewUser;
+  bool _hasCompletedThemeSelect = false;
 
   @override
   void initState() {
@@ -153,8 +156,22 @@ class _AuthGateState extends ConsumerState<AuthGate> {
               body: Center(child: CircularProgressIndicator()),
             ),
             data: (prefs) {
+              if (_isBrandNewUser == null) {
+                final isNew = prefs == null || prefs.startWorkHours == null;
+
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) setState(() => _isBrandNewUser = isNew);
+                });
+              }
               if (prefs == null || prefs.startWorkHours == null) {
                 return const WorkHours();
+              }
+              if (_isBrandNewUser == true && !_hasCompletedThemeSelect) {
+                return ModeOption(
+                  onComplete: () {
+                    setState(() => _hasCompletedThemeSelect = true);
+                  },
+                );
               }
               return const MainCalendar();
             },

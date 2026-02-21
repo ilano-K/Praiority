@@ -1,12 +1,14 @@
 // File: lib/features/settings/presentation/pages/mode_option.dart
 
 import 'package:flutter/material.dart';
-import 'package:flutter_app/core/theme/theme_notifier.dart'; 
+import 'package:flutter_app/core/theme/theme_notifier.dart';
 import 'package:flutter_app/features/calendar/presentation/pages/main_calendar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class ModeOption extends ConsumerStatefulWidget { // Changed to Stateful for the loading logic
-  const ModeOption({super.key});
+class ModeOption extends ConsumerStatefulWidget {
+  final VoidCallback? onComplete;
+  // Changed to Stateful for the loading logic
+  const ModeOption({super.key, this.onComplete});
 
   @override
   ConsumerState<ModeOption> createState() => _ModeOptionState();
@@ -23,20 +25,27 @@ class _ModeOptionState extends ConsumerState<ModeOption> {
 
     if (!mounted) return;
 
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const MainCalendar()),
-    );
+    if (widget.onComplete != null) {
+      widget.onComplete!();
+    } else {
+      // Fallback for standalone testing
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const MainCalendar()),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    print("theme select is running..............");
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
-      body: Stack( // Use Stack to overlay the loader
+      body: Stack(
+        // Use Stack to overlay the loader
         children: [
           SafeArea(
             child: Padding(
@@ -59,12 +68,13 @@ class _ModeOptionState extends ConsumerState<ModeOption> {
                       Expanded(
                         child: _ModeCard(
                           label: "Light Mode",
-                          iconPath: 'assets/images/LightLogo.png', 
+                          iconPath: 'assets/images/LightLogo.png',
                           isSelected: !isDark,
                           backgroundColor: Colors.white,
                           contentColor: Colors.black,
                           onTap: () {
-                            if (isDark) ref.read(themeProvider.notifier).toggleTheme();
+                            if (isDark)
+                              ref.read(themeProvider.notifier).toggleTheme();
                           },
                         ),
                       ),
@@ -77,7 +87,8 @@ class _ModeOptionState extends ConsumerState<ModeOption> {
                           backgroundColor: Colors.black,
                           contentColor: Colors.white,
                           onTap: () {
-                            if (!isDark) ref.read(themeProvider.notifier).toggleTheme();
+                            if (!isDark)
+                              ref.read(themeProvider.notifier).toggleTheme();
                           },
                         ),
                       ),
@@ -91,33 +102,36 @@ class _ModeOptionState extends ConsumerState<ModeOption> {
                     child: ElevatedButton(
                       onPressed: _isLoading ? null : _handleContinue,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: colorScheme.onSurface, 
+                        backgroundColor: colorScheme.onSurface,
                         foregroundColor: colorScheme.surface,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(15),
                         ),
                       ),
-                      child: _isLoading 
-                        ? SizedBox(
-                            height: 24,
-                            width: 24,
-                            child: CircularProgressIndicator(
-                              color: colorScheme.surface,
-                              strokeWidth: 3,
+                      child: _isLoading
+                          ? SizedBox(
+                              height: 24,
+                              width: 24,
+                              child: CircularProgressIndicator(
+                                color: colorScheme.surface,
+                                strokeWidth: 3,
+                              ),
+                            )
+                          : const Text(
+                              "Continue",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          )
-                        : const Text(
-                            "Continue",
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                          ),
                     ),
                   ),
                 ],
               ),
             ),
           ),
-          
+
           // --- FULL SCREEN OVERLAY ---
           if (_isLoading)
             AnimatedOpacity(
@@ -168,8 +182,11 @@ class _ModeCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: backgroundColor,
           borderRadius: BorderRadius.circular(40),
-          border: isSelected 
-              ? Border.all(color: Theme.of(context).colorScheme.tertiary, width: 4) 
+          border: isSelected
+              ? Border.all(
+                  color: Theme.of(context).colorScheme.tertiary,
+                  width: 4,
+                )
               : null,
           boxShadow: [
             BoxShadow(
@@ -177,7 +194,7 @@ class _ModeCard extends StatelessWidget {
               blurRadius: 20,
               spreadRadius: 2,
               offset: const Offset(0, 10),
-            )
+            ),
           ],
         ),
         child: Padding(

@@ -1,5 +1,5 @@
 import 'package:flutter_app/features/calendar/data/models/task_tag_model.dart';
-import 'package:flutter_app/features/settings/data/models/user_preferences_model.dart';
+import 'package:flutter_app/features/user_preferences/data/models/user_preferences_model.dart';
 // File: lib/core/services/local_database_service.dart
 // Purpose: Service responsible for initializing and exposing the local Isar DB.
 import 'package:isar/isar.dart';

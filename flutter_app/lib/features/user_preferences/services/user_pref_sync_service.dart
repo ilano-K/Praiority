@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_app/features/settings/data/datasources/settings_local_data_source.dart';
-import 'package:flutter_app/features/settings/data/models/user_preferences_model.dart';
+import 'package:flutter_app/features/user_preferences/data/datasources/settings_local_data_source.dart';
+import 'package:flutter_app/features/user_preferences/data/models/user_preferences_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class UserPrefSyncService {

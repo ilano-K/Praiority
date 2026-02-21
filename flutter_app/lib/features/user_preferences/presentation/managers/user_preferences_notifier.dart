@@ -1,5 +1,5 @@
-import 'package:flutter_app/features/settings/domain/entities/user_preferences.dart';
-import 'package:flutter_app/features/settings/presentation/managers/user_preferences_provider.dart';
+import 'package:flutter_app/features/user_preferences/domain/entities/user_preferences.dart';
+import 'package:flutter_app/features/user_preferences/presentation/managers/user_preferences_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 

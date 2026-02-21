@@ -5,7 +5,7 @@ import 'package:flutter_app/features/auth/presentation/manager/auth_controller.d
 import 'package:flutter_app/features/auth/presentation/pages/auth_gate.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_provider.dart';
 import 'package:flutter_app/features/calendar/presentation/widgets/dialogs/app_confirmation_dialog.dart';
-import 'package:flutter_app/features/settings/presentation/pages/work_hours.dart';
+import 'package:flutter_app/features/user_preferences/presentation/pages/work_hours_select_page.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 import '../../../../../core/theme/theme_notifier.dart';

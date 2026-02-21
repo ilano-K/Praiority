@@ -5,7 +5,7 @@ import 'package:flutter_app/features/auth/data/auth_provider.dart';
 import 'package:flutter_app/features/auth/data/auth_service.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_controller.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_provider.dart';
-import 'package:flutter_app/features/settings/presentation/managers/user_preferences_provider.dart';
+import 'package:flutter_app/features/user_preferences/presentation/managers/user_preferences_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final authControllerProvider = AsyncNotifierProvider<AuthController, void>(() {

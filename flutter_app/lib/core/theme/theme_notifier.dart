@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'themes.dart';
 import 'dart:async';
-import 'package:flutter_app/features/settings/presentation/managers/user_preferences_provider.dart';
+import 'package:flutter_app/features/user_preferences/presentation/managers/user_preferences_provider.dart';
 
 // 1. Define the Provider using the new Notifier
 final themeProvider = NotifierProvider<ThemeNotifier, ThemeData>(() {

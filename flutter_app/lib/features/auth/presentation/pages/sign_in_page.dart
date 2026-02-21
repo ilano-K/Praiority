@@ -6,7 +6,7 @@ import 'package:flutter_app/features/auth/presentation/manager/auth_controller.d
 import 'package:flutter_app/features/auth/presentation/pages/forgot_pass_page.dart';
 import 'package:flutter_app/features/auth/presentation/widgets/auth_components.dart';
 import 'package:flutter_app/features/calendar/presentation/managers/calendar_provider.dart';
-import 'package:flutter_app/features/settings/presentation/pages/work_hours.dart';
+import 'package:flutter_app/features/user_preferences/presentation/pages/work_hours_select_page.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 import 'package:flutter_app/core/theme/theme_notifier.dart';

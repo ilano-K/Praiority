@@ -1,11 +1,9 @@
-// File: lib/features/calendar/datasources/calendar_local_data_source_impl.dart
 import 'package:flutter/foundation.dart';
 import 'package:flutter_app/features/calendar/data/models/task_model.dart';
 import 'package:flutter_app/features/calendar/data/models/task_tag_model.dart';
 import 'package:flutter_app/features/calendar/domain/entities/enums.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task.dart';
 import 'package:flutter_app/features/calendar/domain/entities/task_tag.dart';
-import 'package:flutter_app/features/calendar/presentation/utils/task_utils.dart';
 import 'package:isar/isar.dart';
 
 class CalendarLocalDataSource {
@@ -58,9 +56,6 @@ class CalendarLocalDataSource {
             final tagEntity = TaskTag.create(name: tag);
             final tagModel = TaskTagModel.fromEntity(tagEntity);
             await isar.taskTagModels.put(tagModel);
-          }
-          for (var task in cloudTasks) {
-            print(task.status);
           }
         }
         await isar.taskModels.put(cloudTask);
