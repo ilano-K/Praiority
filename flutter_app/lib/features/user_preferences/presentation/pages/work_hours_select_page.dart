@@ -8,7 +8,6 @@ import 'package:flutter_app/features/user_preferences/presentation/pages/theme_s
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class WorkHours extends ConsumerStatefulWidget {
-
   final bool isFromSidebar;
   // When true, after saving work hours (first-run flow) show theme select page
   final bool showThemeOnComplete;
@@ -92,7 +91,7 @@ class _WorkHoursState extends ConsumerState<WorkHours> {
     final settingsController = ref.read(
       userPreferencesControllerProvider.notifier,
     );
-    await settingsController.saveSettings(dbFrom, dbTo);
+    await settingsController.saveSettings(start: dbFrom, end: dbTo);
 
     // 3. SMART NAVIGATION
     await Future.delayed(const Duration(milliseconds: 300));

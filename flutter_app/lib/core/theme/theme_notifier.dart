@@ -43,18 +43,14 @@ class ThemeNotifier extends Notifier<ThemeData> {
     // Toggle UI state immediately
     final newIsDark = !(state == darkMode);
     state = newIsDark ? darkMode : lightMode;
+    print("is this running");
 
     // Persist the choice to local settings and trigger sync
     try {
-      final repository = ref.read(userPreferencesRepositoryProvider);
-      final currentPrefs = await repository.getPreferences();
-      if (currentPrefs == null) return;
-      final updated = currentPrefs.copyWith(isDarkMode: newIsDark);
-      await repository.savePreferences(updated);
-
-      // trigger background push to remote
-      final prefSyncController = ref.read(userPrefSyncServiceProvider);
-      prefSyncController.pushLocalChanges();
+      final userPrefsController = ref.read(
+        userPreferencesControllerProvider.notifier,
+      );
+      await userPrefsController.saveSettings(isDark: newIsDark);
     } catch (e) {
       debugPrint('[ThemeNotifier] failed to persist theme: $e');
     }

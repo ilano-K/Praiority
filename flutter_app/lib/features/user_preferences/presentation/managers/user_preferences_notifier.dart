@@ -14,24 +14,28 @@ class UserPreferencesNotifier extends AsyncNotifier<UserPreferences?> {
     return await repository.getPreferences();
   }
 
-  Future<void> saveSettings(String start, String end) async {
+  Future<void> saveSettings({String? start, String? end, bool? isDark}) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      // Safely load existing preferences
-      final currentPrefs = await loadUserSettings();
-
-      final newPrefs = (currentPrefs ?? UserPreferences()).copyWith(
-        startWorkHours: start,
-        endWorkHours: end,
-      );
-
       final repository = ref.read(userPreferencesRepositoryProvider);
-      await repository.savePreferences(newPrefs);
+      final currentPref = state.value;
+      UserPreferences newPrefs;
+
+      if (currentPref == null) {
+        newPrefs = UserPreferences.create(start!, end!);
+        await repository.savePreferences(newPrefs);
+      } else {
+        newPrefs = currentPref.copyWith(
+          startWorkHours: start,
+          endWorkHours: end,
+          isDarkMode: isDark,
+        );
+        await repository.savePreferences(newPrefs);
+      }
 
       final prefSyncController = ref.read(userPrefSyncServiceProvider);
       // save to database asynchronously
       unawaited(prefSyncController.pushLocalChanges());
-
       return newPrefs;
     });
   }
