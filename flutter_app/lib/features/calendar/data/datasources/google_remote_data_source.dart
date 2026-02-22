@@ -39,6 +39,7 @@ class GoogleRemoteDataSource {
           timeMax: now.add(const Duration(days: 90)).toUtc(),
           singleEvents: true,
           orderBy: 'startTime',
+          maxResults: 2500,
         );
         return events.items ?? [];
       } finally {
@@ -73,7 +74,11 @@ class GoogleRemoteDataSource {
         if (taskLists.items != null) {
           // 2. Loop through each list (e.g., Default, Personal, Work)
           for (var list in taskLists.items!) {
-            final tasks = await tasksApi.tasks.list(list.id!);
+            final tasks = await tasksApi.tasks.list(
+              list.id!,
+              showHidden: true,
+              maxResults: 100,
+            );
             if (tasks.items != null) {
               allTasks.addAll(tasks.items!);
             }

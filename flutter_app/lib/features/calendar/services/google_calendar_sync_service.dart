@@ -21,6 +21,7 @@ class GoogleCalendarSyncService {
       // --- HANDLE CALENDAR EVENTS ---
       final googleEvents = await _remoteDataSource.fetchEvents();
       for (var event in googleEvents) {
+        print(event.summary);
         if (existingIds.contains(event.id)) continue;
         if (event.start?.dateTime == null && event.start?.date == null) {
           continue;
@@ -37,7 +38,7 @@ class GoogleCalendarSyncService {
           ..googleEventId = event.id
           ..tags = const []
           ..reminderMinutes = const []
-          ..isAiMovable = false
+          ..isAiMovable = true
           ..isConflicting = false;
 
         if (event.start!.date != null) {
@@ -77,14 +78,27 @@ class GoogleCalendarSyncService {
           ..googleEventId = gTask.id
           ..tags = const []
           ..reminderMinutes = const []
-          ..isAiMovable = false
+          ..isAiMovable = true
           ..isConflicting = false;
 
         // Since Google Tasks don't have duration, we set a default 30-min block
         if (dueTime != null) {
-          newTask.isAllDay = false; // Usually has a specific due time
-          newTask.startTime = dueTime;
-          newTask.endTime = dueTime.add(const Duration(minutes: 30));
+          newTask.isAllDay = false;
+          // FIX: Overwrite the 8:00 AM timezone shift by placing it at the end of the day
+          newTask.startTime = DateTime(
+            dueTime.year,
+            dueTime.month,
+            dueTime.day,
+            23,
+            0,
+          );
+          newTask.endTime = DateTime(
+            dueTime.year,
+            dueTime.month,
+            dueTime.day,
+            23,
+            30,
+          );
         } else {
           // Fallback for tasks without due dates so 'late' fields don't crash
           newTask.isAllDay = true;
