@@ -137,6 +137,7 @@ class _RescheduleState extends ConsumerState<Reschedule> {
                 try{
                   final targetDateOnly = dateOnly(_targetDate);
                   await calendarController.reorganizeTask(targetDateOnly, instruction.isEmpty ? null : instruction);
+                  if (context.mounted) Navigator.pop(context);
                 }catch(e){
                     if (context.mounted) {
                       AppDialogs.showWarning(
