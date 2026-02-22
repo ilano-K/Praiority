@@ -22,6 +22,7 @@ class AppSidebar extends ConsumerStatefulWidget {
 
   @override
   ConsumerState<AppSidebar> createState() => _AppSidebarState();
+
 }
 
 class _AppSidebarState extends ConsumerState<AppSidebar> {
@@ -137,6 +138,47 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
           children: [
             Column(
               children: [
+Padding(
+  padding: const EdgeInsets.symmetric(vertical: 40),
+  child: Column(
+    children: [
+      Container(
+        width: 110,
+        height: 110,
+        decoration: BoxDecoration(
+          shape: BoxShape.rectangle, 
+          color: colorScheme.primary.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(16), 
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Image.asset(
+            isDark ? 'assets/images/monthDark.png' : 'assets/images/month.png',
+            fit: BoxFit.cover,
+            gaplessPlayback: true,
+            cacheWidth: 220, 
+            cacheHeight: 220,
+            errorBuilder: (context, error, stackTrace) => Icon(
+              Icons.person,
+              size: 70,
+              color: colorScheme.primary,
+            ),
+          ),
+        ),
+      ),
+      const SizedBox(height: 15),
+      Text(
+        "Praiority",
+        style: TextStyle(
+          fontSize: 22,
+          fontWeight: FontWeight.w900,
+          color: colorScheme.onSurface,
+        ),
+      ),
+    ],
+  ),
+),
+
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 25),
                   child: Divider(
