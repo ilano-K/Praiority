@@ -41,11 +41,11 @@ class _SortSelectorState extends ConsumerState<SortSelector> {
   @override
   void initState() {
     super.initState();
-    
+
     // Initialize from widget parameters
     _selectedFromDate = widget.initialFromDate;
     _selectedToDate = widget.initialToDate;
-    _selectedPriority = widget.initialPriority != null 
+    _selectedPriority = widget.initialPriority != null
         ? widget.initialPriority.toString().split('.').last
         : "None";
     _selectedTag = widget.initialTag;
@@ -57,29 +57,45 @@ class _SortSelectorState extends ConsumerState<SortSelector> {
     });
   }
 
+  // --- NEW: Clear Sort Method ---
+  void _clearSort() {
+    setState(() {
+      _selectedCategory = "None";
+      _selectedPriority = "None";
+      _selectedFromDate = null;
+      _selectedToDate = null;
+      _selectedTag = "None";
+    });
+    // Immediately apply the cleared state to reset the backend list and pop context
+    _applySort();
+  }
+
   void _applySort() {
     final controller = ref.read(taskViewControllerProvider.notifier);
 
-    final start = _selectedFromDate != null ? DateUtils.dateOnly(_selectedFromDate!) : null;
+    final start = _selectedFromDate != null
+        ? DateUtils.dateOnly(_selectedFromDate!)
+        : null;
     final end = _selectedToDate != null
-        ? DateUtils.dateOnly(_selectedToDate!).add(
-            const Duration(hours: 23, minutes: 59, seconds: 59))
+        ? DateUtils.dateOnly(
+            _selectedToDate!,
+          ).add(const Duration(hours: 23, minutes: 59, seconds: 59))
         : null;
 
     controller.filterTasks(
       // 1. FIX: Check for "None". If true, pass null.
       // Otherwise, the DB searches for category == TaskCategory.none specifically.
-      category: _selectedCategory == "None" 
-          ? null 
+      category: _selectedCategory == "None"
+          ? null
           : taskCategoryFromString(_selectedCategory),
-          
-      priority: _selectedPriority == "None" 
-          ? null 
+
+      priority: _selectedPriority == "None"
+          ? null
           : taskPriorityFromString(_selectedPriority),
-          
+
       start: start,
       end: end,
-      
+
       // 2. FIX: Check for "None" tag.
       // Passing "None" makes Isar search for a tag named "None".
       tag: _selectedTag == "None" ? null : _selectedTag,
@@ -110,7 +126,6 @@ class _SortSelectorState extends ConsumerState<SortSelector> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 "Sort By",
@@ -120,6 +135,25 @@ class _SortSelectorState extends ConsumerState<SortSelector> {
                   color: colorScheme.onSurface,
                 ),
               ),
+              const Spacer(), // Pushes the buttons to the far right
+              // --- NEW: Clear Button ---
+              TextButton(
+                onPressed: _clearSort,
+                style: TextButton.styleFrom(
+                  // Subtle color so it doesn't outshine the primary Sort button
+                  foregroundColor: colorScheme.onSurface.withOpacity(0.5),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: const Text(
+                  "Clear",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+              ),
+              const SizedBox(width: 8),
+
+              // Existing Sort Button
               ElevatedButton(
                 onPressed: _applySort,
                 style: ElevatedButton.styleFrom(
@@ -129,7 +163,8 @@ class _SortSelectorState extends ConsumerState<SortSelector> {
                   fixedSize: const Size(90, 30),
                   padding: EdgeInsets.zero,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 child: const Text(
                   "Sort",
@@ -236,7 +271,7 @@ class SortOption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return ListTile(
       contentPadding: EdgeInsets.zero,
       onTap: onTap,
@@ -251,7 +286,7 @@ class SortOption extends StatelessWidget {
       subtitle: Text(
         value,
         style: TextStyle(
-          fontSize: 14, 
+          fontSize: 14,
           color: colorScheme.onSurface.withOpacity(0.5),
         ),
       ),
