@@ -473,8 +473,8 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                                   onTap: () => _showOffsetSelector(context),
                                 ),
                               _buildSwitchTile(
-                                'Lock Task',
-                                "Exclude from auto-reorganization.",
+                                'Unlock Task',
+                                "Include from auto-reorganization.",
                                 _movableByAI,
                                 (v) => setState(() => _movableByAI = v),
                                 colorScheme,

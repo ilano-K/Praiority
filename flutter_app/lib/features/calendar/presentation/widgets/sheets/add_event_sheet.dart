@@ -557,8 +557,8 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
 
                         // 4. Switch Tiles
                         _buildSwitchTile(
-                          'Lock Task',
-                          "Exclude from auto-reorganization.",
+                          'Unock Task',
+                          "Include from auto-reorganization.",
                           _movableByAI,
                           (v) => setState(() => _movableByAI = v),
                           colorScheme,
