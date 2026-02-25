@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 class ApiConstants {
   static const _port = 8000;
 
-  static const _localIp = '192.168.1.25';
+  static const _localIp = '192.168.0.230';
 
   static String get baseUrl {
     if (kReleaseMode) {

@@ -23,6 +23,7 @@ class GoogleCalendarSyncService {
       for (var event in googleEvents) {
         print(event.summary);
         if (existingIds.contains(event.id)) continue;
+        if (event.status == 'cancelled') continue;
         if (event.start?.dateTime == null && event.start?.date == null) {
           continue;
         }
@@ -57,6 +58,8 @@ class GoogleCalendarSyncService {
       final googleTasks = await _remoteDataSource.fetchTasks();
       for (var gTask in googleTasks) {
         if (existingIds.contains(gTask.id)) continue;
+        if (gTask.deleted == true) continue;
+        print(gTask.completed);
 
         // Google Task dates are strings (RFC 3339)
         DateTime? dueTime = gTask.due != null

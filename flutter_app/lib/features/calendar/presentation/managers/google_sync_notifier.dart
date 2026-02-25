@@ -19,7 +19,9 @@ class GoogleSyncNotifier extends AsyncNotifier<void> {
 
     if (!state.hasError) {
       final calendarController = ref.read(calendarControllerProvider.notifier);
+      final taskSync = ref.read(taskSyncServiceProvider);
       await calendarController.refreshUi();
+      unawaited(taskSync.pushLocalChanges());
     }
 
     if (state.hasError) throw state.error!;

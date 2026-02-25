@@ -74,11 +74,7 @@ class GoogleRemoteDataSource {
         if (taskLists.items != null) {
           // 2. Loop through each list (e.g., Default, Personal, Work)
           for (var list in taskLists.items!) {
-            final tasks = await tasksApi.tasks.list(
-              list.id!,
-              showHidden: true,
-              maxResults: 100,
-            );
+            final tasks = await tasksApi.tasks.list(list.id!, maxResults: 100);
             if (tasks.items != null) {
               allTasks.addAll(tasks.items!);
             }
